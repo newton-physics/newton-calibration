@@ -1,0 +1,50 @@
+{
+  "result": {
+    "acceptance": "rejected_training",
+    "termination_reason": "generation_budget_exhausted",
+    "parameters": {
+      "bending_rigidity": 0.003439428447490269,
+      "bend_damping": 0.010546396845283986
+    },
+    "asset_path": null,
+    "run_directory": "<original-workspace>/cable_tuning/workspace/20261013T034559Z-9fa415c5"
+  },
+  "metrics": [
+    {
+      "experiment": "noplug_left",
+      "model": "baseline",
+      "coordinate_rmse_mm": 3.485982474462355,
+      "max_coordinate_error_mm": 9.760047565803427
+    },
+    {
+      "experiment": "noplug_left",
+      "model": "candidate",
+      "coordinate_rmse_mm": 0.6989121407717671,
+      "max_coordinate_error_mm": 2.3292497228731905
+    },
+    {
+      "experiment": "noplug_right",
+      "model": "baseline",
+      "coordinate_rmse_mm": 0.4208320224627087,
+      "max_coordinate_error_mm": 0.8946837108285768
+    },
+    {
+      "experiment": "noplug_right",
+      "model": "candidate",
+      "coordinate_rmse_mm": 2.395016975671691,
+      "max_coordinate_error_mm": 6.556612459573671
+    },
+    {
+      "experiment": "noplug_release",
+      "model": "baseline",
+      "coordinate_rmse_mm": 6.366140453113834,
+      "max_coordinate_error_mm": 25.126677945013117
+    },
+    {
+      "experiment": "noplug_release",
+      "model": "candidate",
+      "coordinate_rmse_mm": 3.2301936685180817,
+      "max_coordinate_error_mm": 12.084230412625724
+    }
+  ]
+}

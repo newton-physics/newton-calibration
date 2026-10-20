@@ -1,0 +1,14 @@
+{
+  "base": "d37f4d3d341ccce1e06a1dff21e9a054759b4855",
+  "remote": "72eca36c70e88d1eb0cc540da7a7a4ea44fb4b98",
+  "local_merged": "ffe17aefca69ed7a6892020655da63cba6f9fa4b",
+  "merge_base": "ed5ef3830030bcc14bb86a24aa08fca5982fa45d",
+  "url": "https://github.com/SamdianJ/newton/tree/SamiulJ/vbd-cable-viscoelasticity",
+  "adapted_patch_sha256": "43ada6cfae2ff12439be8b3799448aef82b262a820b893454340c45356ce9764",
+  "changes": "Port SLS only onto calibrated base; retain newer collision-frequency methods and current custom attribute registration API",
+  "native_tests": {
+    "count": 8,
+    "passed": true,
+    "wall_s": 14.80247909600439
+  }
+}

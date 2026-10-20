@@ -1,0 +1,24 @@
+{
+  "dt7680_i160": {
+    "wall_s": 35.27597008000157,
+    "settings": {
+      "dynamic_dt": 0.00013020833333333333
+    },
+    "max_difference_from_dt3840_i160_mm": 0.7800469744503463,
+    "passed": false,
+    "coordinate_rmse_mm": 10.476811852180811,
+    "max_error_mm": 44.50654844045055
+  },
+  "wall_s": 82.91246398599469,
+  "dt3840_i320": {
+    "wall_s": 47.63574263099872,
+    "settings": {
+      "dynamic_dt": 0.00026041666666666666,
+      "dynamic_iterations": 320
+    },
+    "max_difference_from_dt3840_i160_mm": 0.02058152933598692,
+    "passed": true,
+    "coordinate_rmse_mm": 10.413219955908067,
+    "max_error_mm": 44.17294623095726
+  }
+}

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Tuning Environment"
+  short_description: "Qualify physics, numerics, and simulation"
+  default_prompt: "Use $tuning-environment to configure the asset, numerical template, rollout, and comparison."
+
+policy:
+  allow_implicit_invocation: true

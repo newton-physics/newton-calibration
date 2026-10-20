@@ -1,0 +1,7 @@
+{
+  "acceptance": "rejected_validation",
+  "termination_reason": "candidate_space_exhausted",
+  "parameters": {
+    "bend_damping": 0.014714154781913564
+  }
+}

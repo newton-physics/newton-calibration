@@ -1,0 +1,7 @@
+interface:
+  display_name: "Standard Tuning"
+  short_description: "Compose and run traceable calibration tasks"
+  default_prompt: "Use $standard-tuning to configure and construct a Tuning task from the available asset and measurements."
+
+policy:
+  allow_implicit_invocation: true

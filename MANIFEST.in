@@ -1,0 +1,5 @@
+include CONTRIBUTING.md .pre-commit-config.yaml index.html .nojekyll
+graft docs
+graft examples
+graft codex-skills
+global-exclude __pycache__ *.py[cod]

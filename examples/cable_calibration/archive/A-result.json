@@ -1,0 +1,8 @@
+{
+  "acceptance": "rejected_training",
+  "termination_reason": "generation_budget_exhausted",
+  "parameters": {
+    "bending_rigidity": 0.003439428447490269,
+    "bend_damping": 0.010546396845283986
+  }
+}

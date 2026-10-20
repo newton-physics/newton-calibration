@@ -1,0 +1,16 @@
+{
+  "dt15360_i160": {
+    "max_difference_from_dt7680_i160_mm": 2.7621756898184096,
+    "passed": false,
+    "rmse_mm": 10.531892843830882,
+    "max_mm": 44.18664957429738
+  },
+  "wall_s": 128.661269446995,
+  "dt7680_i320": {
+    "max_difference_from_dt7680_i160_mm": 0.06526359420964273,
+    "passed": true,
+    "rmse_mm": 10.480182045224092,
+    "max_mm": 44.511620651554075
+  },
+  "passed": false
+}

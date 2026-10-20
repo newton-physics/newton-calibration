@@ -1,0 +1,9 @@
+{
+  "acceptance": "rejected_validation",
+  "termination_reason": "target_reached",
+  "parameters": {
+    "bending_rigidity": 0.002228959921229482,
+    "bend_damping": 0.017155896261648672,
+    "mount_clamp_angle_offset_deg": 0.29056250228814395
+  }
+}

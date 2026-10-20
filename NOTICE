@@ -1,0 +1,13 @@
+Newton Calibration
+
+This repository includes TaskTuning code contributed by Lightwheel.
+Copyright 2026 Lightwheel.
+Lightwheel's original code is contributed under the Apache License, Version 2.0.
+
+The cable example contains an adaptation patch derived from Newton.
+Its upstream notices and license are retained in
+examples/cable_calibration/solver/NEWTON-LICENSE.md.
+Source revisions and hashes are recorded alongside the patch.
+
+Archived cable observations, outputs and reports retain their provenance.
+Historical experimental results are not new validation results for this seed.

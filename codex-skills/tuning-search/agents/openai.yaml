@@ -1,0 +1,7 @@
+interface:
+  display_name: "Tuning Search"
+  short_description: "Choose parameters, search, and stopping rules"
+  default_prompt: "Use $tuning-search to define identifiable parameters, an optimizer, and a realistic computation budget."
+
+policy:
+  allow_implicit_invocation: true

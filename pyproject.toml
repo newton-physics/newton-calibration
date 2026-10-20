@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "task-tuning"
+version = "0.2.0"
+description = "Composable, evidence-based calibration for the Newton ecosystem"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+requires-python = ">=3.11"
+dependencies = ["numpy>=1.26", "torch>=2.2"]
+
+[project.optional-dependencies]
+cma = ["cma>=4,<5"]
+cable = ["scipy>=1.11"]
+gl = ["pyglet>=2.1,<3"]
+dev = ["pytest>=8", "ruff==0.16.10", "pre-commit>=4,<5", "build>=1,<2"]
+
+[project.urls]
+Repository = "https://github.com/newton-physics/newton-calibration"
+Issues = "https://github.com/newton-physics/newton-calibration/issues"
+
+[project.scripts]
+task-tuning = "task_tuning.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+# Preserve archived adapter snapshots and their recorded hashes.
+extend-exclude = ["examples/cable_calibration/backends"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="TaskTuning: a traceable calibration workflow, demonstrated through real cable measurements, clamp identification, and SLS viscoelasticity.">
+<title>TaskTuning — Cable calibration results</title>
+<style>
+:root{color-scheme:light;--ink:#172e40;--muted:#536672;--paper:#f7f5ef;--line:#d6dedc;--accent:#087e83}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.65 system-ui,sans-serif}
+main,header,footer{max-width:1120px;margin:auto;padding:0 28px}
+header{display:flex;justify-content:space-between;align-items:center;padding-top:28px;padding-bottom:28px;border-bottom:1px solid var(--line)}
+.brand{font-weight:800;letter-spacing:.08em;font-size:15px}a{color:var(--accent);text-underline-offset:4px}
+header a{font-size:14px}header{gap:16px;flex-wrap:wrap}.hero{padding:64px 0 34px}.eyebrow{font-size:12px;letter-spacing:.13em;font-weight:750;color:var(--accent);text-transform:uppercase}
+h1{font-size:clamp(36px,5vw,62px);line-height:1.08;letter-spacing:-.04em;max-width:850px;margin:18px 0 24px}
+.lead{font-size:19px;max-width:800px;color:var(--muted)}.buttons{display:flex;flex-wrap:wrap;gap:12px;margin:28px 0}
+.button{display:inline-block;border:1px solid var(--accent);border-radius:7px;padding:12px 20px;text-decoration:none;font-weight:650}
+.primary{background:var(--accent);color:white}.button:hover{filter:brightness(.9)}a:focus-visible{outline:3px solid #c48731;outline-offset:5px}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;padding:26px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.metric strong{display:block;font-size:33px;line-height:1.3}.metric span{font-size:14px;color:var(--muted)}
+figure{margin:38px 0 24px}figure img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:10px}
+figcaption{color:var(--muted);font-size:13px;margin-top:10px}.note{border-left:3px solid #b18455;background:#ede8de;padding:17px 22px;margin:28px 0 40px}
+h2{font-size:27px;letter-spacing:-.02em;margin:0 0 18px}.stages{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.stage{border-top:2px solid var(--accent);padding-top:18px}.stage small{font-weight:750;color:var(--accent)}h3{font-size:20px;margin:8px 0}.stage p{color:var(--muted);font-size:15px}
+.resources{padding:40px 0;display:flex;flex-wrap:wrap;gap:14px 26px}footer{border-top:1px solid var(--line);padding-top:22px;padding-bottom:30px;font-size:13px;color:var(--muted)}
+@media(max-width:680px){main,header,footer{padding-left:20px;padding-right:20px}.hero{padding-top:38px}.metrics{grid-template-columns:1fr;gap:18px}.metric{display:grid;grid-template-columns:125px 1fr;gap:12px;align-items:center}.metric strong{font-size:26px}.stages{grid-template-columns:1fr}.lead{font-size:17px}.button{width:100%;text-align:center}}
+</style>
+</head>
+<body>
+<header><div class="brand">TASKTUNING / RESULTS</div><a href="https://github.com/SamdianJ/TaskTuning">View repository ↗</a></header>
+<main>
+<section class="hero">
+<div class="eyebrow">Real measurements · Reproducible calibration</div>
+<h1>From cable measurements<br>to a better dynamic model.</h1>
+<p class="lead">A single calibration workflow connects evidence, simulation, search and validation. Follow the experiment from bending stiffness and damping, through clamp alignment, to a standard linear solid model.</p>
+<div class="buttons">
+<a class="button primary" href="examples/cable_calibration/reports/cable_calibration_en.html">Read the interactive report →</a>
+<a class="button" href="examples/cable_calibration/reports/cable_calibration_zh.html" lang="en">Chinese report →</a>
+</div>
+</section>
+<section class="metrics" aria-label="Key results">
+<div class="metric"><strong>0.844 mm</strong><span>SLS no-plug dynamic coordinate RMSE</span></div>
+<div class="metric"><strong>76.0%</strong><span>Lower objective, matched B* → C comparison</span></div>
+<div class="metric"><strong>32 segments</strong><span>Newton VBD deployment model</span></div>
+</section>
+<figure>
+<a href="examples/cable_calibration/reports/cable_calibration_en.html#stages"><img src="examples/cable_calibration/reports/cable_calibration_preview.png" width="1920" height="864" alt="No-plug dynamic coordinate RMSE falls from A 3.230 mm to B 1.617 mm, B* 1.598 mm, and C 0.844 mm. Measured and predicted vertical trajectories are shown at 150 mm along the cable."></a>
+<figcaption>Rendered from archived measurements and simulation traces. B* and C share an objective; A → B also includes numerical and backend changes.</figcaption>
+</figure>
+<div class="note"><strong>Scope of the result.</strong> SLS improves the no-plug release fit. The plugged case still fails validation and numerical qualification; the historical result remains <code>rejected_validation</code>. These are equivalent parameters for the specified model, not validated universal material constants.</div>
+<section aria-labelledby="progress"><h2 id="progress">Why the model changed</h2><div class="stages">
+<article class="stage"><small>STAGE A</small><h3>Fit material response</h3><p>Optimizing EI and damping reduced error, but opposite static orientations traded off and dynamic maximum error remained above the limit.</p></article>
+<article class="stage"><small>STAGE B</small><h3>Test the fixed boundary</h3><p>A shared clamp-angle correction helped the joint fit. With static values conditionally frozen, viscous damping still traded oscillation amplitude against period.</p></article>
+<article class="stage"><small>STAGE C</small><h3>Add relaxation</h3><p>An SLS branch added transient rigidity and a relaxation time. No-plug dynamics improved, while attachment uncertainty and loaded numerics remained unresolved.</p></article>
+</div></section>
+<nav class="resources" aria-label="Supporting resources">
+<a href="https://github.com/SamdianJ/TaskTuning/blob/main/examples/cable_calibration/README.md">Case and reproduction guide ↗</a>
+<a href="https://github.com/SamdianJ/TaskTuning/blob/main/docs/user-guide.md">TaskTuning user guide ↗</a>
+<a href="https://github.com/SamdianJ/TaskTuning/blob/main/docs/codex-skills.md">Codex skills ↗</a>
+<a href="https://github.com/SamdianJ/TaskTuning/tree/main/examples/cable_calibration/archive">Data and diagnostics ↗</a>
+</nav>
+</main>
+<footer>Evidence through 13 October 2026 · Newton VBD / Warp CUDA · TaskTuning 0.2.0<br>Both reports include embedded figures and can also be downloaded for offline reading.</footer>
+</body>
+</html>

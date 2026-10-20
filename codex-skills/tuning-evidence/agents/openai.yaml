@@ -1,0 +1,7 @@
+interface:
+  display_name: "Tuning Evidence"
+  short_description: "Define observations, losses, and acceptance"
+  default_prompt: "Use $tuning-evidence to review observations, data splits, scoring, and validation for this calibration."
+
+policy:
+  allow_implicit_invocation: true

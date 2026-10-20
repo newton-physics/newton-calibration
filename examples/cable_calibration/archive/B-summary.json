@@ -1,0 +1,97 @@
+{
+  "result": {
+    "acceptance": "rejected_validation",
+    "termination_reason": "target_reached",
+    "parameters": {
+      "bending_rigidity": 0.002228959921229482,
+      "bend_damping": 0.017155896261648672,
+      "mount_clamp_angle_offset_deg": 0.29056250228814395
+    },
+    "asset_path": null,
+    "run_directory": "<original-workspace>/cable_tuning/angle_workspace/20261013T060515Z-210cecda"
+  },
+  "metrics": [
+    {
+      "experiment": "noplug_left",
+      "model": "baseline",
+      "coordinate_rmse_mm": 0.7585682177576047,
+      "max_coordinate_error_mm": 1.639799010776266
+    },
+    {
+      "experiment": "noplug_left",
+      "model": "previous_candidate",
+      "coordinate_rmse_mm": 0.6989121407717671,
+      "max_coordinate_error_mm": 2.3292497228731905
+    },
+    {
+      "experiment": "noplug_left",
+      "model": "candidate",
+      "coordinate_rmse_mm": 0.23774829073458853,
+      "max_coordinate_error_mm": 0.4836127574346476
+    },
+    {
+      "experiment": "noplug_right",
+      "model": "baseline",
+      "coordinate_rmse_mm": 1.607109394396032,
+      "max_coordinate_error_mm": 2.8642157280112275
+    },
+    {
+      "experiment": "noplug_right",
+      "model": "previous_candidate",
+      "coordinate_rmse_mm": 2.395016975671691,
+      "max_coordinate_error_mm": 6.556612459573671
+    },
+    {
+      "experiment": "noplug_right",
+      "model": "candidate",
+      "coordinate_rmse_mm": 0.8865797000293705,
+      "max_coordinate_error_mm": 1.8725779233884146
+    },
+    {
+      "experiment": "noplug_release",
+      "model": "baseline",
+      "coordinate_rmse_mm": 1.627706820751963,
+      "max_coordinate_error_mm": 10.998988244279012
+    },
+    {
+      "experiment": "noplug_release",
+      "model": "previous_candidate",
+      "coordinate_rmse_mm": 3.2301936685180817,
+      "max_coordinate_error_mm": 12.084230412625724
+    },
+    {
+      "experiment": "noplug_release",
+      "model": "candidate",
+      "coordinate_rmse_mm": 1.6166338070337642,
+      "max_coordinate_error_mm": 9.01632745701922
+    },
+    {
+      "experiment": "withplug_left",
+      "model": "settled_diagnostic",
+      "coordinate_rmse_mm": 2.057030999474271,
+      "max_coordinate_error_mm": 3.765142138805681
+    },
+    {
+      "experiment": "withplug_right",
+      "model": "settled_diagnostic",
+      "coordinate_rmse_mm": 3.403789094289402,
+      "max_coordinate_error_mm": 5.967646145286741
+    },
+    {
+      "experiment": "withplug_release",
+      "model": "candidate",
+      "coordinate_rmse_mm": 10.280825478048426,
+      "max_coordinate_error_mm": 42.945569996247926
+    }
+  ],
+  "simulation_failures": {
+    "withplug_left": {
+      "status": "numerical_failure",
+      "error": "static equilibrium drift 0.000421568 m exceeds 0.1 mm"
+    },
+    "withplug_right": {
+      "status": "numerical_failure",
+      "error": "static equilibrium drift 0.000217818 m exceeds 0.1 mm"
+    }
+  }
+}

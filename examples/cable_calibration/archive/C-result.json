@@ -1,0 +1,8 @@
+{
+  "acceptance": "rejected_validation",
+  "termination_reason": "generation_budget_exhausted",
+  "parameters": {
+    "sls_transient_rigidity": 0.0026986063206090416,
+    "sls_relaxation_time": 0.034355237499589575
+  }
+}

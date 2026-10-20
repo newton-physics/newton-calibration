@@ -1,0 +1,721 @@
+diff --git a/newton/_src/solvers/vbd/rigid_vbd_kernels.py b/newton/_src/solvers/vbd/rigid_vbd_kernels.py
+index 65399514..d59febc0 100644
+--- a/newton/_src/solvers/vbd/rigid_vbd_kernels.py
++++ b/newton/_src/solvers/vbd/rigid_vbd_kernels.py
+@@ -2785,6 +2785,8 @@ def evaluate_joint_force_hessian(
+     joint_penalty_kd: wp.array[float],
+     joint_sigma_start: wp.array[wp.vec3],
+     joint_C_fric: wp.array[wp.vec3],
++    joint_visco_bias: wp.array[wp.vec3],
++    joint_visco_tangent: wp.array[float],
+     # Drive parameters (DOF-indexed via joint_qd_start)
+     joint_target_ke: wp.array[float],
+     joint_target_kd: wp.array[float],
+@@ -2899,6 +2901,8 @@ def evaluate_joint_force_hessian(
+         kd_shear = joint_penalty_kd[shear_idx]
+         kd_bend = joint_penalty_kd[bend_idx]
+         kd_twist = joint_penalty_kd[twist_idx]
++        visco_bias = joint_visco_bias[joint_index]
++        visco_tangent = joint_visco_tangent[joint_index]
+ 
+         total_force = wp.vec3(0.0)
+         total_torque = wp.vec3(0.0)
+@@ -2908,7 +2912,8 @@ def evaluate_joint_force_hessian(
+ 
+         bend_stiff = _structural_row_has_stiffness(solve_weight_bend, material_bend, joint_compliant_alm)
+         twist_stiff = _structural_row_has_stiffness(solve_weight_twist, material_twist, joint_compliant_alm)
+-        bend_active = bend_stiff or kd_bend > 0.0
++        visco_active = visco_tangent > 0.0 or visco_bias[0] != 0.0 or visco_bias[1] != 0.0
++        bend_active = bend_stiff or kd_bend > 0.0 or visco_active
+         twist_active = twist_stiff or kd_twist > 0.0
+         if bend_active or twist_active:
+             lambda_ang = joint_lambda_ang[joint_index]
+@@ -2932,7 +2937,11 @@ def evaluate_joint_force_hessian(
+                 solve_weight_twist, material_twist, twist_dual, joint_compliant_alm
+             )
+ 
+-            K_elastic_diag = wp.vec3(bend_primal_k, bend_primal_k, twist_primal_k)
++            K_elastic_diag = wp.vec3(
++                bend_primal_k + visco_tangent,
++                bend_primal_k + visco_tangent,
++                twist_primal_k,
++            )
+             K_damp_diag = wp.vec3(kd_bend, kd_bend, kd_twist)
+             damping_active = kd_bend > 0.0 or kd_twist > 0.0
+ 
+@@ -2943,7 +2952,7 @@ def evaluate_joint_force_hessian(
+             if joint_compliant_alm == 1 or twist_hard:
+                 twist_alpha = stab_alpha
+ 
+-            sigma = wp.vec3(0.0)
++            sigma = wp.vec3(visco_bias[0], visco_bias[1], 0.0)
+             H_fric_diag = wp.vec3(0.0)
+             lambda_projected = bend_dual_eff + twist_dual_eff
+             C0_force = bend_primal_k * bend_alpha * wp.vec3(C0_ang[0], C0_ang[1], 0.0)
+@@ -5090,6 +5099,80 @@ def compute_rod_dahl_parameters(
+     joint_C_fric[j] = C_fric_out
+ 
+ 
++@wp.kernel
++def compute_rod_viscoelastic_parameters(
++    dt: float,
++    joint_type: wp.array[int],
++    joint_enabled: wp.array[bool],
++    joint_world: wp.array[wp.int32],
++    pose_rebaseline_mask: wp.array[wp.bool],
++    joint_parent: wp.array[int],
++    joint_child: wp.array[int],
++    joint_X_p: wp.array[wp.transform],
++    joint_X_c: wp.array[wp.transform],
++    joint_constraint_start: wp.array[int],
++    joint_is_hard: wp.array[wp.int32],
++    joint_compliant_alm: int,
++    joint_rod_rest_kb_local: wp.array[wp.vec3],
++    joint_rod_rest_twist: wp.array[float],
++    body_q: wp.array[wp.transform],
++    joint_moment_prev: wp.array[wp.vec3],
++    joint_kappa_prev: wp.array[wp.vec3],
++    joint_bend_ke: wp.array[float],
++    joint_tau: wp.array[float],
++    joint_bias: wp.array[wp.vec3],
++    joint_tangent: wp.array[float],
++):
++    """Freeze the backward-Euler rod bending response for one timestep."""
++    j = wp.tid()
++    zero = wp.vec3(0.0)
++    joint_bias[j] = zero
++    joint_tangent[j] = 0.0
++
++    if joint_type[j] != JointType.ROD or not joint_enabled[j]:
++        return
++
++    child = joint_child[j]
++    if child < 0:
++        return
++
++    bend_idx = joint_constraint_start[j] + 2
++    if joint_compliant_alm == 0 and joint_is_hard[bend_idx] == 1:
++        return
++
++    parent = joint_parent[j]
++    if parent >= 0:
++        X_wp = body_q[parent] * joint_X_p[j]
++    else:
++        X_wp = joint_X_p[j]
++    X_wc = body_q[child] * joint_X_c[j]
++    kappa_now = compute_geometric_rod_kappa_cached_z(
++        wp.transform_get_rotation(X_wp),
++        wp.transform_get_rotation(X_wc),
++        joint_rod_rest_kb_local[j],
++        joint_rod_rest_twist[j],
++    )
++    bend_kappa_now = wp.vec3(kappa_now[0], kappa_now[1], 0.0)
++
++    if _world_selected(joint_world[j], pose_rebaseline_mask):
++        joint_kappa_prev[j] = bend_kappa_now
++        joint_moment_prev[j] = zero
++
++    bend_ke = joint_bend_ke[j]
++    tau = joint_tau[j]
++    if bend_ke <= 0.0 or tau <= 0.0:
++        return
++
++    decay = tau / (tau + dt)
++    tangent = decay * bend_ke
++    moment_prev = joint_moment_prev[j]
++    kappa_prev = joint_kappa_prev[j]
++    joint_bias[j] = decay * wp.vec3(moment_prev[0], moment_prev[1], 0.0) - tangent * wp.vec3(
++        kappa_prev[0], kappa_prev[1], 0.0
++    )
++    joint_tangent[j] = tangent
++
++
+ # -----------------------------
+ # Iteration kernels (per color per iteration)
+ # -----------------------------
+@@ -5645,6 +5728,9 @@ def solve_rigid_body(
+     # Dahl hysteresis parameters (frozen for this timestep, component-wise vec3 per joint)
+     joint_sigma_start: wp.array[wp.vec3],
+     joint_C_fric: wp.array[wp.vec3],
++    # Standard-linear-solid rod bending parameters (frozen for this timestep)
++    joint_visco_bias: wp.array[wp.vec3],
++    joint_visco_tangent: wp.array[float],
+     # Drive parameters (DOF-indexed via joint_qd_start)
+     joint_target_ke: wp.array[float],
+     joint_target_kd: wp.array[float],
+@@ -5821,6 +5907,8 @@ def solve_rigid_body(
+             joint_penalty_kd,
+             joint_sigma_start,
+             joint_C_fric,
++            joint_visco_bias,
++            joint_visco_tangent,
+             joint_target_ke,
+             joint_target_kd,
+             joint_target_q,
+@@ -6849,3 +6937,61 @@ def update_rod_dahl_state(
+     joint_sigma_prev[j] = sigma_final_out
+     joint_kappa_prev[j] = kappa_final
+     joint_dkappa_prev[j] = d_kappa_out
++
++
++@wp.kernel
++def update_rod_viscoelastic_state(
++    joint_type: wp.array[int],
++    joint_enabled: wp.array[bool],
++    joint_parent: wp.array[int],
++    joint_child: wp.array[int],
++    joint_X_p: wp.array[wp.transform],
++    joint_X_c: wp.array[wp.transform],
++    joint_constraint_start: wp.array[int],
++    joint_is_hard: wp.array[wp.int32],
++    joint_compliant_alm: int,
++    joint_rod_rest_kb_local: wp.array[wp.vec3],
++    joint_rod_rest_twist: wp.array[float],
++    body_q: wp.array[wp.transform],
++    joint_bend_ke: wp.array[float],
++    joint_tau: wp.array[float],
++    joint_bias: wp.array[wp.vec3],
++    joint_tangent: wp.array[float],
++    joint_moment_prev: wp.array[wp.vec3],
++    joint_kappa_prev: wp.array[wp.vec3],
++):
++    """Commit the converged rod viscoelastic bending state."""
++    j = wp.tid()
++    if joint_type[j] != JointType.ROD:
++        return
++
++    child = joint_child[j]
++    if child < 0:
++        return
++
++    parent = joint_parent[j]
++    if parent >= 0:
++        X_wp = body_q[parent] * joint_X_p[j]
++    else:
++        X_wp = joint_X_p[j]
++    X_wc = body_q[child] * joint_X_c[j]
++    kappa_final = compute_geometric_rod_kappa_cached_z(
++        wp.transform_get_rotation(X_wp),
++        wp.transform_get_rotation(X_wc),
++        joint_rod_rest_kb_local[j],
++        joint_rod_rest_twist[j],
++    )
++    bend_kappa_final = wp.vec3(kappa_final[0], kappa_final[1], 0.0)
++
++    bend_idx = joint_constraint_start[j] + 2
++    enabled = (
++        joint_enabled[j]
++        and (joint_compliant_alm == 1 or joint_is_hard[bend_idx] == 0)
++        and joint_bend_ke[j] > 0.0
++        and joint_tau[j] > 0.0
++    )
++    if enabled:
++        joint_moment_prev[j] = joint_bias[j] + joint_tangent[j] * bend_kappa_final
++    else:
++        joint_moment_prev[j] = wp.vec3(0.0)
++    joint_kappa_prev[j] = bend_kappa_final
+diff --git a/newton/_src/solvers/vbd/solver_vbd.py b/newton/_src/solvers/vbd/solver_vbd.py
+index f4432a28..1e39ab64 100644
+--- a/newton/_src/solvers/vbd/solver_vbd.py
++++ b/newton/_src/solvers/vbd/solver_vbd.py
+@@ -65,6 +65,7 @@ from .rigid_vbd_kernels import (
+     check_contact_overflow,
+     compute_rigid_contact_forces,
+     compute_rod_dahl_parameters,
++    compute_rod_viscoelastic_parameters,
+     forward_step_rigid_bodies,
+     init_body_body_contact_materials,
+     init_body_body_contacts_alm,
+@@ -82,6 +83,7 @@ from .rigid_vbd_kernels import (
+     update_duals_body_particle_contacts,
+     update_duals_joint,
+     update_rod_dahl_state,
++    update_rod_viscoelastic_state,
+ )
+ from .vbd_coupling_kernels import (
+     _harvest_vbd_body_particle_contact_forces_on_proxy_bodies_kernel,
+@@ -544,6 +546,11 @@ class SolverVBD(SolverBase, CouplingInterface):
+               ``model.vbd.dahl_eps_max`` and ``model.vbd.dahl_tau``. Register them with
+               ``SolverVBD.register_custom_attributes`` before building the model. Dahl friction is
+               enabled only when positive Dahl parameters are authored.
++            - Standard-linear-solid cable bending is controlled by ``model.vbd.visco_bend_ke``
++              [N·m/rad] and ``model.vbd.visco_bend_tau`` [s]. The cable's bend stiffness is the
++              relaxed stiffness, while ``visco_bend_ke`` is the transient branch stiffness.
++              Register the attributes before building the model and author positive values before
++              constructing the solver. The viscoelastic branch affects bending but not twist.
+ 
+         """
+         integrates_rigid_bodies = model.body_count > 0 and not integrate_with_external_rigid_solver
+@@ -1119,6 +1126,33 @@ class SolverVBD(SolverBase, CouplingInterface):
+                 self.joint_dahl_tau = wp.zeros(model.joint_count, dtype=float, device=self.device)
+                 self.enable_dahl_friction = False
+ 
++            # Standard-linear-solid rod bending state and frozen per-step response.
++            self.joint_visco_moment_prev = wp.zeros(model.joint_count, dtype=wp.vec3, device=self.device)
++            self.joint_visco_kappa_prev = wp.zeros(model.joint_count, dtype=wp.vec3, device=self.device)
++            self.joint_visco_bias = wp.zeros(model.joint_count, dtype=wp.vec3, device=self.device)
++            self.joint_visco_tangent = wp.zeros(model.joint_count, dtype=float, device=self.device)
++
++            has_viscoelasticity = (
++                model.joint_count > 0
++                and vbd_attrs is not None
++                and hasattr(vbd_attrs, "visco_bend_ke")
++                and hasattr(vbd_attrs, "visco_bend_tau")
++            )
++            if has_viscoelasticity:
++                self.joint_visco_bend_ke = vbd_attrs.visco_bend_ke
++                self.joint_visco_bend_tau = vbd_attrs.visco_bend_tau
++                visco_bend_ke = self._to_numpy(self.joint_visco_bend_ke, dtype=float)
++                visco_bend_tau = self._to_numpy(self.joint_visco_bend_tau, dtype=float)
++                if not np.all(np.isfinite(visco_bend_ke)) or np.any(visco_bend_ke < 0.0):
++                    raise ValueError("model.vbd.visco_bend_ke values must be finite and >= 0.")
++                if not np.all(np.isfinite(visco_bend_tau)) or np.any(visco_bend_tau < 0.0):
++                    raise ValueError("model.vbd.visco_bend_tau values must be finite and >= 0.")
++                self.enable_viscoelasticity = bool(np.any((visco_bend_ke > 0.0) & (visco_bend_tau > 0.0)))
++            else:
++                self.joint_visco_bend_ke = wp.zeros(model.joint_count, dtype=float, device=self.device)
++                self.joint_visco_bend_tau = wp.zeros(model.joint_count, dtype=float, device=self.device)
++                self.enable_viscoelasticity = False
++
+             # Per-joint DER rest invariants, refreshed at init and on model change
+             # (see _refresh_rod_rest_bend_twist_cache): the parent-local rest
+             # curvature binormal (bend) and the rest transported-material twist.
+@@ -1994,6 +2028,7 @@ class SolverVBD(SolverBase, CouplingInterface):
+         Currently registers:
+           - ``vbd:joint_is_hard`` for per-joint hard/soft constraint mode (non-rod joints)
+           - ``vbd:dahl_eps_max`` and ``vbd:dahl_tau`` for optional rod angular Dahl friction
++          - ``vbd:visco_bend_ke`` and ``vbd:visco_bend_tau`` for optional rod bending relaxation
+ 
+         Attributes are declared in the ``vbd`` namespace so they can be authored
+         in scenes and in USD as ``newton:vbd:<attr>``.
+@@ -2025,6 +2060,26 @@ class SolverVBD(SolverBase, CouplingInterface):
+                 namespace="vbd",
+             )
+         )
++        builder.add_custom_attribute(
++            ModelBuilder.CustomAttribute(
++                name="visco_bend_ke",
++                frequency=Model.AttributeFrequency.JOINT,
++                assignment=Model.AttributeAssignment.MODEL,
++                dtype=wp.float32,
++                default=0.0,
++                namespace="vbd",
++            )
++        )
++        builder.add_custom_attribute(
++            ModelBuilder.CustomAttribute(
++                name="visco_bend_tau",
++                frequency=Model.AttributeFrequency.JOINT,
++                assignment=Model.AttributeAssignment.MODEL,
++                dtype=wp.float32,
++                default=0.0,
++                namespace="vbd",
++            )
++        )
+         builder.add_custom_attribute(
+             ModelBuilder.CustomAttribute(
+                 name="joint_is_hard",
+@@ -2237,7 +2292,7 @@ class SolverVBD(SolverBase, CouplingInterface):
+         The solver follows a 3-phase structure:
+         1. Initialize: Forward integrate particles and rigid bodies, detect collisions, initialize contact state
+         2. Iterate: Interleave particle and rigid-body VBD iterations
+-        3. Finalize: Update velocities and persistent state (Dahl friction)
++        3. Finalize: Update velocities and persistent cable material state
+ 
+         To control rigid body substepping behavior, call set_rigid_history_update().
+         When True (default), the step rebuilds rigid contact lists, re-initializes
+@@ -2323,9 +2378,10 @@ class SolverVBD(SolverBase, CouplingInterface):
+ 
+         Body fields selected by *flags* are copied from the model defaults.
+         Joint penalty is restored to its minimum; joint C0 and AVBD dual history
+-        is zeroed immediately. Pose and enabled-rod friction history (curvature,
+-        stress, and increment) are rebaselined together from the next :meth:`step`
+-        input pose, after any intervening state edits or forward kinematics.
++        is zeroed immediately. Pose and enabled-rod material history (curvature,
++        friction stress and increment, and viscoelastic moment) are rebaselined
++        together from the next :meth:`step` input pose, after any intervening state
++        edits or forward kinematics. The authored pose is treated as relaxed.
+         Selected-world contact warm-start is cold-started when fresh rigid contacts
+         are next processed. Internal rigid history is reset regardless of *flags*.
+         When an external solver integrates the bodies, reset performs no rigid
+@@ -3119,6 +3175,39 @@ class SolverVBD(SolverBase, CouplingInterface):
+                     device=self.device,
+                 )
+ 
++            # Freeze the SLS history moment and consistent tangent for all VBD iterations.
++            if self.enable_viscoelasticity and model.joint_count > 0:
++                wp.launch(
++                    kernel=compute_rod_viscoelastic_parameters,
++                    inputs=[
++                        dt,
++                        model.joint_type,
++                        model.joint_enabled,
++                        model.joint_world,
++                        self._rigid_pose_rebaseline_mask,
++                        model.joint_parent,
++                        model.joint_child,
++                        model.joint_X_p,
++                        model.joint_X_c,
++                        self.joint_constraint_start,
++                        self.joint_is_hard,
++                        self.rigid_compliant_alm,
++                        self.joint_rod_rest_kb_local,
++                        self.joint_rod_rest_twist,
++                        self.body_q_prev,
++                        self.joint_visco_moment_prev,
++                        self.joint_visco_kappa_prev,
++                        self.joint_visco_bend_ke,
++                        self.joint_visco_bend_tau,
++                    ],
++                    outputs=[
++                        self.joint_visco_bias,
++                        self.joint_visco_tangent,
++                    ],
++                    dim=model.joint_count,
++                    device=self.device,
++                )
++
+             # The forward step and any enabled rod update have consumed the mask.
+             self._rigid_pose_rebaseline_mask.zero_()
+ 
+@@ -3498,6 +3587,8 @@ class SolverVBD(SolverBase, CouplingInterface):
+                     self.joint_penalty_kd,
+                     self.joint_sigma_start,
+                     self.joint_C_fric,
++                    self.joint_visco_bias,
++                    self.joint_visco_tangent,
+                     model.joint_target_ke,
+                     model.joint_target_kd,
+                     control.joint_target_q,
+@@ -3800,10 +3891,10 @@ class SolverVBD(SolverBase, CouplingInterface):
+         )
+ 
+     def _finalize_rigid_bodies(self, state_in: State, state_out: State, dt: float):
+-        """Finalize rigid body velocities and Dahl friction state after VBD iterations (post-iteration phase).
++        """Finalize rigid velocities and persistent rod material state after AVBD iterations.
+ 
+-        Updates rigid body velocities using BDF1 and updates Dahl hysteresis state for rod bend/twist.
+-        Also transfers the final body poses from state_in to state_out.
++        Updates rigid body velocities using BDF1, updates rod Dahl and viscoelastic
++        state, and transfers final body poses from state_in to state_out.
+         """
+         model = self.model
+ 
+@@ -3851,6 +3942,35 @@ class SolverVBD(SolverBase, CouplingInterface):
+                 device=self.device,
+             )
+ 
++        if self.enable_viscoelasticity and model.joint_count > 0:
++            wp.launch(
++                kernel=update_rod_viscoelastic_state,
++                inputs=[
++                    model.joint_type,
++                    model.joint_enabled,
++                    model.joint_parent,
++                    model.joint_child,
++                    model.joint_X_p,
++                    model.joint_X_c,
++                    self.joint_constraint_start,
++                    self.joint_is_hard,
++                    self.rigid_compliant_alm,
++                    self.joint_rod_rest_kb_local,
++                    self.joint_rod_rest_twist,
++                    state_out.body_q,
++                    self.joint_visco_bend_ke,
++                    self.joint_visco_bend_tau,
++                    self.joint_visco_bias,
++                    self.joint_visco_tangent,
++                ],
++                outputs=[
++                    self.joint_visco_moment_prev,
++                    self.joint_visco_kappa_prev,
++                ],
++                dim=model.joint_count,
++                device=self.device,
++            )
++
+     def _default_collision_frequency_type(self, slot: SolverBase.CollisionSlot) -> SolverBase.CollisionFrequencyType:
+         """Resolve ``AUTO``: the self-contact slot follows the legacy VBD behavior.
+ 
+diff --git a/newton/tests/test_solver_vbd.py b/newton/tests/test_solver_vbd.py
+index 0ed6c284..e85f0e8d 100644
+--- a/newton/tests/test_solver_vbd.py
++++ b/newton/tests/test_solver_vbd.py
+@@ -3258,15 +3258,26 @@ def _vbd_custom_attribute_registration_controls_dahl_defaults(test, device):
+     test.assertIn("vbd:joint_is_hard", builder.custom_attributes)
+     test.assertIn("vbd:dahl_eps_max", builder.custom_attributes)
+     test.assertIn("vbd:dahl_tau", builder.custom_attributes)
++    test.assertIn("vbd:visco_bend_ke", builder.custom_attributes)
++    test.assertIn("vbd:visco_bend_tau", builder.custom_attributes)
+     test.assertEqual(builder.custom_attributes["vbd:joint_is_hard"].default, 1)
+     test.assertEqual(builder.custom_attributes["vbd:dahl_eps_max"].default, 0.0)
+     test.assertEqual(builder.custom_attributes["vbd:dahl_tau"].default, 0.0)
++    test.assertEqual(builder.custom_attributes["vbd:visco_bend_ke"].default, 0.0)
++    test.assertEqual(builder.custom_attributes["vbd:visco_bend_tau"].default, 0.0)
+ 
+     with test.assertRaisesRegex(TypeError, "dahl_defaults_enabled"):
+         newton.solvers.SolverVBD.register_custom_attributes(newton.ModelBuilder(), dahl_defaults_enabled=True)
+ 
+ 
+-def _make_vbd_dahl_detection_model(device, *, dahl_eps_max=None, dahl_tau=None):
++def _make_vbd_dahl_detection_model(
++    device,
++    *,
++    dahl_eps_max=None,
++    dahl_tau=None,
++    visco_bend_ke=None,
++    visco_bend_tau=None,
++):
+     builder = newton.ModelBuilder(gravity=(0.0, 0.0, 0.0))
+     newton.solvers.SolverVBD.register_custom_attributes(builder)
+ 
+@@ -3288,10 +3299,15 @@ def _make_vbd_dahl_detection_model(device, *, dahl_eps_max=None, dahl_tau=None):
+         model.vbd.dahl_eps_max.fill_(float(dahl_eps_max))
+     if dahl_tau is not None:
+         model.vbd.dahl_tau.fill_(float(dahl_tau))
++    if visco_bend_ke is not None:
++        model.vbd.visco_bend_ke.fill_(float(visco_bend_ke))
++    if visco_bend_tau is not None:
++        model.vbd.visco_bend_tau.fill_(float(visco_bend_tau))
+     return model
+ 
+ 
+ def _vbd_dahl_detection_requires_positive_values(test, device):
++    """Enable Dahl cable friction only when both parameters are positive."""
+     model = _make_vbd_dahl_detection_model(device)
+ 
+     with warnings.catch_warnings():
+@@ -3321,6 +3337,202 @@ def _vbd_dahl_detection_requires_positive_values(test, device):
+     test.assertTrue(solver.enable_dahl_friction)
+ 
+ 
++def _vbd_viscoelastic_detection_requires_positive_values(test, device):
++    """Enable cable viscoelasticity only for finite, nonnegative parameter pairs."""
++    model = _make_vbd_dahl_detection_model(device)
++    solver = newton.solvers.SolverVBD(model, rigid_compliant_alm=True)
++    test.assertFalse(solver.enable_viscoelasticity)
++
++    model = _make_vbd_dahl_detection_model(device, visco_bend_ke=2.0)
++    solver = newton.solvers.SolverVBD(model, rigid_compliant_alm=True)
++    test.assertFalse(solver.enable_viscoelasticity)
++
++    model = _make_vbd_dahl_detection_model(device, visco_bend_tau=0.5)
++    solver = newton.solvers.SolverVBD(model, rigid_compliant_alm=True)
++    test.assertFalse(solver.enable_viscoelasticity)
++
++    model = _make_vbd_dahl_detection_model(device, visco_bend_ke=2.0, visco_bend_tau=0.5)
++    solver = newton.solvers.SolverVBD(model, rigid_compliant_alm=True)
++    test.assertTrue(solver.enable_viscoelasticity)
++
++    model = _make_vbd_dahl_detection_model(device, visco_bend_ke=-1.0, visco_bend_tau=0.5)
++    with test.assertRaisesRegex(ValueError, "visco_bend_ke"):
++        newton.solvers.SolverVBD(model, rigid_compliant_alm=True)
++
++    model = _make_vbd_dahl_detection_model(device, visco_bend_ke=1.0, visco_bend_tau=-0.5)
++    with test.assertRaisesRegex(ValueError, "visco_bend_tau"):
++        newton.solvers.SolverVBD(model, rigid_compliant_alm=True)
++
++    model = _make_vbd_dahl_detection_model(device, visco_bend_ke=np.inf, visco_bend_tau=0.5)
++    with test.assertRaisesRegex(ValueError, "visco_bend_ke"):
++        newton.solvers.SolverVBD(model, rigid_compliant_alm=True)
++
++    model = _make_vbd_dahl_detection_model(device, visco_bend_ke=1.0, visco_bend_tau=np.nan)
++    with test.assertRaisesRegex(ValueError, "visco_bend_tau"):
++        newton.solvers.SolverVBD(model, rigid_compliant_alm=True)
++
++
++def _cable_viscoelastic_moment_relaxes_analytically(test, device):
++    """Match the backward-Euler SLS moment update and reset semantics."""
++    bend_ke = 4.0
++    tau = 0.5
++    dt = 0.1
++    theta = 0.3
++    decay = tau / (tau + dt)
++    tangent = decay * bend_ke
++
++    model = _make_vbd_dahl_detection_model(
++        device,
++        visco_bend_ke=bend_ke,
++        visco_bend_tau=tau,
++    )
++    solver = newton.solvers.SolverVBD(model, iterations=0, rigid_compliant_alm=False)
++    state_in = model.state()
++    state_out = model.state()
++
++    # Establish the straight pose as a relaxed material baseline.
++    solver.step(state_in, state_out, None, None, dt)
++    state_in, state_out = state_out, state_in
++
++    posed_q = state_in.body_q.numpy()
++    posed_q[1, 3:] = [math.sin(0.5 * theta), 0.0, 0.0, math.cos(0.5 * theta)]
++    state_in.body_q.assign(posed_q)
++    state_in.body_qd.zero_()
++
++    solver.step(state_in, state_out, None, None, dt)
++    state_in, state_out = state_out, state_in
++
++    expected_kappa = 2.0 * math.tan(0.5 * theta)
++    expected_moment = tangent * expected_kappa
++    np.testing.assert_allclose(solver.joint_visco_tangent.numpy()[0], tangent, rtol=1.0e-6)
++    np.testing.assert_allclose(
++        solver.joint_visco_moment_prev.numpy()[0],
++        [expected_moment, 0.0, 0.0],
++        rtol=1.0e-5,
++        atol=1.0e-6,
++    )
++
++    # Holding curvature fixed must decay only the Maxwell-branch moment.
++    for step in range(1, 5):
++        state_in.body_q.assign(posed_q)
++        state_in.body_qd.zero_()
++        solver.step(state_in, state_out, None, None, dt)
++        state_in, state_out = state_out, state_in
++        np.testing.assert_allclose(
++            solver.joint_visco_moment_prev.numpy()[0],
++            [expected_moment * decay**step, 0.0, 0.0],
++            rtol=2.0e-5,
++            atol=1.0e-6,
++        )
++
++    # Reset defers history mutation until the next pose establishes a relaxed baseline.
++    solver.reset(state_in, flags=0)
++    reset_theta = -0.2
++    posed_q = state_in.body_q.numpy()
++    posed_q[1, 3:] = [math.sin(0.5 * reset_theta), 0.0, 0.0, math.cos(0.5 * reset_theta)]
++    state_in.body_q.assign(posed_q)
++    state_in.body_qd.zero_()
++    solver.step(state_in, state_out, None, None, dt)
++
++    np.testing.assert_allclose(
++        solver.joint_visco_kappa_prev.numpy()[0],
++        [2.0 * math.tan(0.5 * reset_theta), 0.0, 0.0],
++        atol=1.0e-5,
++    )
++    np.testing.assert_allclose(solver.joint_visco_moment_prev.numpy()[0], 0.0, atol=1.0e-6)
++
++
++def _cable_viscoelastic_branch_affects_bending_not_twist(test, device):
++    """Apply the transient SLS branch to bending while leaving twist unchanged."""
++
++    def simulate(transient_ke, angular_axis):
++        builder = newton.ModelBuilder(gravity=(0.0, 0.0, 0.0))
++        newton.solvers.SolverVBD.register_custom_attributes(builder)
++        parent = builder.add_link()
++        child = builder.add_link(mass=1.0, inertia=wp.mat33(np.eye(3)))
++        joint = builder.add_joint_rod(
++            parent,
++            child,
++            stretch_stiffness=0.0,
++            bend_stiffness=0.0,
++        )
++        builder.add_articulation([joint])
++        builder.color()
++        model = builder.finalize(device=device)
++        model.vbd.visco_bend_ke.fill_(transient_ke)
++        model.vbd.visco_bend_tau.fill_(0.5 if transient_ke > 0.0 else 0.0)
++
++        solver = newton.solvers.SolverVBD(model, iterations=5, rigid_compliant_alm=True)
++        state_in = model.state()
++        state_out = model.state()
++        dt = 0.1
++
++        solver.step(state_in, state_out, None, None, dt)
++        state_in, state_out = state_out, state_in
++        body_qd = state_in.body_qd.numpy()
++        body_qd[child, 3 + angular_axis] = 1.0
++        state_in.body_qd.assign(body_qd)
++        solver.step(state_in, state_out, None, None, dt)
++
++        child_q = state_out.body_q.numpy()[child, 3:]
++        angle = 2.0 * math.atan2(child_q[angular_axis], child_q[3])
++        moment = solver.joint_visco_moment_prev.numpy()[joint]
++        return angle, moment
++
++    free_bend_angle, free_bend_moment = simulate(0.0, 0)
++    visco_bend_angle, visco_bend_moment = simulate(100.0, 0)
++    free_twist_angle, free_twist_moment = simulate(0.0, 2)
++    visco_twist_angle, visco_twist_moment = simulate(100.0, 2)
++
++    test.assertGreater(free_bend_angle, 0.08)
++    np.testing.assert_allclose(free_bend_moment, 0.0, atol=1.0e-8)
++    test.assertGreater(abs(float(visco_bend_moment[0])), 1.0e-3)
++    test.assertLess(abs(visco_bend_angle), 0.8 * abs(free_bend_angle))
++    np.testing.assert_allclose(visco_bend_moment[2], 0.0, atol=1.0e-8)
++    np.testing.assert_allclose(visco_twist_angle, free_twist_angle, rtol=1.0e-5, atol=1.0e-6)
++    np.testing.assert_allclose(free_twist_moment, 0.0, atol=1.0e-8)
++    np.testing.assert_allclose(visco_twist_moment, 0.0, atol=1.0e-8)
++
++
++def _cable_viscoelastic_masked_reset_rebaselines_selected_world(test, device):
++    """Rebaseline SLS history only for the world selected by reset()."""
++    template = newton.ModelBuilder(gravity=(0.0, 0.0, 0.0))
++    newton.solvers.SolverVBD.register_custom_attributes(template)
++    parent = template.add_link()
++    child = template.add_link(mass=1.0, inertia=wp.mat33(np.eye(3)))
++    joint = template.add_joint_rod(parent, child, stretch_stiffness=0.0, bend_stiffness=0.0)
++    template.add_articulation([joint])
++
++    builder = newton.ModelBuilder(gravity=(0.0, 0.0, 0.0))
++    builder.add_world(template)
++    builder.add_world(template, xform=wp.transform(wp.vec3(2.0, 0.0, 0.0), wp.quat_identity()))
++    builder.color()
++    model = builder.finalize(device=device)
++    model.vbd.visco_bend_ke.fill_(4.0)
++    model.vbd.visco_bend_tau.fill_(0.5)
++
++    solver = newton.solvers.SolverVBD(model, iterations=0, rigid_compliant_alm=True)
++    state_in = model.state()
++    state_out = model.state()
++    dt = 0.1
++    solver.step(state_in, state_out, None, None, dt)
++
++    seeded_moment = np.zeros((model.joint_count, 3), dtype=np.float32)
++    seeded_moment[:, 0] = 1.0
++    solver.joint_visco_moment_prev.assign(seeded_moment)
++    solver.joint_visco_kappa_prev.zero_()
++
++    world_mask = wp.array([True, False, False], dtype=wp.bool, device=device)
++    solver.reset(state_out, world_mask=world_mask, flags=0)
++    np.testing.assert_allclose(solver.joint_visco_moment_prev.numpy(), seeded_moment)
++
++    solver.step(state_out, state_in, None, None, dt)
++    moment = solver.joint_visco_moment_prev.numpy()
++    joint_world = model.joint_world.numpy()
++    np.testing.assert_allclose(moment[joint_world == 0], 0.0, atol=1.0e-6)
++    np.testing.assert_allclose(moment[joint_world == 1, 0], 0.5 / (0.5 + dt), rtol=1.0e-6)
++
++
+ def _rigid_reset_cable_history(test, device):
+     """Reset defers the cable tuple, then rebaselines it from the post-reset pose."""
+     model = _make_vbd_dahl_detection_model(device, dahl_eps_max=0.5, dahl_tau=1.0)
+@@ -4006,6 +4218,30 @@ add_function_test(
+     _vbd_dahl_detection_requires_positive_values,
+     devices=devices,
+ )
++add_function_test(
++    TestSolverVBD,
++    "test_vbd_viscoelastic_detection_requires_positive_values",
++    _vbd_viscoelastic_detection_requires_positive_values,
++    devices=devices,
++)
++add_function_test(
++    TestSolverVBD,
++    "test_cable_viscoelastic_moment_relaxes_analytically",
++    _cable_viscoelastic_moment_relaxes_analytically,
++    devices=devices,
++)
++add_function_test(
++    TestSolverVBD,
++    "test_cable_viscoelastic_branch_affects_bending_not_twist",
++    _cable_viscoelastic_branch_affects_bending_not_twist,
++    devices=devices,
++)
++add_function_test(
++    TestSolverVBD,
++    "test_cable_viscoelastic_masked_reset_rebaselines_selected_world",
++    _cable_viscoelastic_masked_reset_rebaselines_selected_world,
++    devices=devices,
++)
+ add_function_test(
+     TestSolverVBD,
+     "test_rigid_reset_cable_history",

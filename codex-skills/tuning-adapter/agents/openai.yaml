@@ -1,0 +1,7 @@
+interface:
+  display_name: "Tuning Adapter"
+  short_description: "Implement minimal calibration member adapters"
+  default_prompt: "Use $tuning-adapter to implement the missing member behavior while preserving Tuning contracts."
+
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,13 @@
+{
+  "base_revision": "d37f4d3d341ccce1e06a1dff21e9a054759b4855",
+  "base": {
+    "newton/_src/solvers/vbd/solver_vbd.py": "2eaf20bde0cfa436bdaad375b689f5e562130667801ceb3e6098343f4418bc13",
+    "newton/_src/solvers/vbd/rigid_vbd_kernels.py": "c88eb7b4357e0f36d563ffd0ffe29b780543acfacbb2c17a2dc33f0f5026bdf3",
+    "newton/tests/test_solver_vbd.py": "d7018259ff4924ddc483ad46ee6d4b9e802d855e83d347eb898f5a4aab3d1b96"
+  },
+  "sls": {
+    "newton/_src/solvers/vbd/solver_vbd.py": "97e10b68291064f61dfc8df0fb108310c9e53f7eac9f2e41308afb3db6c930be",
+    "newton/_src/solvers/vbd/rigid_vbd_kernels.py": "7b515a5449d42fb31991e2021097adc9c2ea72b432d6d6c7ed21b1c7dd294bcf",
+    "newton/tests/test_solver_vbd.py": "a9014a509e6bc65dc4e0e440e72446f0584cf1edca83d44c0143bfa00316292c"
+  }
+}
