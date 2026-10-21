@@ -11,7 +11,7 @@ The core provides two synthetic systems and the [real cable example](../examples
 | Identifiability | SVD, effective rank, mappings, anchor response correlation; rank deficiency defaults to inconclusive |
 | Explicit reduction | Unidentified directions fixed at baseline only when allowed; representative solution |
 | Frozen Template | Deep immutable configuration, no tuned/fixed overlap, separate refinement templates |
-| Batch execution/scoring | Independent threaded environments, NumPy CPU scoring |
+| Batch execution/scoring | Threaded per-episode environments or asset-provided multi-candidate environments, NumPy CPU scoring |
 | Binding checks | Readback of tuned/fixed quantities; missing or inconsistent bindings fail |
 | Optimizers | GridSearch and CMAES initialize/ask/tell/state/diagnostics; no stop authority |
 | Decision | Work authorization and shared rollout/time budgets with purpose-specific accounting |

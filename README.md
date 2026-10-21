@@ -118,7 +118,7 @@ python -m examples.cable_calibration.verify
 ruff check src tests examples/cable_calibration/run.py examples/cable_calibration/verify.py
 ```
 
-The core currently supports synchronous batches, threaded environment scheduling and NumPy scoring. Thread speedup depends on the backend. It does not provide process-level forced termination, distributed multi-GPU execution, automatic resume, Bayesian optimization or PBT.
+The core currently supports synchronous batches, threaded environments, optional multi-candidate environments and NumPy scoring. Thread speedup depends on the backend. It does not provide process-level forced termination, distributed multi-GPU execution, automatic resume, Bayesian optimization or PBT.
 
 Local SVD diagnostics are not confidence intervals or proofs of global identifiability. USDA output is a trajectory visualization, not a complete physical USD asset. **Search termination, training fit and accepted release are different outcomes.**
 

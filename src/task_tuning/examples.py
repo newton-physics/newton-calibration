@@ -11,6 +11,7 @@ import numpy as np
 from . import (
     CMAES,
     Asset,
+    BatchEnvironment,
     Decision,
     Environment,
     Evaluator,
@@ -80,6 +81,61 @@ class OscillatorAsset(Asset):
         )
 
 
+class OscillatorBatchEnvironment(BatchEnvironment):
+    """All members integrated together as arrays; the same RK4 steps as OscillatorEnvironment."""
+
+    def __init__(self, parameters, dt, settings):
+        self.applied_parameters = [dict(p) for p in parameters]
+        self.dt, self.settings = dt, dict(settings)
+
+    def run(self, times, *, seed, deadline):
+        s = self.settings
+        k = np.array([p["stiffness"] for p in self.applied_parameters], dtype=np.float64)
+        c = np.array([p["damping"] for p in self.applied_parameters], dtype=np.float64)
+        mass = np.array([p["mass"] for p in self.applied_parameters], dtype=np.float64)
+        force = s["force"]
+        if s["mode"] == "static":
+            equilibrium = force / k
+            return [_trace(times, np.full(len(times), value)) for value in equilibrium]
+        x = np.full(len(k), float(s["initial_x"]))
+        velocity = np.full(len(k), float(s["initial_velocity"]))
+        current = 0.0
+        output = []
+        for target in times.tolist():
+            while current < target - 1e-12:
+                if deadline is not None and time.monotonic() >= deadline:
+                    raise TimeoutError("oscillator deadline")
+                h = min(self.dt, target - current)
+
+                def acceleration(position, speed):
+                    return (force - k * position - c * speed) / mass
+
+                a1 = acceleration(x, velocity)
+                v2 = velocity + h * a1 / 2
+                a2 = acceleration(x + h * velocity / 2, v2)
+                v3 = velocity + h * a2 / 2
+                a3 = acceleration(x + h * v2 / 2, v3)
+                v4 = velocity + h * a3
+                a4 = acceleration(x + h * v3, v4)
+                x = x + h * (velocity + 2 * v2 + 2 * v3 + v4) / 6
+                velocity = velocity + h * (a1 + 2 * a2 + 2 * a3 + a4) / 6
+                current += h
+            output.append(x.copy())
+        series = np.stack(output, axis=1)
+        return [_trace(times, series[i]) for i in range(len(k))]
+
+
+class BatchedOscillatorAsset(OscillatorAsset):
+    """OscillatorAsset that also simulates a whole batch in one environment."""
+
+    def create_batch_environment(self, template, parameter_values, experiment_settings):
+        if template.numeric_settings["integrator"] != "rk4":
+            raise ValueError("OscillatorAsset supports the declared RK4 integrator")
+        return OscillatorBatchEnvironment(
+            parameter_values, template.numeric_settings["dt"], experiment_settings
+        )
+
+
 def oscillator_reference(times, parameters, settings):
     k, c, mass = parameters["stiffness"], parameters["damping"], parameters["mass"]
     equilibrium = settings["force"] / k
@@ -127,7 +183,9 @@ class SlidingAsset(Asset):
         )
 
 
-def make_tuning(case, workspace="workspace", *, optimizer=None, capacity=4):
+def make_tuning(
+    case, workspace="workspace", *, optimizer=None, capacity=4, batched=False, worlds=None
+):
     if case == "oscillator":
         parameters = Parameters(
             [
@@ -135,7 +193,8 @@ def make_tuning(case, workspace="workspace", *, optimizer=None, capacity=4):
                 Parameter("damping", (0.1, 1.3), 0.3, unit="N s/m"),
             ]
         )
-        asset = OscillatorAsset(parameters.as_dict(parameters.baseline))
+        asset_type = BatchedOscillatorAsset if batched else OscillatorAsset
+        asset = asset_type(parameters.as_dict(parameters.baseline))
         fixed = {"mass": 1.0}
         truth = {**fixed, "stiffness": 5.0, "damping": 0.7}
         settings = {
@@ -178,6 +237,8 @@ def make_tuning(case, workspace="workspace", *, optimizer=None, capacity=4):
             )
         numeric = {"dt": 0.02, "integrator": "rk4", "dtype": "float64"}
     elif case == "sliding":
+        if batched:
+            raise ValueError("the sliding example has no batched asset")
         parameters = Parameters([Parameter("friction", (0.05, 0.65), 0.15)])
         asset = SlidingAsset(parameters.as_dict(parameters.baseline))
         fixed = {"gravity": 9.81}
@@ -216,7 +277,7 @@ def make_tuning(case, workspace="workspace", *, optimizer=None, capacity=4):
         asset=asset,
         evaluator=Evaluator(max_normalized_error=2.0),
         parameters=parameters,
-        rollout=Rollout(capacity),
+        rollout=Rollout(capacity, worlds=worlds),
         optimizer=strategy,
         decision=Decision(
             max_trials=2000 if optimizer == "grid" else 400,
