@@ -14,7 +14,8 @@
   and standard technical terminology are not contributor references.
 - Retain reproducibility information: dependency versions, device requirements,
   source revisions, patch identities, units, and experimental conditions.
-  Preserve original provenance hashes; update export hashes when an artifact changes.
+  Preserve retained original-evidence and historical-run hashes; they identify source
+  records, not current exports. Use Git to track bundled-file revisions.
 
 ## Documentation scope
 
@@ -24,7 +25,7 @@
   and dated validation summaries in the PR description.
 - Link bundled reports and source evidence with relative paths. Do not imply
   that a hosted site or publication workflow exists unless it is configured.
-- Check Markdown and HTML links, report provenance hashes, and all tracked text
+- Check Markdown and HTML links, retained provenance records, and all tracked text
   for personal or machine-specific references before submitting changes.
 
 ## Focused changes and validation
@@ -34,5 +35,5 @@
 - Preserve measured data, numerical settings, archived scores, and solver behavior
   during documentation cleanup. Never reinterpret a historical rejection as acceptance.
 - Run pre-commit and checks relevant to the change. For report/source-link edits,
-  verify local links, export hashes, and archived scores. A documentation-only change
+  verify local links, retained provenance records, and archived scores. A documentation-only change
   does not require rerunning a calibration search.

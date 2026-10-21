@@ -236,6 +236,17 @@ The factory assembles these adapters with portable configuration. It performs a
 fresh run and does not pretend to resume a historical checkpoint. New run source
 hashes include both the selected stage directory and shared scoring modules.
 
-[provenance.json](archive/provenance.json) retains original source hashes and exported-file hashes. Keys in `files` retain the original export locations; an optional `export_path` identifies the current shared file. If absent, the key is still the current path. Consolidated files match their original hashes byte for byte. Machine-local paths in records were replaced with descriptive placeholders; report links were relocated; this specification and the asset note were translated/curated in English. The HTML reports embed their figures and can be opened locally from [reports](reports/). Source links resolve within the checkout; keep both reports in the same folder for language switching. See [local preview instructions](../../docs/publishing-results.md).
+[provenance.json](archive/provenance.json) records the four historical run IDs,
+hashes of their original resolved configurations and results, and fingerprints of
+the original observation, prehistory, and asset-description files. These hashes
+identify records before portable export; they are not checksums of the current
+bundled files. Git tracks bundled-file revisions and the earlier export manifest.
+Historical outcomes remain in the stage result files; solver provenance is in
+[solver](solver/).
+
+The specification and asset note are curated English exports. The HTML reports
+embed their figures and can be opened locally from [reports](reports/). Source
+links resolve within the checkout; keep both reports in the same folder for
+language switching. See [local preview instructions](../../docs/publishing-results.md).
 
 The bundled SLS patch is the tested adaptation onto the pinned Newton base. Its original source revision `72eca36c70e88d1eb0cc540da7a7a4ea44fb4b98`, adaptation history, and patch checksum are retained as provenance; reconstruction uses the official base and bundled patch. Newton-derived code retains its upstream notices and [Apache 2.0 license](solver/NEWTON-LICENSE.md); see [SLS provenance](solver/sls-provenance.json).

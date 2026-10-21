@@ -40,6 +40,6 @@ coordinate RMSE for A/B/B*/C and measured/predicted z at 150 mm using the scorin
 
 Retain uncertainty and acceptance statements: A to B is not an angle-only ablation;
 B* and C share the dynamic objective; plugged validation remains unresolved.
-When reports or their provenance metadata change, update the relevant export hashes in
-`examples/cable_calibration/archive/provenance.json` while preserving original hashes.
+Git tracks report revisions. Keep historical run and original evidence fingerprints in
+`examples/cable_calibration/archive/provenance.json` unchanged when editing reports.
 Check links and run the archive verifier before submitting the change.

@@ -36,10 +36,10 @@ can be agreed with maintainers separately. This is an explicit integration diffe
 not a claim that the seed already satisfies every main-repository convention.
 
 The adapters in `examples/cable_calibration/backends/` retain historical source
-contents, with byte-identical stage copies shared. Original hashes are preserved;
-`archive/provenance.json` maps relocated files through `export_path`. These adapters
-are excluded from Ruff. Keep new maintained adapters outside this directory. If an existing snapshot
-must change, explain the change, update provenance, and rerun the relevant behavior checks.
+contents, with byte-identical stage copies shared. These adapters are excluded from
+Ruff. Keep new maintained adapters outside this directory. If an existing adapter
+must change, explain the change and rerun the relevant behavior checks. Git tracks
+source revisions; case provenance retains historical run and input-evidence identities.
 The two large HTML reports are retained as evidence and are the only large-file hook exceptions.
 
 GitHub Actions are pinned by commit SHA. CPU CI runs tests, archive verification, both
