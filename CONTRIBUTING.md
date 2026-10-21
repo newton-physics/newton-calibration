@@ -1,8 +1,7 @@
 # Contributing to Newton Calibration
 
-This seed preserves TaskTuning's public package, tests and examples while the framework
-is integrated with Newton. Keep pull requests focused and describe the behavior changed,
-its validation and any remaining limitations.
+The framework uses the `task_tuning` package and `task-tuning` CLI. Keep pull requests
+focused and describe the behavior changed, its validation and any remaining limitations.
 
 ## Development
 
@@ -61,6 +60,7 @@ Keep NumPy and Torch as the existing core runtime; CMA-ES, cable preprocessing a
 playback remain optional extras. Newton is installed explicitly for the cable example.
 Do not silently replace the pinned patched solver with a released package.
 
-See [Newton integration status](docs/newton-integration.md) for the current temporary
-private-API dependency and planned upstream interfaces. Discuss interface changes using
-a runnable case and structured evaluation results before changing the public package.
+Follow [AGENTS.md](AGENTS.md) for portable content and documentation scope.
+See the [cable runtime requirements](examples/cable_calibration/README.md#5-construct-or-rerun-a-stage-with-newton)
+for the pinned solver dependency. Discuss interface changes using a runnable case and
+structured evaluation results before changing the public package.

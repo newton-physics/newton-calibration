@@ -90,4 +90,4 @@ Propose a distal-motion metric without silently changing the existing thresholds
 
 In the cable example, the critical user decisions included the 17 cm length correction, unchanged clamp during board reversal, fitting a shared angle, using 32-segment equivalent parameters, and later testing SLS. Numerical accuracy and actual parameter binding were checked in implementation, not assumed from an old template.
 
-See the [acceptance scenarios](../codex-skills/standard-tuning/references/acceptance-scenarios.md). Historical format/copy checks are documented in [implementation notes](tuning-skills-implementation.md); they are not benchmarks of automatic skill-selection accuracy.
+See the [acceptance scenarios](../codex-skills/standard-tuning/references/acceptance-scenarios.md). See [usage and validation scope](tuning-skills-implementation.md); format checks are not benchmarks of automatic skill-selection accuracy.

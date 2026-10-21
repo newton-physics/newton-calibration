@@ -1,6 +1,6 @@
 # Cable calibration: A → B → C
 
-[Repository](../../README.md) · [Specification](TUNING-SPEC.md) · [Online English report](https://samdianj.github.io/TaskTuning/examples/cable_calibration/reports/cable_calibration_en.html) · [Online Chinese report](https://samdianj.github.io/TaskTuning/examples/cable_calibration/reports/cable_calibration_zh.html)
+[Repository](../../README.md) · [Specification](TUNING-SPEC.md) · [English HTML report](reports/cable_calibration_en.html) · [Chinese HTML report](reports/cable_calibration_zh.html)
 
 This example follows a real 17 cm free cable from a stiffness/damping fit, through a shared clamp-angle correction, to a standard linear solid (SLS) bending model. It includes processed measurements, archived predictions, the actual stage adapters, and factories for new runs.
 
@@ -115,7 +115,7 @@ The plugged data initially served as holdout, but later model decisions used the
 
 ### Recorded simulation environment
 
-The original A/B/B*/C calibration ran locally in a Conda environment named `newton-dev`. The environment name is only a historical label; a new installation may use any name. Newton executes the cable physics, Warp supplies its GPU runtime, and TaskTuning/PyTorch manage calibration and scoring in the same Python process.
+Newton executes the cable physics, Warp supplies its GPU runtime, and TaskTuning/PyTorch manage calibration and scoring in the same Python process.
 
 | Component | Recorded version or setting | Role |
 |---|---|---|
@@ -132,11 +132,11 @@ Python/Torch/NumPy/CMA versions are retained in each [stage configuration](confi
 
 The `versions.device=cpu` field in exported configurations describes TaskTuning scoring. The separate `template.numeric_settings.device=cuda:0` selects Newton/Warp simulation. A CPU-only PyTorch build can therefore coexist with GPU cable physics.
 
-### Upstream integration status
+### Solver compatibility
 
-SLS has been proposed upstream in [Newton PR #4825](https://github.com/newton-physics/newton/pull/4825). This example continues to use the recorded base plus `solver/sls-adapted.patch` while that work is reviewed. The PR adapts SLS to newer Newton APIs and is not a drop-in replacement for the archived solver hashes.
+Stage C requires the recorded base plus `solver/sls-adapted.patch`. The factory checks three solver-file hashes and the actual import location. A released package or another branch is not interchangeable with this pinned source.
 
-Stage C still uses the private curvature kernel and solver history buffers to initialize stress from measured pre-release motion. Merging the constitutive model alone does not provide a public history-initialization API. Keep these accesses confined to the pinned adapter until an equivalent public interface is available and validated. See [integration boundaries](../../docs/newton-integration.md).
+The adapter uses `compute_geometric_rod_kappa_cached_z`, the solver moment/strain arrays, and `_rigid_pose_rebaseline_mask` to initialize and preserve material history from observed pre-release motion. These private bindings are specific to the pinned solver. A replacement solver or public API must reproduce the same initialization and trajectory behavior before its revision and hashes are updated.
 
 ### Install the pinned solver
 
@@ -148,7 +148,7 @@ From the TaskTuning repository root:
 
 ```bash
 python -m pip install -e ".[cable,cma]"
-git clone https://github.com/SamdianJ/newton.git ../newton-task-tuning-base
+git clone https://github.com/newton-physics/newton.git ../newton-task-tuning-base
 git -C ../newton-task-tuning-base checkout --detach d37f4d3d341ccce1e06a1dff21e9a054759b4855
 python -m pip install -e ../newton-task-tuning-base "warp-lang==1.17.0"
 
@@ -201,7 +201,7 @@ The archived Decision configurations cap their own run time at 740 s (A), 2180 s
 
 The recorded simulations used Warp CUDA on an RTX 5070 Ti Laptop GPU; generic Torch scoring can remain on CPU. --device cpu is an explicit change of numerical conditions and requires new qualification. The factory never reuses a historical qualification pass.
 
-During repository preparation, the generic tests, synthetic demos, and archived cable scoring were run locally; all four Newton factories were constructed, but the cable calibration searches were not rerun. Those packaging checks therefore do not constitute a fresh qualification of the Newton/CUDA simulation environment.
+Core tests, archive scoring, factory construction, and trajectory replay serve different purposes. None substitutes for a new numerical qualification and independent validation of a changed Newton/CUDA environment.
 
 ## 6. Repository contents and provenance
 
@@ -218,6 +218,6 @@ During repository preparation, the generic tests, synthetic demos, and archived 
 
 Adapter duplication is intentional: historical stages used different source snapshots. The factory assembles these adapters with portable configuration. It performs a fresh run and does not pretend to resume a historical checkpoint.
 
-[provenance.json](archive/provenance.json) retains original source hashes and exported-file hashes. Machine-local paths in records were replaced with descriptive placeholders; report links were relocated; this specification and the asset note were translated/curated in English. The HTML reports embed their figures and can be opened locally after download from [reports](reports/). Their source links open GitHub; the language switch works online or with both files in the same folder.
+[provenance.json](archive/provenance.json) retains original source hashes and exported-file hashes. Machine-local paths in records were replaced with descriptive placeholders; report links were relocated; this specification and the asset note were translated/curated in English. The HTML reports embed their figures and can be opened locally from [reports](reports/). Source links resolve within the checkout; keep both reports in the same folder for language switching. See [local preview instructions](../../docs/publishing-results.md).
 
-The SLS implementation originated in the [Newton fork](https://github.com/SamdianJ/newton/tree/SamiulJ/vbd-cable-viscoelasticity), upstream revision 72eca36c70e88d1eb0cc540da7a7a4ea44fb4b98. The bundled patch is the tested adaptation onto the pinned base, not an instruction to use the current branch tip. Newton-derived code retains its upstream notices and [Apache 2.0 license](solver/NEWTON-LICENSE.md); see [SLS provenance](solver/sls-provenance.json).
+The bundled SLS patch is the tested adaptation onto the pinned Newton base. Its original source revision `72eca36c70e88d1eb0cc540da7a7a4ea44fb4b98`, adaptation history, and patch checksum are retained as provenance; reconstruction uses the official base and bundled patch. Newton-derived code retains its upstream notices and [Apache 2.0 license](solver/NEWTON-LICENSE.md); see [SLS provenance](solver/sls-provenance.json).

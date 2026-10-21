@@ -1,6 +1,6 @@
 # Design of the Tuning skills module
 
-Design baseline: 2026-10-12. Five skills have been implemented; see [delivery and validation](tuning-skills-implementation.md) and [installation and usage](codex-skills.md).
+See [usage and validation scope](tuning-skills-implementation.md) and [installation and usage](codex-skills.md).
 
 ## Purpose and boundary
 

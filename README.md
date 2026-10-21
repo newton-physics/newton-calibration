@@ -2,13 +2,13 @@
 
 Composable, evidence-based simulation parameter calibration for the Newton ecosystem.
 
-This initial contribution is based on [Lightwheel's TaskTuning](https://github.com/SamdianJ/TaskTuning). It retains the `task_tuning` Python package and `task-tuning` CLI while integration with Newton's calibration APIs proceeds incrementally. The core remains simulator-independent.
+The framework uses the `task_tuning` Python package and `task-tuning` CLI. The core remains simulator-independent; the cable example provides a Newton VBD adapter.
 
-[Contributing](CONTRIBUTING.md) · [Newton integration status](docs/newton-integration.md) · [Apache-2.0 license](LICENSE)
+[Contributing](CONTRIBUTING.md) · [Repository instructions](AGENTS.md) · [Apache-2.0 license](LICENSE)
 
 TaskTuning turns measured observations, a simulator adapter and a parameter space into one traceable `Tuning.run()`. It checks numerical accuracy and local identifiability, performs batched search, reloads the candidate, and validates before releasing an asset.
 
-[View interactive report](https://samdianj.github.io/TaskTuning/) · [User guide](docs/user-guide.md) · [Codex skills](docs/codex-skills.md) · [Cable A → B → C example](examples/cable_calibration/README.md)
+[Local report preview](docs/publishing-results.md) · [User guide](docs/user-guide.md) · [Codex skills](docs/codex-skills.md) · [Cable A → B → C example](examples/cable_calibration/README.md)
 
 ## Quick start
 
@@ -65,9 +65,9 @@ See the [class diagram](docs/tuning-class-diagram.md) and [design](docs/generic-
 
 ## Real example: cable calibration
 
-[![Cable calibration results: errors and measured/predicted dynamics](examples/cable_calibration/reports/cable_calibration_preview.png)](https://samdianj.github.io/TaskTuning/examples/cable_calibration/reports/cable_calibration_en.html)
+[![Cable calibration results: errors and measured/predicted dynamics](examples/cable_calibration/reports/cable_calibration_preview.png)](examples/cable_calibration/reports/cable_calibration_en.html)
 
-**[View interactive report](https://samdianj.github.io/TaskTuning/examples/cable_calibration/reports/cable_calibration_en.html)** · [Chinese report](https://samdianj.github.io/TaskTuning/examples/cable_calibration/reports/cable_calibration_zh.html)
+**[English HTML report](examples/cable_calibration/reports/cable_calibration_en.html)** · [Chinese report](examples/cable_calibration/reports/cable_calibration_zh.html)
 
 The cable calibration was performed with **Newton VBD, using NVIDIA Warp on a CUDA GPU**. TaskTuning managed the calibration lifecycle and scored observations with PyTorch. The repository includes processed observations, 14 archived traces, stage-specific Newton adapters, portable configurations, and bilingual HTML reports.
 
@@ -81,7 +81,7 @@ The cable calibration was performed with **Newton VBD, using NVIDIA Warp on a CU
 A → B addresses a boundary hypothesis prompted by left/right residuals. It is not a controlled angle-only ablation. B* → C uses the same observations and objective; SLS reduces that objective by **76.0%**, but the plugged case still fails and remains numerically unqualified.
 
 - [Case walkthrough and rerun instructions](examples/cable_calibration/README.md)
-- [Downloadable English HTML](examples/cable_calibration/reports/cable_calibration_en.html) · [Downloadable Chinese HTML](examples/cable_calibration/reports/cable_calibration_zh.html) — use the online links above to view the reports in your browser.
+- [Downloadable English HTML](examples/cable_calibration/reports/cable_calibration_en.html) · [Downloadable Chinese HTML](examples/cable_calibration/reports/cable_calibration_zh.html) — download the reports or use the [local preview](docs/publishing-results.md).
 - [Historical results](examples/cable_calibration/archive/) · [portable stage configurations](examples/cable_calibration/configs/)
 
 ### Which environment do I need?
@@ -122,6 +122,6 @@ The core currently supports synchronous batches, threaded environment scheduling
 
 Local SVD diagnostics are not confidence intervals or proofs of global identifiability. USDA output is a trajectory visualization, not a complete physical USD asset. **Search termination, training fit and accepted release are different outcomes.**
 
-Historical engineering records: [implementation status](docs/implementation-status.md), [skills implementation](docs/tuning-skills-implementation.md).
+See [capabilities and limits](docs/implementation-status.md) and [skills usage](docs/tuning-skills-implementation.md).
 
-The linked website and archived reports remain hosted by the original TaskTuning project. No Pages deployment is configured by this seed. See [development and validation](CONTRIBUTING.md).
+Reports are bundled for [local viewing](docs/publishing-results.md). See [development and validation](CONTRIBUTING.md).
