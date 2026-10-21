@@ -107,3 +107,17 @@ class Template:
             raise ValueError("each experiment must explicitly declare its seed")
         complete = {**dict(self.fixed_parameters), **parameter_values}
         return asset.create_environment(self, complete, settings)
+
+    def instantiate_batch(self, asset, parameter_values, experiment):
+        """Create one BatchEnvironment for several candidates, with the checks of instantiate."""
+        if not self._frozen:
+            raise RuntimeError("freeze Template before executing")
+        settings = self.experiment_settings[experiment.id]
+        if "seed" not in settings:
+            raise ValueError("each experiment must explicitly declare its seed")
+        complete = []
+        for values in parameter_values:
+            if set(values) & set(self.fixed_parameters):
+                raise ValueError("a parameter cannot be both calibrated and fixed")
+            complete.append({**dict(self.fixed_parameters), **values})
+        return asset.create_batch_environment(self, tuple(complete), settings)
