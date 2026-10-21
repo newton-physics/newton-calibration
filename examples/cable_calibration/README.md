@@ -210,14 +210,32 @@ Core tests, archive scoring, factory construction, and trajectory replay serve d
 | [data](data/) | Processed observations, normalized experiments, prehistory, compressed numeric traces |
 | [configs](configs/) | Portable stage configurations, parameters, fixed settings, splits, budgets |
 | [archive](archive/) | Original outcomes, summaries, diagnostics, expected metrics, provenance |
-| [backends](backends/) | Stage-specific snapshots from the actual archived runs |
+| [backends](backends/) | Historical adapters with byte-identical stage copies shared |
 | [solver](solver/) | Adapted SLS patch, upstream provenance, expected hashes, Newton license |
 | [reports](reports/) | Self-contained English and retained Chinese HTML reports |
 | [verify.py](verify.py) | CPU archive verification |
 | [run.py](run.py) | Factory/CLI using the standard Tuning lifecycle |
 
-Adapter duplication is intentional: historical stages used different source snapshots. The factory assembles these adapters with portable configuration. It performs a fresh run and does not pretend to resume a historical checkpoint.
+The factory selects the historical implementation required by each stage:
 
-[provenance.json](archive/provenance.json) retains original source hashes and exported-file hashes. Machine-local paths in records were replaced with descriptive placeholders; report links were relocated; this specification and the asset note were translated/curated in English. The HTML reports embed their figures and can be opened locally from [reports](reports/). Source links resolve within the checkout; keep both reports in the same folder for language switching. See [local preview instructions](../../docs/publishing-results.md).
+| Stage | Simulation adapter and rollout | Scoring |
+|---|---|---|
+| A | `backends/a/` | Shared `CableEvaluator` |
+| B | `backends/b/` | Shared `CableEvaluator` |
+| B* | `backends/b/` (identical to B) | Shared `DistalDynamicEvaluator` |
+| C | `backends/c/`, including the SLS extension | Shared `DistalDynamicEvaluator` |
+
+All stages share `backends/validation.py`; B* and C share
+`backends/staged_evaluator.py`. Only byte-identical copies are consolidated.
+A retains its original boundary/frame handling and readback tolerances; C retains
+its SLS initialization hooks and environment selection. `newton_backend.py` builds
+and advances the physical model, while `rollout.py` batches candidates and handles
+execution status. They serve different responsibilities.
+
+The factory assembles these adapters with portable configuration. It performs a
+fresh run and does not pretend to resume a historical checkpoint. New run source
+hashes include both the selected stage directory and shared scoring modules.
+
+[provenance.json](archive/provenance.json) retains original source hashes and exported-file hashes. Keys in `files` retain the original export locations; an optional `export_path` identifies the current shared file. If absent, the key is still the current path. Consolidated files match their original hashes byte for byte. Machine-local paths in records were replaced with descriptive placeholders; report links were relocated; this specification and the asset note were translated/curated in English. The HTML reports embed their figures and can be opened locally from [reports](reports/). Source links resolve within the checkout; keep both reports in the same folder for language switching. See [local preview instructions](../../docs/publishing-results.md).
 
 The bundled SLS patch is the tested adaptation onto the pinned Newton base. Its original source revision `72eca36c70e88d1eb0cc540da7a7a4ea44fb4b98`, adaptation history, and patch checksum are retained as provenance; reconstruction uses the official base and bundled patch. Newton-derived code retains its upstream notices and [Apache 2.0 license](solver/NEWTON-LICENSE.md); see [SLS provenance](solver/sls-provenance.json).

@@ -44,7 +44,9 @@
     "backends/a/validation.py": {
       "original_path": "cable_tuning/workspace/20261013T034559Z-9fa415c5/source/validation.py",
       "original_sha256": "73c41c410381c5ede6082c267d9f18ef01a2f41c71a366561145e4b43aaf7843",
-      "export_sha256": "73c41c410381c5ede6082c267d9f18ef01a2f41c71a366561145e4b43aaf7843"
+      "export_sha256": "73c41c410381c5ede6082c267d9f18ef01a2f41c71a366561145e4b43aaf7843",
+      "export_path": "backends/validation.py",
+      "changes": "Byte-identical stage copies consolidated at export_path; original source identity retained."
     },
     "backends/b/newton_backend.py": {
       "original_path": "cable_tuning/angle_workspace/20261013T060515Z-210cecda/source/newton_backend.py",
@@ -59,27 +61,37 @@
     "backends/b/validation.py": {
       "original_path": "cable_tuning/angle_workspace/20261013T060515Z-210cecda/source/validation.py",
       "original_sha256": "73c41c410381c5ede6082c267d9f18ef01a2f41c71a366561145e4b43aaf7843",
-      "export_sha256": "73c41c410381c5ede6082c267d9f18ef01a2f41c71a366561145e4b43aaf7843"
+      "export_sha256": "73c41c410381c5ede6082c267d9f18ef01a2f41c71a366561145e4b43aaf7843",
+      "export_path": "backends/validation.py",
+      "changes": "Byte-identical stage copies consolidated at export_path; original source identity retained."
     },
     "backends/bstar/newton_backend.py": {
       "original_path": "cable_tuning/dynamic_workspace/20261013T131029Z-e71e55c0/source/newton_backend.py",
       "original_sha256": "cc97561526a01ae8b461407d3528ff9edda77ad2a73c7ea3130bd620d215d206",
-      "export_sha256": "cc97561526a01ae8b461407d3528ff9edda77ad2a73c7ea3130bd620d215d206"
+      "export_sha256": "cc97561526a01ae8b461407d3528ff9edda77ad2a73c7ea3130bd620d215d206",
+      "export_path": "backends/b/newton_backend.py",
+      "changes": "Byte-identical stage copies consolidated at export_path; original source identity retained."
     },
     "backends/bstar/rollout.py": {
       "original_path": "cable_tuning/dynamic_workspace/20261013T131029Z-e71e55c0/source/rollout.py",
       "original_sha256": "4b870d3f5077bd98c2f4b3d93d07f53ae4ec31b596d665e9c1f570404d596ade",
-      "export_sha256": "4b870d3f5077bd98c2f4b3d93d07f53ae4ec31b596d665e9c1f570404d596ade"
+      "export_sha256": "4b870d3f5077bd98c2f4b3d93d07f53ae4ec31b596d665e9c1f570404d596ade",
+      "export_path": "backends/b/rollout.py",
+      "changes": "Byte-identical stage copies consolidated at export_path; original source identity retained."
     },
     "backends/bstar/validation.py": {
       "original_path": "cable_tuning/dynamic_workspace/20261013T131029Z-e71e55c0/source/validation.py",
       "original_sha256": "73c41c410381c5ede6082c267d9f18ef01a2f41c71a366561145e4b43aaf7843",
-      "export_sha256": "73c41c410381c5ede6082c267d9f18ef01a2f41c71a366561145e4b43aaf7843"
+      "export_sha256": "73c41c410381c5ede6082c267d9f18ef01a2f41c71a366561145e4b43aaf7843",
+      "export_path": "backends/validation.py",
+      "changes": "Byte-identical stage copies consolidated at export_path; original source identity retained."
     },
     "backends/bstar/staged_evaluator.py": {
       "original_path": "cable_tuning/dynamic_workspace/20261013T131029Z-e71e55c0/source/staged_evaluator.py",
       "original_sha256": "5a7a90cdc901cbafb0defd421a2e0b7704af58fd1ef300bdcd3d657aea47e91c",
-      "export_sha256": "5a7a90cdc901cbafb0defd421a2e0b7704af58fd1ef300bdcd3d657aea47e91c"
+      "export_sha256": "5a7a90cdc901cbafb0defd421a2e0b7704af58fd1ef300bdcd3d657aea47e91c",
+      "export_path": "backends/staged_evaluator.py",
+      "changes": "Byte-identical stage copies consolidated at export_path; original source identity retained."
     },
     "backends/c/newton_backend.py": {
       "original_path": "cable_tuning/sls_workspace/20261013T140350Z-fe034cf3/source/newton_backend.py",
@@ -94,12 +106,16 @@
     "backends/c/validation.py": {
       "original_path": "cable_tuning/sls_workspace/20261013T140350Z-fe034cf3/source/validation.py",
       "original_sha256": "73c41c410381c5ede6082c267d9f18ef01a2f41c71a366561145e4b43aaf7843",
-      "export_sha256": "73c41c410381c5ede6082c267d9f18ef01a2f41c71a366561145e4b43aaf7843"
+      "export_sha256": "73c41c410381c5ede6082c267d9f18ef01a2f41c71a366561145e4b43aaf7843",
+      "export_path": "backends/validation.py",
+      "changes": "Byte-identical stage copies consolidated at export_path; original source identity retained."
     },
     "backends/c/staged_evaluator.py": {
       "original_path": "cable_tuning/sls_workspace/20261013T140350Z-fe034cf3/source/staged_evaluator.py",
       "original_sha256": "5a7a90cdc901cbafb0defd421a2e0b7704af58fd1ef300bdcd3d657aea47e91c",
-      "export_sha256": "5a7a90cdc901cbafb0defd421a2e0b7704af58fd1ef300bdcd3d657aea47e91c"
+      "export_sha256": "5a7a90cdc901cbafb0defd421a2e0b7704af58fd1ef300bdcd3d657aea47e91c",
+      "export_path": "backends/staged_evaluator.py",
+      "changes": "Byte-identical stage copies consolidated at export_path; original source identity retained."
     },
     "backends/c/sls_backend.py": {
       "original_path": "cable_tuning/sls_workspace/20261013T140350Z-fe034cf3/source/sls_backend.py",

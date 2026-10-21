@@ -35,9 +35,10 @@ suite and its real simulation/acceptance checks; the target repository's test co
 can be agreed with maintainers separately. This is an explicit integration difference,
 not a claim that the seed already satisfies every main-repository convention.
 
-The adapters in `examples/cable_calibration/backends/` are historical snapshots.
-Their contents and provenance hashes are preserved, and they are excluded from Ruff.
-Keep new maintained adapters outside this snapshot directory. If an existing snapshot
+The adapters in `examples/cable_calibration/backends/` retain historical source
+contents, with byte-identical stage copies shared. Original hashes are preserved;
+`archive/provenance.json` maps relocated files through `export_path`. These adapters
+are excluded from Ruff. Keep new maintained adapters outside this directory. If an existing snapshot
 must change, explain the change, update provenance, and rerun the relevant behavior checks.
 The two large HTML reports are retained as evidence and are the only large-file hook exceptions.
 

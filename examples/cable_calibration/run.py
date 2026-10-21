@@ -22,6 +22,8 @@ from task_tuning import (
     Tuning,
 )
 
+from .backends.staged_evaluator import DistalDynamicEvaluator
+from .backends.validation import CableEvaluator, HistoricalValidator
 from .verify import CASE, load_experiments
 
 
@@ -46,24 +48,24 @@ def build_tuning(stage, *, newton_source, workspace="workspace/cable", device=No
     source, solver_hashes = check_solver(newton_source, stage)
     config_path = CASE / "configs" / f"{stage}.json"
     config = json.loads(config_path.read_text())
-    package = f"{__package__}.backends.{stage.lower()}"
+    backend_stage = "b" if stage == "Bstar" else stage.lower()
+    package = f"{__package__}.backends.{backend_stage}"
     backend = importlib.import_module(
         package + (".sls_backend" if stage == "C" else ".newton_backend")
     )
     rollout = importlib.import_module(package + ".rollout")
-    validation = importlib.import_module(package + ".validation")
-    if stage in ("Bstar", "C"):
-        evaluator_type = importlib.import_module(
-            package + ".staged_evaluator"
-        ).DistalDynamicEvaluator
-    else:
-        evaluator_type = validation.CableEvaluator
+    evaluator_type = DistalDynamicEvaluator if stage in ("Bstar", "C") else CableEvaluator
     parameters = Parameters([Parameter(**p) for p in config["parameters"]])
     data = config["template"]
     if device is not None:
         data["numeric_settings"]["device"] = device
     asset_type = backend.SLSCableAsset if stage == "C" else backend.CableAsset
     experiments = load_experiments()
+    adapter_paths = sorted((CASE / "backends" / backend_stage).glob("*.py"))
+    adapter_paths += [
+        CASE / "backends" / "validation.py",
+        CASE / "backends" / "staged_evaluator.py",
+    ]
     sources = {
         "historical_run": config["historical_run_id"],
         "portable_config_sha256": hashlib.sha256(config_path.read_bytes()).hexdigest(),
@@ -71,8 +73,8 @@ def build_tuning(stage, *, newton_source, workspace="workspace/cable", device=No
             (CASE / "data/experiments.json").read_bytes()
         ).hexdigest(),
         "adapter_hashes": {
-            p.name: hashlib.sha256(p.read_bytes()).hexdigest()
-            for p in sorted((CASE / "backends" / stage.lower()).glob("*.py"))
+            str(p.relative_to(CASE)): hashlib.sha256(p.read_bytes()).hexdigest()
+            for p in adapter_paths
         },
         "solver_vbd_hashes": solver_hashes,
         "interpretation": "New run; historical precision and acceptance are not reused.",
@@ -96,7 +98,7 @@ def build_tuning(stage, *, newton_source, workspace="workspace/cable", device=No
         if stage == "Bstar"
         else CMAES(batch_size=8, sigma=0.2, seed=42),
         decision=Decision(**config["decision"]),
-        validator=validation.HistoricalValidator(max_objective=1.0, max_error=3.0),
+        validator=HistoricalValidator(max_objective=1.0, max_error=3.0),
         play=Play(),
         workspace=workspace,
         orthogonalize=config["orthogonalize"],
