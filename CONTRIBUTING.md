@@ -12,27 +12,27 @@ If you contribute as part of your employment, your organization must be set up i
 
 If your organization is not listed, the EasyCLA workflow lets you add it and identify the representative authorized to coordinate the CCLA signing process. See [Contributor License Agreements](https://github.com/newton-physics/newton-governance/blob/main/CONTRIBUTING.md#contributor-license-agreements) for the full process.
 
-# Contributing to Newton
+# Contributing to Newton Calibration
 
-Newton welcomes contributions from the community. In order to avoid any surprises and to increase the chance of contributions being merged, we encourage contributors to communicate their plans proactively by opening a GitHub Issue or starting a Discussion in the corresponding repository. Keep each pull request focused on a single feature or bug fix, and write clear, concise commit messages.
+Newton Calibration welcomes contributions from the community. In order to avoid any surprises and to increase the chance of contributions being merged, we encourage contributors to communicate their plans proactively by opening a GitHub Issue or starting a Discussion in the corresponding repository. Keep each pull request focused on a single feature or bug fix, and write clear, concise commit messages.
 
-Use the [development guide](https://newton-physics.github.io/newton/latest/guide/development.html) for environment setup and development workflows. Code and public API changes must follow the [source code and public API guidelines](CODING_GUIDELINES.rst). Reviewers may use the suggested [review guidelines](REVIEW_GUIDELINES.rst).
+Use [AGENTS.md](AGENTS.md) for environment setup and development workflows. Code and public API changes must follow the [source code and public API guidelines](CODING_GUIDELINES.rst). Reviewers may use the suggested [review guidelines](REVIEW_GUIDELINES.rst).
 
-There are several ways to participate in the Newton community:
+There are several ways to participate:
 
 ## Questions, Discussions, Suggestions
 
-* Help answer questions or contribute to technical discussion in [GitHub Discussions](https://github.com/newton-physics/newton/discussions) and Issues.
-* If you have a question, suggestion or discussion topic, start a new [GitHub Discussion](https://github.com/newton-physics/newton/discussions) if there is no existing topic.
+* Help answer questions or contribute to technical discussion in [GitHub Discussions](https://github.com/newton-physics/newton-calibration/discussions) and Issues.
+* If you have a question, suggestion or discussion topic, start a new [GitHub Discussion](https://github.com/newton-physics/newton-calibration/discussions) if there is no existing topic.
 * Once somebody shares a satisfying answer to the question, click "Mark as answer".
-* [GitHub Issues](https://github.com/newton-physics/newton/issues) should only be used for bugs and features. Specifically, issues that result in a code or documentation change. We may convert issues to discussions if these conditions are not met.
+* [GitHub Issues](https://github.com/newton-physics/newton-calibration/issues) should only be used for bugs and features. Specifically, issues that result in a code or documentation change. We may convert issues to discussions if these conditions are not met.
 
 ## Reporting a Bug
 
-* Check in the [GitHub Issues](https://github.com/newton-physics/newton/issues) if a report for the bug already exists.
+* Check in the [GitHub Issues](https://github.com/newton-physics/newton-calibration/issues) if a report for the bug already exists.
 * If the bug has not been reported yet, open a new Issue.
 * Use a short, descriptive title and write a clear description of the bug.
-* Document the Git hash or release version where the bug is present, and the hardware and environment by including the output of `nvidia-smi`.
+* Document the Git hash or release version where the bug is present, the Newton revision in use, and the hardware and environment by including the output of `nvidia-smi`.
 * Add executable code samples or test cases with instructions for reproducing the bug.
 
 ## Documentation Issues
@@ -52,8 +52,8 @@ There are several ways to participate in the Newton community:
 
 ## Improving Performance
 
-* Write an optimization that improves an existing or new benchmark following the [source code guidelines](CODING_GUIDELINES.rst).
-* Open a new pull request with the optimization, and the benchmark, if applicable.
+* Write an optimization and measure it on a case in `examples/` or on a synthetic demo, following the [source code guidelines](CODING_GUIDELINES.rst).
+* Open a new pull request with the optimization and the measurement.
 * Write a description of the performance optimization.
 * Mention related issues in the description: E.g. if the optimization addresses Issue \#42, write Addresses \#42.
 * Have a signed CLA on file (see [Legal Requirements](https://github.com/newton-physics/newton-governance/blob/main/CONTRIBUTING.md#legal-requirements)).
@@ -64,77 +64,57 @@ There are several ways to participate in the Newton community:
 * Discuss your proposal ideally before starting with implementation. Open a GitHub Issue or Discussion to:
   * propose and motivate the new feature;
   * detail technical specifications;
-  * and list changes or additions to the Newton API.
+  * and list changes or additions to the public `task_tuning` API.
 * Wait for feedback from [Project Members](https://github.com/newton-physics/newton-governance/blob/main/CONTRIBUTING.md#project-members) before proceeding.
 * Implement the feature following the [source code guidelines](CODING_GUIDELINES.rst).
-* Add comprehensive testing and benchmarking for the new feature.
-* Ensure all existing tests pass and that existing benchmarks do not regress.
+* Add comprehensive testing for the new feature.
+* Ensure all existing tests pass and that the archived cable scoring (`python -m examples.cable_calibration.verify`) still reproduces its recorded metrics.
 * Update or add documentation for the new feature.
 * Have a signed CLA on file (see [Legal Requirements](https://github.com/newton-physics/newton-governance/blob/main/CONTRIBUTING.md#legal-requirements)).
 * Have the pull request approved by a [Project Member](https://github.com/newton-physics/newton-governance/blob/main/CONTRIBUTING.md#project-members) and merged into the codebase.
 
-## Adding a Solver or Large Extension
+## Adding a Framework Member
 
-Newton is designed to be extended outside this repository. Most new solvers and domain-specific extensions should start as separate packages that depend on Newton, so the solver authors can own their maintenance, documentation, testing, and release cadence.
+The calibration lifecycle is `Tuning.run()` composed of its members: `Evidence`, `Asset`, `Evaluator`, `Parameters`, `Rollout`, `Optimizer`, `Decision`, `Validator`, `Template` and `Play`. Case-specific behavior goes into members, not into a second loop.
 
-When developing an external solver or extension:
+A new member implementation or a new public hook on a member is a candidate for the core package when:
 
-* publish it in its own repository or package with a dependency on Newton;
-* use public Newton APIs only; do not import from `newton._src`;
-* keep solver-specific tests, examples, and documentation with the external project;
-* open a separate GitHub Issue or Discussion if you need new public extension points in Newton;
-* add the `newton-physics` GitHub topic to the repository for discoverability.
-
-If an external solver or extension becomes broadly useful and has clear long-term maintainers, Project Members may decide case-by-case to adopt part or all of it into the main Newton repository. This is conservative and not guaranteed. Contributors should not rely on upstream adoption as the expected path.
-
-The bar for adding a solver to the main Newton repository is high because every upstream solver adds API, testing, review, release, and support responsibilities for the project. Project Members may ask that a solver remain external, or that only smaller reusable API hooks or improvements be contributed upstream.
-
-Before investing in an upstream solver contribution, open a GitHub Issue or Discussion and wait for feedback from [Project Members](https://github.com/newton-physics/newton-governance/blob/main/CONTRIBUTING.md#project-members). Include:
-
-* the solver's scope, algorithms, and expected users;
-* why it should live in the main Newton repository instead of an external package;
-* the proposed Newton API additions or changes;
-* the long-term maintenance plan and owners;
-* tests, benchmarks, examples, and documentation you expect to provide.
-
-## Adding Control Laws and Actuator Components
-
-The same expectations apply to control laws and actuator components as to solvers: Newton provides the composable building blocks and extension points, while domain- or asset-specific behavior is generally owned by the projects that use it.
-
-Newton core carries a small set of control laws and actuator components that are broadly used across robots, such as PD and PID control, neural policies, effort clamping, and actuation delay. Control laws that model a specific mechanism or product should be implemented on the user side using the public actuator API.
-
-A control law or actuator component is a candidate for the main Newton repository when:
-
-* it applies across many robots or benchmarks rather than to one mechanism or product family;
-* it cannot be expressed by composing existing public components;
+* it applies to more than one case or simulator rather than to one asset or experiment;
+* it cannot be expressed by composing or subclassing existing members;
 * it has clear long-term maintainers within the project.
 
-Everything else is better maintained externally. Instead of contributing a specialized control law upstream, consider contributing an example that shows how to implement and register a user-supplied one, or a pull request for the public extension points you are missing.
+Do not add a second search, stopping, validation or recording loop; `Decision` alone stops work, and `Tuning` owns all writes to the run state. Open a GitHub Issue or Discussion and wait for feedback from [Project Members](https://github.com/newton-physics/newton-governance/blob/main/CONTRIBUTING.md#project-members) before changing the public package.
 
-As with solvers, open a GitHub Issue or Discussion and wait for feedback from [Project Members](https://github.com/newton-physics/newton-governance/blob/main/CONTRIBUTING.md#project-members) before investing in an upstream contribution.
+## Adding a Calibration Case
 
-## Adding Simulation Assets and Tuned Models
+Cases live under `examples/`, one directory each, and use the public `task_tuning` API only. A case consists of:
 
-Newton generally does not maintain a library of tuned or verified simulation content, such as actuator models, sensor models, robot models, calibrated material parameters, datasets, or trained policies. These assets are often tied to specific OEM products, firmware versions, calibration processes, validation datasets, or support commitments. They should be owned and maintained by the OEM, lab, or user project that can validate and support them.
+* a backend that builds the scene and implements `Asset` and `Environment` (or `BatchEnvironment`), with parameter readback from the model;
+* a data loader that turns the recordings into `Experiment`s and experiment settings from one source;
+* a configuration with parameters, bounds, fixed values, numerical settings, refinements and budgets;
+* a script that generates the recordings, or a documented way to obtain them, with their content hashes (see "Assets and Recordings" below);
+* a `README.md` that states the physical setup, units, the Newton revision, the hardware the case was run on, and what was and was not validated.
 
-Newton's role is to provide the public APIs, capabilities, tooling, workflows, examples, and tests needed for externally maintained models to work with Newton. If Newton is missing functionality that prevents you from building, tuning, validating, or distributing your own model assets, submit a pull request for the required Newton functionality, documentation, examples, or extension points rather than adding the tuned assets themselves to the main Newton repository.
+Use public Newton APIs; do not import from `newton._src`. The one existing exception is the archived cable stage C, which binds to a patched solver; see the [cable example README](examples/cable_calibration/README.md#5-construct-or-rerun-a-stage-with-newton). Do not silently replace a pinned solver revision or patch with a released package; record the change and rerun the affected checks.
 
-When publishing externally maintained model assets:
+Measured data, numerical settings, archived scores and acceptance statuses are evidence. Preserve them when reorganizing a case, and never reinterpret a historical rejection as acceptance.
 
-* Host them in their own repository or package.
-* Use public Newton APIs only; do not import from `newton._src`.
-* Document ownership, license, supported Newton versions, what was and was not validated, and support expectations.
-* Include tests or validation examples with the external project.
-* Add the `newton-physics` GitHub topic to the repository for discoverability.
+## Assets and Recordings
 
-The Newton project may host simulation assets in the [newton-assets](https://github.com/newton-physics/newton-assets) repository when they are needed to test, document, or demonstrate Newton's core functionality. The `newton-assets` repository is not a general content library for OEM, lab, or user-maintained tuned models.
+Git holds code, configurations and documentation. It does not hold recorded or rendered data: frames, masks, videos, trajectories, fitted results and the meshes and robot descriptions a case consumes. Such files bloat the history permanently, and every regeneration adds another copy.
 
-For example, a calibrated URDF for a specific robot should live in the maintainer's own repository, while a generic URDF used to test a Newton importer or document a Newton feature may belong in `newton-assets`.
+* Generic simulation assets, such as robot URDFs and meshes, belong in the [newton-assets](https://github.com/newton-physics/newton-assets) repository and are downloaded at run time.
+* Recordings and results are kept outside git and synced by other means. A case records the content hash of every file it depends on, so a synced copy can be checked.
+* A small, deliberately selected set of example recordings may be committed when a fresh checkout or CI needs them to run a case end to end. Choose the smallest set that serves that purpose, prefer regenerable synthetic data, and state in the pull request why each file is needed.
 
-Before proposing to add project-maintained assets:
+Before proposing to add project-maintained assets to `newton-assets`:
 
 * Make sure that the assets are properly licensed for use and distribution. If you are unsure about the license, open a new discussion.
-* If a pull request in the main Newton repository relies on new assets, open a corresponding pull request in the [newton-assets](https://github.com/newton-physics/newton-assets) repository.
+* If a pull request in this repository relies on new assets, open a corresponding pull request in the [newton-assets](https://github.com/newton-physics/newton-assets) repository.
 * Follow the instructions in the [README](https://github.com/newton-physics/newton-assets) of the `newton-assets` repository.
 * Have a signed CLA on file (see [Legal Requirements](https://github.com/newton-physics/newton-governance/blob/main/CONTRIBUTING.md#legal-requirements)).
 * Have the `newton-assets` pull request approved by a [Project Member](https://github.com/newton-physics/newton-governance/blob/main/CONTRIBUTING.md#project-members) and merged into the asset repository.
+
+## Licensing
+
+Original contributions are Apache-2.0; retain third-party notices and identify the license of every new dependency. See [NOTICE](NOTICE) for the original contribution and the Newton patch. Runtime dependencies keep their own licenses: NumPy, SciPy, PyTorch, CMA-ES and Pyglet are BSD-licensed; consult the installed distributions for their complete notices.

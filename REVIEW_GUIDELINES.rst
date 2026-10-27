@@ -6,15 +6,17 @@
 Review Guidelines
 =================
 
-This document provides suggested criteria for reviewing Newton changes,
-particularly for AI-assisted reviews. Human reviewers may use their own
-process and judgment. The criteria organize substantial concerns into three
+This document provides suggested criteria for reviewing Newton Calibration
+changes, particularly for AI-assisted reviews. Human reviewers may use their
+own process and judgment. It is adapted from Newton's review guidelines
+(``newton-physics/newton``, ``REVIEW_GUIDELINES.rst`` at commit ``e7791e6f2``);
+"this repository" replaces "Newton" in the Fit gates. The criteria organize substantial concerns into three
 independent axes: **Fit**, **Requirements**, and **Standards**.
 
 Review axes
 -----------
 
-- **Fit:** Should Newton own this outcome, is the proposed design the right
+- **Fit:** Should this repository own this outcome, is the proposed design the right
   approach, and is its durable cost proportionate?
 - **Requirements:** Does the change faithfully and correctly implement the
   agreed behavior, without omissions or unrelated scope, and is that behavior
@@ -58,7 +60,7 @@ Use three priorities:
 Fit
 ---
 
-Judge whether the outcome belongs in Newton, has the right owner, and is
+Judge whether the outcome belongs in this repository, has the right owner, and is
 proportionate. Keep Fit separate from implementation correctness, coding
 standards, and requirements fidelity.
 
@@ -73,14 +75,15 @@ proposal or specification is the only solution.
 Apply four gates:
 
 - **Product value, standalone surface, and ownership:** Determine whether the
-  change advances robot learning, a validated robotics workflow, or Newton's
+  change advances a validated calibration workflow or the package's
   independent discovery, installation, and use. Identify whether the core
-  library or a downstream integration, application, importer, renderer, or
-  dependency should own it. Downstream demand is evidence, but does not
-  automatically make core Newton the right owner.
-- **Coherent Newton capability:** Prefer deepening a canonical Newton concept
-  over parallel machinery or new vocabulary. Follow Newton's existing design
-  and terminology. Where Newton has no established concept, compare durable
+  package, a case under ``examples/``, Newton itself, or a dependency should
+  own it. Demand from one case is evidence, but does not automatically make
+  the core package the right owner.
+- **Coherent capability:** Prefer deepening a canonical concept of the
+  lifecycle (``Tuning`` and its members) over parallel machinery or new
+  vocabulary. Follow the existing design and Newton's terminology for
+  simulation concepts. Where neither has an established concept, compare durable
   designs in other physics engines, robotics libraries, or relevant open
   standards. For a large change, compare at least one materially different
   design.
@@ -94,7 +97,7 @@ Apply four gates:
   obvious use is slow, brittle, or unmaintainable.
 - **Executable evidence and sustained capacity:** Require a named user or
   workload with measurable failure and success criteria plus executable
-  validation. Ask whether Newton would accept the change if the contributor
+  validation. Ask whether the project would accept the change if the contributor
   left, who can maintain and validate it, and which existing priority will
   lose capacity.
 
@@ -119,7 +122,7 @@ Requirements
 
 Treat the linked issue, PRD, design document, or agreed pull-request scope as
 the intended outcome, not as proof that the proposed implementation is
-correct or belongs in Newton. When no separate specification exists, use the
+correct or belongs in this repository. When no separate specification exists, use the
 pull-request description as the stated intent.
 
 Check for:
@@ -178,8 +181,8 @@ Check the repository obligations relevant to the change, including:
   without a Python signature change.
 
 Treat recognized code and design smells as prompts for closer inspection, not
-automatic violations. Explain the concrete Newton-specific cost rather than
-reporting a smell label alone. A documented Newton design takes precedence over
+automatic violations. Explain the concrete cost to this repository rather than
+reporting a smell label alone. A documented design takes precedence over
 a generic heuristic.
 
 The release audit remains the final cross-release reconciliation. Standards

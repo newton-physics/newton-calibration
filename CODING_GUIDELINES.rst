@@ -7,24 +7,25 @@ Source Code and Public API Guidelines
 =====================================
 
 This document is the canonical source code and public API guidance for Newton
-contributors and reviewers. It applies prospectively to new code and to
-existing code that is being changed substantially. Do not request unrelated
-cleanup or break a supported API merely to make existing code conform.
+Calibration contributors and reviewers. It applies prospectively to new code
+and to existing code that is being changed substantially. Do not request
+unrelated cleanup or break a supported API merely to make existing code
+conform.
+
+It is adapted from Newton's guidelines (``newton-physics/newton``,
+``CODING_GUIDELINES.rst`` at commit ``cea666826``). The differences are the
+package boundary, the module names and the dependency rules.
 
 Its scope is limited to source-code and public-API conventions. Repository
 contribution and pull-request workflows are documented in
-`CONTRIBUTING.md <https://github.com/newton-physics/newton/blob/main/CONTRIBUTING.md>`__;
-environment setup and operational procedures are in the
-`development guide <https://newton-physics.github.io/newton/latest/guide/development.html>`__.
+`CONTRIBUTING.md <CONTRIBUTING.md>`__, which also covers environment setup.
 General review concerns such as requirements fidelity, project fit,
 reviewability, and maintenance burden are covered by the
 :ref:`review-guidelines`.
-Release readiness is assessed by the
-`release-audit workflow <https://github.com/newton-physics/newton/tree/main/.agents/skills/release-audit>`__.
 
 In this document, *must* identifies a requirement, *should* identifies the
 normal choice from which a well-justified exception may be made, and *may*
-identifies an allowed choice. Breaking changes must follow Newton's deprecation
+identifies an allowed choice. Breaking changes must follow the deprecation
 policy even when the replacement would better follow these guidelines.
 
 Public API surface
@@ -43,15 +44,13 @@ Keep such aliases out of the preferred API documentation, mark them as
 deprecated, and remove them only after the required deprecation period.
 
 Python may still allow users to reach implementation details through other
-paths, but accessibility does not make those paths public or stable. In
-particular, ``newton._src`` is internal: examples and documentation must import
-through public modules such as :mod:`newton.geometry` and
-:mod:`newton.solvers`.
+paths, but accessibility does not make those paths public or stable. The
+public API is what :mod:`task_tuning` exports in its ``__all__``. Names with a
+leading underscore, and everything under ``examples/``, are internal: examples
+and documentation must import through :mod:`task_tuning`.
 
-The API reference is generated from public ``__all__`` declarations. Follow
-the `API documentation procedure
-<https://newton-physics.github.io/newton/latest/guide/development.html#api-documentation>`__
-whenever a public symbol or module is added, removed, or renamed.
+Update the user guide whenever a public symbol or module is added, removed,
+or renamed.
 
 Keep namespaces shallow and purposeful
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -59,13 +58,14 @@ Keep namespaces shallow and purposeful
 Balance a discoverable top-level namespace against excessively deep import
 paths:
 
-- Reserve ``newton`` for concepts broadly needed in ordinary simulation
-  workflows. Adding a root symbol requires justification that it belongs in
-  typical user code rather than a specialized domain.
+- Reserve the :mod:`task_tuning` root for concepts needed in every
+  calibration: the lifecycle, its members and the data records. Adding a root
+  symbol requires justification that it belongs in typical user code rather
+  than a specialized domain.
 - Put families of related types in a public submodule, even when one member of
   the family could plausibly be exposed at the root.
-- Put specialized APIs in stable domain modules such as ``newton.geometry``,
-  ``newton.solvers``, and ``newton.viewer``.
+- Put specialized APIs in stable domain submodules, for example a submodule
+  per simulator backend or per evidence type, once more than one exists.
 - Do not add nesting solely to categorize a small number of names. Additional
   levels should represent a durable boundary such as a backend, provider, or
   cohesive experimental subsystem.
@@ -77,9 +77,9 @@ paths:
 
 An internal implementation may be deeply organized when that improves
 maintenance. These restrictions concern the public import path, not the layout
-under ``newton._src``.
+of private modules.
 
-Keep public imports lightweight. Importing :mod:`newton` or a lightweight
+Keep public imports lightweight. Importing :mod:`task_tuning` or a lightweight
 public module must not eagerly initialize optional backends or load heavy,
 provider-specific dependencies. Use lazy loading at optional-dependency and
 backend boundaries, and account for import-time cost when assigning a symbol
@@ -97,9 +97,7 @@ limitations alongside the marker.
 Use a domain-local experimental namespace only for a cohesive new subsystem
 that can reasonably live behind an opt-in import path. Do not move an existing
 public type into an experimental namespace merely to describe implementation
-maturity. Follow the `experimental-feature documentation procedure
-<https://newton-physics.github.io/newton/latest/guide/development.html#experimental-features>`__
-for directive syntax and generated API documentation.
+maturity. Document the marker in the user guide next to the feature.
 
 Naming
 ------
@@ -135,8 +133,8 @@ which are not re-exported or documented independently.
 Minimize new concepts
 ^^^^^^^^^^^^^^^^^^^^^
 
-Before introducing a new public noun, determine whether an established Newton
-concept describes the same responsibility. Prefer extending or composing
+Before introducing a new public noun, determine whether an established
+concept of this package or of Newton describes the same responsibility. Prefer extending or composing
 existing concepts to adding vague abstractions such as ``Entity`` or
 ``Manager``.
 
@@ -215,11 +213,11 @@ Put reusable math at the right layer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A generally useful operation on Warp-native types should normally be proposed
-upstream in Warp rather than becoming a Newton-specific concept. If Newton
-needs the operation before it is available upstream:
+upstream in Warp or Newton rather than becoming a concept of this package. If
+this package needs the operation before it is available upstream:
 
 - prefer a private compatibility helper linked to the upstream issue;
-- put a Newton-owned public math operation in :mod:`newton.math`, not in a
+- put a package-owned public math operation in a named math module, not in a
   catch-all utility namespace; and
 - treat any temporary public helper as supported API, including the normal
   deprecation requirements when migrating users to Warp.
@@ -238,11 +236,13 @@ Python source conventions
   not ``wp.array1d[X]``.
 - Use kebab-case for command-line arguments, such as ``--use-cuda-graph``
   rather than ``--use_cuda_graph``.
-- Avoid new required dependencies. Strongly prefer Warp, NumPy, or the standard
-  library to a new optional dependency.
+- Avoid new required dependencies. The core depends on NumPy and the standard
+  library only; simulators, optimizers and image libraries are optional extras
+  imported inside the functions that use them (enforced by the ``TID253``
+  lint rule).
 - A pull request that introduces a required or optional dependency must
-  identify its license and verify that it is compatible with Newton's
-  distribution. Update license metadata and notices when required. Treat an
+  identify its license and verify that it is compatible with this
+  repository's Apache-2.0 distribution. Update license metadata and notices when required. Treat an
   unknown or undeclared dependency license as requiring review before merge.
 
 Documentation and comments
@@ -252,7 +252,7 @@ Documentation and comments
   write arguments as ``name: description`` under ``Args:``.
 - Put a dataclass field's docstring on the line immediately after the field.
 - Use the shortest useful Sphinx cross-reference target and prefer public API
-  paths. Never reference ``newton._src`` from user-facing documentation.
+  paths. Never reference private modules from user-facing documentation.
 - State SI units for physical quantities in public API docstrings, for example
   ``Particle positions [m], shape [particle_count, 3].`` Use ``[m or rad]``
   for joint-dependent values and ``[N, N·m]`` for spatial force vectors.
@@ -262,8 +262,8 @@ Documentation and comments
   constraints, or edge cases. Explain *why*, not what the code already states.
   Prefer an appropriate cross-reference to repeating a longer explanation.
 - Before relying on or changing a documented claim, inspect its internal
-  cross-references and external primary sources. Verify Newton-specific
-  behavior against the current code. If a source is unavailable, state that
+  cross-references and external primary sources. Verify Newton and solver
+  behavior against the current code of the pinned Newton revision. If a source is unavailable, state that
   limitation instead of assuming its support.
 
 Tests and repository conventions
@@ -290,7 +290,7 @@ When reviewing a new or substantially changed public API, check that:
 - each public symbol has one canonical export and the relevant ``__all__`` is
   updated;
 - the namespace is shallow, purposeful, and not unnecessarily added to
-  ``newton``;
+  the :mod:`task_tuning` root;
 - names cluster with their concept family and remain clear out of context;
 - members of an API family use consistent vocabulary, parameter grouping,
   options, and safe defaults;
