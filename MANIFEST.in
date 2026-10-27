@@ -1,4 +1,5 @@
 include AGENTS.md CONTRIBUTING.md .pre-commit-config.yaml index.html .nojekyll
+include CODING_GUIDELINES.rst REVIEW_GUIDELINES.rst
 graft docs
 graft examples
 graft codex-skills
