@@ -108,6 +108,8 @@ class CMAES(Optimizer):
 
     def initialize(self, parameters):
         super().initialize(parameters)
+        if self.dimension < 2:
+            raise ValueError("CMA-ES needs at least two parameters; use GridSearch")
         try:
             import cma
         except ImportError as error:

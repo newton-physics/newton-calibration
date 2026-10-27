@@ -127,7 +127,7 @@ class SlidingAsset(Asset):
         )
 
 
-def make_tuning(case, workspace="workspace", *, optimizer="cma_es", capacity=4):
+def make_tuning(case, workspace="workspace", *, optimizer=None, capacity=4):
     if case == "oscillator":
         parameters = Parameters(
             [
@@ -204,6 +204,8 @@ def make_tuning(case, workspace="workspace", *, optimizer="cma_es", capacity=4):
         refinements=({"numeric_settings": {"dt": 0.01}},),
         precision_tolerance=0.02,
     )
+    if optimizer is None:
+        optimizer = "grid" if case == "sliding" else "cma_es"
     strategy = GridSearch(levels=41, batch_size=32) if optimizer == "grid" else CMAES()
     return Tuning(
         evidence=Evidence(

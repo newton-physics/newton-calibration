@@ -15,7 +15,11 @@ def main():
     commands = parser.add_subparsers(dest="command", required=True)
     demo = commands.add_parser("demo", help="run a non-cable synthetic qualification case")
     demo.add_argument("--case", choices=("oscillator", "sliding"), default="oscillator")
-    demo.add_argument("--optimizer", choices=("grid", "cma_es"), default="cma_es")
+    demo.add_argument(
+        "--optimizer",
+        choices=("grid", "cma_es"),
+        help="default: grid for sliding, cma_es for oscillator",
+    )
     demo.add_argument(
         "--workspace",
         type=Path,

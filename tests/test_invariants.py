@@ -298,3 +298,10 @@ def test_reloaded_asset_is_resimulated_even_when_parameter_metadata_matches(tmp_
     assert not tuning.state.analysis_reports["training_retest"]["passed"]
     assert "training_retest" in tuning.state.budget_usage
     assert not (tuning.run_directory / "release").exists()
+
+
+def test_cma_es_rejects_one_parameter():
+    """Reject an unsupported search before asking pycma for a generation."""
+    parameters = Parameters([Parameter("k", (0.0005, 0.05), 0.003, "m", "log")])
+    with pytest.raises(ValueError, match="GridSearch"):
+        CMAES(batch_size=4).initialize(parameters)
