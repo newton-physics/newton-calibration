@@ -7,15 +7,13 @@
 
 - [ ] New or existing tests cover these changes
 - [ ] The documentation is up to date with these changes
-- [ ] For user-facing changes, a fragment has been added by following the
-      [changelog fragment instructions](https://github.com/newton-physics/newton/blob/main/changelog/README.md)
 
 ## Test plan
 
 <!-- How were these changes verified? Include commands, test names,
      or manual steps. Example:
      ```
-     uv run --extra dev -m newton.tests -k test_relevant_test
+     uv run --extra cma --extra dev -m pytest -q tests/test_relevant.py
      ``` -->
 
 ## Bug fix

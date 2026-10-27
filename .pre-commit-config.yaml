@@ -20,6 +20,7 @@ repos:
     hooks:
       - id: check-added-large-files
         args: [--maxkb=500]
+        exclude: ^examples/cable_calibration/reports/cable_calibration_(en|zh)\.html$
       - id: check-case-conflict
       - id: check-illegal-windows-names
       - id: check-json
@@ -64,4 +65,4 @@ repos:
         language: pygrep
         entry: patch\.dict\s*\((?:\s*|[^()]*\bin_dict\s*=\s*)["']?sys\.modules\b
         args: [--multiline]
-        files: ^newton/tests/.*\.py$
+        files: ^tests/.*\.py$
