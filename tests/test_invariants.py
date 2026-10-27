@@ -269,6 +269,14 @@ def test_cma_es_recovers_two_parameters_with_same_parent(tmp_path):
     assert (tuning.run_directory / checkpoint).stat().st_size > 0
 
 
+def test_cma_es_rejects_one_parameter():
+    from task_tuning import Parameter, Parameters
+
+    parameters = Parameters([Parameter("k", (0.0005, 0.05), 0.003, "m", "log")])
+    with pytest.raises(ValueError, match="GridSearch"):
+        CMAES(batch_size=4).initialize(parameters)
+
+
 def test_scoring_device_can_be_cuda():
     if not torch.cuda.is_available():
         pytest.skip("CUDA unavailable")
