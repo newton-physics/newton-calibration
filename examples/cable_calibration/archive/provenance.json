@@ -1,221 +1,32 @@
 {
-  "description": "Curated portable export; original run states are unchanged.",
+  "description": "Historical run identities and original evidence fingerprints for the cable case. Hashes identify original records before portable export, not the current bundled files. Git tracks bundled-file revisions; solver provenance is recorded separately in solver/.",
   "runs": {
     "A": {
       "run_id": "20261013T034559Z-9fa415c5",
       "resolved_sha256": "582ea6c9876775485c2960fb7fcdbb600a8b6b4430c4931e6b3a79000f9032e1",
-      "result_sha256": "08a4ccc6f5a6ff86b2c81083f9182c7bf4f30d14f91f207f60747d38403c59ed",
-      "acceptance": "rejected_training",
-      "termination_reason": "generation_budget_exhausted"
+      "result_sha256": "08a4ccc6f5a6ff86b2c81083f9182c7bf4f30d14f91f207f60747d38403c59ed"
     },
     "B": {
       "run_id": "20261013T060515Z-210cecda",
       "resolved_sha256": "cd0ac4348cddeded60a8b5d7d691126d9b6575c3f51661c94bb01e1465b487f6",
-      "result_sha256": "c4b4266aa60dce7d1846606b5b124b1b8e2e57546d43a21b18ab05c30f58509b",
-      "acceptance": "rejected_validation",
-      "termination_reason": "target_reached"
+      "result_sha256": "c4b4266aa60dce7d1846606b5b124b1b8e2e57546d43a21b18ab05c30f58509b"
     },
     "Bstar": {
       "run_id": "20261013T131029Z-e71e55c0",
       "resolved_sha256": "f576d2d5d06bb2192a3ba4963efbc663feaefa843031d82d0e5a81c5f83be7f5",
-      "result_sha256": "db41aedd5128f2c0158faf202c2332a48a8798d78946f2fed18b1b337254c746",
-      "acceptance": "rejected_validation",
-      "termination_reason": "candidate_space_exhausted"
+      "result_sha256": "db41aedd5128f2c0158faf202c2332a48a8798d78946f2fed18b1b337254c746"
     },
     "C": {
       "run_id": "20261013T140350Z-fe034cf3",
       "resolved_sha256": "2e76020751c77fc97b2214711b9e2bf229b3fa54ad76bea50b31d8a46d7ab1d9",
-      "result_sha256": "b135d421b55d016f7f113dc2166293dcb39bfffb27fc7c07d3111b8e6cfc85db",
-      "acceptance": "rejected_validation",
-      "termination_reason": "generation_budget_exhausted"
+      "result_sha256": "b135d421b55d016f7f113dc2166293dcb39bfffb27fc7c07d3111b8e6cfc85db"
     }
   },
-  "files": {
-    "backends/a/newton_backend.py": {
-      "original_path": "cable_tuning/workspace/20261013T034559Z-9fa415c5/source/newton_backend.py",
-      "original_sha256": "766ce8e630c8f76417f7245429108a5d06d9bd3378ac65ec3bbec48db8d67a6c",
-      "export_sha256": "766ce8e630c8f76417f7245429108a5d06d9bd3378ac65ec3bbec48db8d67a6c"
-    },
-    "backends/a/rollout.py": {
-      "original_path": "cable_tuning/workspace/20261013T034559Z-9fa415c5/source/rollout.py",
-      "original_sha256": "f3342575d61abcc3e99de1e6d98180d4ea29743a2c5985927f14ff4c78a3c1bf",
-      "export_sha256": "f3342575d61abcc3e99de1e6d98180d4ea29743a2c5985927f14ff4c78a3c1bf"
-    },
-    "backends/a/validation.py": {
-      "original_path": "cable_tuning/workspace/20261013T034559Z-9fa415c5/source/validation.py",
-      "original_sha256": "73c41c410381c5ede6082c267d9f18ef01a2f41c71a366561145e4b43aaf7843",
-      "export_sha256": "73c41c410381c5ede6082c267d9f18ef01a2f41c71a366561145e4b43aaf7843"
-    },
-    "backends/b/newton_backend.py": {
-      "original_path": "cable_tuning/angle_workspace/20261013T060515Z-210cecda/source/newton_backend.py",
-      "original_sha256": "cc97561526a01ae8b461407d3528ff9edda77ad2a73c7ea3130bd620d215d206",
-      "export_sha256": "cc97561526a01ae8b461407d3528ff9edda77ad2a73c7ea3130bd620d215d206"
-    },
-    "backends/b/rollout.py": {
-      "original_path": "cable_tuning/angle_workspace/20261013T060515Z-210cecda/source/rollout.py",
-      "original_sha256": "4b870d3f5077bd98c2f4b3d93d07f53ae4ec31b596d665e9c1f570404d596ade",
-      "export_sha256": "4b870d3f5077bd98c2f4b3d93d07f53ae4ec31b596d665e9c1f570404d596ade"
-    },
-    "backends/b/validation.py": {
-      "original_path": "cable_tuning/angle_workspace/20261013T060515Z-210cecda/source/validation.py",
-      "original_sha256": "73c41c410381c5ede6082c267d9f18ef01a2f41c71a366561145e4b43aaf7843",
-      "export_sha256": "73c41c410381c5ede6082c267d9f18ef01a2f41c71a366561145e4b43aaf7843"
-    },
-    "backends/bstar/newton_backend.py": {
-      "original_path": "cable_tuning/dynamic_workspace/20261013T131029Z-e71e55c0/source/newton_backend.py",
-      "original_sha256": "cc97561526a01ae8b461407d3528ff9edda77ad2a73c7ea3130bd620d215d206",
-      "export_sha256": "cc97561526a01ae8b461407d3528ff9edda77ad2a73c7ea3130bd620d215d206"
-    },
-    "backends/bstar/rollout.py": {
-      "original_path": "cable_tuning/dynamic_workspace/20261013T131029Z-e71e55c0/source/rollout.py",
-      "original_sha256": "4b870d3f5077bd98c2f4b3d93d07f53ae4ec31b596d665e9c1f570404d596ade",
-      "export_sha256": "4b870d3f5077bd98c2f4b3d93d07f53ae4ec31b596d665e9c1f570404d596ade"
-    },
-    "backends/bstar/validation.py": {
-      "original_path": "cable_tuning/dynamic_workspace/20261013T131029Z-e71e55c0/source/validation.py",
-      "original_sha256": "73c41c410381c5ede6082c267d9f18ef01a2f41c71a366561145e4b43aaf7843",
-      "export_sha256": "73c41c410381c5ede6082c267d9f18ef01a2f41c71a366561145e4b43aaf7843"
-    },
-    "backends/bstar/staged_evaluator.py": {
-      "original_path": "cable_tuning/dynamic_workspace/20261013T131029Z-e71e55c0/source/staged_evaluator.py",
-      "original_sha256": "5a7a90cdc901cbafb0defd421a2e0b7704af58fd1ef300bdcd3d657aea47e91c",
-      "export_sha256": "5a7a90cdc901cbafb0defd421a2e0b7704af58fd1ef300bdcd3d657aea47e91c"
-    },
-    "backends/c/newton_backend.py": {
-      "original_path": "cable_tuning/sls_workspace/20261013T140350Z-fe034cf3/source/newton_backend.py",
-      "original_sha256": "2bcb248af65401a62dd57a4908c6c26fe34d7f9f0f90b04cba90d5d6bb1f4570",
-      "export_sha256": "2bcb248af65401a62dd57a4908c6c26fe34d7f9f0f90b04cba90d5d6bb1f4570"
-    },
-    "backends/c/rollout.py": {
-      "original_path": "cable_tuning/sls_workspace/20261013T140350Z-fe034cf3/source/rollout.py",
-      "original_sha256": "5ebfcae3158df4dfe10b08170b0175adfd1232e0bbe7274ccf0ce34d30ad1a0f",
-      "export_sha256": "5ebfcae3158df4dfe10b08170b0175adfd1232e0bbe7274ccf0ce34d30ad1a0f"
-    },
-    "backends/c/validation.py": {
-      "original_path": "cable_tuning/sls_workspace/20261013T140350Z-fe034cf3/source/validation.py",
-      "original_sha256": "73c41c410381c5ede6082c267d9f18ef01a2f41c71a366561145e4b43aaf7843",
-      "export_sha256": "73c41c410381c5ede6082c267d9f18ef01a2f41c71a366561145e4b43aaf7843"
-    },
-    "backends/c/staged_evaluator.py": {
-      "original_path": "cable_tuning/sls_workspace/20261013T140350Z-fe034cf3/source/staged_evaluator.py",
-      "original_sha256": "5a7a90cdc901cbafb0defd421a2e0b7704af58fd1ef300bdcd3d657aea47e91c",
-      "export_sha256": "5a7a90cdc901cbafb0defd421a2e0b7704af58fd1ef300bdcd3d657aea47e91c"
-    },
-    "backends/c/sls_backend.py": {
-      "original_path": "cable_tuning/sls_workspace/20261013T140350Z-fe034cf3/source/sls_backend.py",
-      "original_sha256": "6024c5384aa20fb417ce89ea91b07b4ead0de906004a7573e58853271a5f502f",
-      "export_sha256": "6024c5384aa20fb417ce89ea91b07b4ead0de906004a7573e58853271a5f502f"
-    },
-    "archive/C-comparison.json": {
-      "original_path": "cable_tuning/sls_workspace/20261013T140350Z-fe034cf3/comparison.json",
-      "original_sha256": "75d6bd55187c6a80804b8d510ad2cafdb3f5013a8956c1ed1bbd6a462f0411ed",
-      "export_sha256": "2172419a91a219d84fb6d25c0cd6511c69c8116977c666a71e59ff74b95ef06f"
-    },
-    "archive/C-final-diagnostics.json": {
-      "original_path": "cable_tuning/sls_workspace/20261013T140350Z-fe034cf3/final-diagnostics.json",
-      "original_sha256": "3b52705920b46874c81529cefbd384e5ca491aaa7bf6a99d5173e424cd552f3f",
-      "export_sha256": "3b52705920b46874c81529cefbd384e5ca491aaa7bf6a99d5173e424cd552f3f"
-    },
-    "archive/C-loaded-precision-extension.json": {
-      "original_path": "cable_tuning/sls_workspace/20261013T140350Z-fe034cf3/loaded-precision-extension.json",
-      "original_sha256": "8f2290be86d5e2a876e78a905bf04216620485b9675259886dfe689d2d375e56",
-      "export_sha256": "8f2290be86d5e2a876e78a905bf04216620485b9675259886dfe689d2d375e56"
-    },
-    "archive/C-loaded-precision-deep.json": {
-      "original_path": "cable_tuning/sls_workspace/20261013T140350Z-fe034cf3/loaded-precision-deep.json",
-      "original_sha256": "c78f8f2fe07669b8077bbcbb8a851d0236de4425e81de7cfabbf55098cc52c37",
-      "export_sha256": "c78f8f2fe07669b8077bbcbb8a851d0236de4425e81de7cfabbf55098cc52c37"
-    },
-    "data/static_observations.json": {
-      "original_path": "cable_tuning/evidence/static_observations.json",
-      "original_sha256": "672ba235396b2859b18122cffe962a15d00c736b2ba58b13d6fdf8ba9912ec54",
-      "export_sha256": "d7cf0b1e12d5fa0793b9ebd29e3a8fb4eb38c028511e7d5e6754647de497538b"
-    },
-    "data/release_observations.json": {
-      "original_path": "cable_tuning/evidence/release_observations.json",
-      "original_sha256": "200a48d52abb654b8e0734eaa38b1d358e8c8bec5efe256550e1b11156149bb6",
-      "export_sha256": "cb3ccd4e8bd62696a7addcb17637f276e065521bd3125e1fc6aa96a187add677"
-    },
-    "data/rest_observations.json": {
-      "original_path": "cable_tuning/evidence/rest_observations.json",
-      "original_sha256": "8422b4df0e4cb33a9cb49a18a2933d5083bcf30e287002e947989f891f046f76",
-      "export_sha256": "8aa339cb9b845ec1b3ba4b155ec20c3af0d28ead82ef6a4f4bd151dcbb99752a"
-    },
-    "data/sls_history.json": {
-      "original_path": "cable_tuning/evidence/sls_history.json",
-      "original_sha256": "e6352372f64b2a5191f644934c819eb66da7ae3e9b9a9ffb72e776a5000779d9",
-      "export_sha256": "d130a09976f0cbabcba59fbed036c97a8725da389908194c91bdde1280130c00"
-    },
-    "data/asset.md": {
-      "original_path": "cable.md",
-      "original_sha256": "95091d84f88759c0e1244beb46d4927e9ccd9d629674eed56866504a5f1e9c0c",
-      "export_sha256": "089d84edc56d37316ccb8879e9fb83efb8e23bf8917c62ba125f810a7ddd8cd8",
-      "changes": "English translation with the user-confirmed free-length clarification."
-    },
-    "TUNING-SPEC.md": {
-      "original_path": "cable_tuning/TUNING-SPEC.md",
-      "original_sha256": "c7009c48d40ebe0d963130cb8b43013eb1f11cd2b91ed7b57ab9b32739fe7dc3",
-      "export_sha256": "f9fe5c3e55b0a8e71148936cb8793e9e48799e2cb82306b657759aa3f8b10b48",
-      "changes": "Curated English specification retaining stage decisions and limitations; portable links replace original workspace references."
-    },
-    "solver/sls-adapted.patch": {
-      "original_path": "cable_tuning/vendor/sls-adapted.patch",
-      "original_sha256": "43ada6cfae2ff12439be8b3799448aef82b262a820b893454340c45356ce9764",
-      "export_sha256": "43ada6cfae2ff12439be8b3799448aef82b262a820b893454340c45356ce9764"
-    },
-    "solver/sls-provenance.json": {
-      "original_path": "cable_tuning/vendor/sls-provenance.json",
-      "original_sha256": "ab1e807b890e46a1a09c3f0dddf04039426eb2ee06c7449c0e4f92b9963ff659",
-      "export_sha256": "ab1e807b890e46a1a09c3f0dddf04039426eb2ee06c7449c0e4f92b9963ff659"
-    },
-    "solver/NEWTON-LICENSE.md": {
-      "original_path": "cable_tuning/vendor/newton_sls/LICENSE.md",
-      "original_sha256": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9",
-      "export_sha256": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9"
-    },
-    "reports/cable_calibration_zh.html": {
-      "original_sha256": "b46710218b8be6667d4be06d3f45ceefefb438757a9ab6ffd835fd32598aa950",
-      "export_sha256": "f6f030a655cb9412b06b5b32944828f12f1c663a87b72694977fd66a8f83b0cd",
-      "changes": "Only source hrefs relocated into this repository. Source links now target GitHub; added a Pages home link and updated the source-link note."
-    },
-    "reports/cable_calibration_en.html": {
-      "original_sha256": "6f637d8713d38854b93f8d2b9450edb05a379b63789438306602a82a76dc2fe0",
-      "export_sha256": "4daf68ec1ea8b897fff29caa5d6fbb60ec998bc630b23113071be726519afe2c",
-      "changes": "Source hrefs relocated into this repository; language-switch label translated to English. Source links now target GitHub; added a Pages home link and updated the source-link note."
-    }
-  },
-  "derived_files": {
-    "data/experiments.json": {
-      "export_sha256": "11f0c2c4a2a0cebd3cc459c6b4f7bd59d92ad23d2dc2b9861709e7ac46fd54f9",
-      "description": "Derived portable export from the identified historical runs; not an original run file."
-    },
-    "data/traces.npz": {
-      "export_sha256": "e9a0efe62fbb0b9cc3beef7cfcdc31d4d3e584f0d0378e7b1b2da6f47ec882a7",
-      "description": "Derived portable export from the identified historical runs; not an original run file."
-    },
-    "archive/expected-metrics.json": {
-      "export_sha256": "cf674f95505ec4b29ab9b10755c31b054f6ac164624d42a915d9b39d8caafbc1",
-      "description": "Derived portable export from the identified historical runs; not an original run file."
-    },
-    "configs/A.json": {
-      "export_sha256": "4f0c978ab6e5db7909887a0a0aab96c0fcc649d58d45c017c8bc05182bd585ad",
-      "description": "Derived portable export from the identified historical runs; not an original run file."
-    },
-    "configs/B.json": {
-      "export_sha256": "f82cfd96617aaeb38022851163f2249ea900ad063b50bcf62e670f9042d9b242",
-      "description": "Derived portable export from the identified historical runs; not an original run file."
-    },
-    "configs/Bstar.json": {
-      "export_sha256": "334df3dd3d11b4e3ad673e2d03491836d0e18827136252f1e759633c9c9eeaf6",
-      "description": "Derived portable export from the identified historical runs; not an original run file."
-    },
-    "configs/C.json": {
-      "export_sha256": "64ac94db10327aefddf56eaf6916f3f1daa47ba3323a156a2ebc442e24adfde2",
-      "description": "Derived portable export from the identified historical runs; not an original run file."
-    },
-    "solver/expected-hashes.json": {
-      "export_sha256": "8884ec5a10430e8c38cefe929473c1622fcab8ecf407b7a8688249be2a1918e9",
-      "description": "Derived portable export from the identified historical runs; not an original run file."
-    }
+  "original_evidence_sha256": {
+    "data/static_observations.json": "672ba235396b2859b18122cffe962a15d00c736b2ba58b13d6fdf8ba9912ec54",
+    "data/release_observations.json": "200a48d52abb654b8e0734eaa38b1d358e8c8bec5efe256550e1b11156149bb6",
+    "data/rest_observations.json": "8422b4df0e4cb33a9cb49a18a2933d5083bcf30e287002e947989f891f046f76",
+    "data/sls_history.json": "e6352372f64b2a5191f644934c819eb66da7ae3e9b9a9ffb72e776a5000779d9",
+    "data/asset.md": "95091d84f88759c0e1244beb46d4927e9ccd9d629674eed56866504a5f1e9c0c"
   }
 }

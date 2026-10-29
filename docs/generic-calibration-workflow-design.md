@@ -1,6 +1,6 @@
 # Object-oriented calibration workflow
 
-Design baseline: 2026-10-12. The generic implementation and two synthetic examples are complete; see [implementation status](implementation-status.md) for verified scope and limitations. The [cable example](../examples/cable_calibration/README.md) extends members without replacing the lifecycle.
+The generic implementation includes two synthetic examples; see [capabilities and limits](implementation-status.md) for verified scope and limitations. The [cable example](../examples/cable_calibration/README.md) extends members without replacing the lifecycle.
 
 ## One Tuning owns one calibration
 

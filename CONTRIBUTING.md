@@ -1,8 +1,7 @@
 # Contributing to Newton Calibration
 
-This seed preserves TaskTuning's public package, tests and examples while the framework
-is integrated with Newton. Keep pull requests focused and describe the behavior changed,
-its validation and any remaining limitations.
+The framework uses the `task_tuning` package and `task-tuning` CLI. Keep pull requests
+focused and describe the behavior changed, its validation and any remaining limitations.
 
 ## Development
 
@@ -36,10 +35,11 @@ suite and its real simulation/acceptance checks; the target repository's test co
 can be agreed with maintainers separately. This is an explicit integration difference,
 not a claim that the seed already satisfies every main-repository convention.
 
-The adapters in `examples/cable_calibration/backends/` are historical snapshots.
-Their contents and provenance hashes are preserved, and they are excluded from Ruff.
-Keep new maintained adapters outside this snapshot directory. If an existing snapshot
-must change, explain the change, update provenance, and rerun the relevant behavior checks.
+The adapters in `examples/cable_calibration/backends/` retain historical source
+contents, with byte-identical stage copies shared. These adapters are excluded from
+Ruff. Keep new maintained adapters outside this directory. If an existing adapter
+must change, explain the change and rerun the relevant behavior checks. Git tracks
+source revisions; case provenance retains historical run and input-evidence identities.
 The two large HTML reports are retained as evidence and are the only large-file hook exceptions.
 
 GitHub Actions are pinned by commit SHA. CPU CI runs tests, archive verification, both
@@ -61,6 +61,7 @@ Keep NumPy and Torch as the existing core runtime; CMA-ES, cable preprocessing a
 playback remain optional extras. Newton is installed explicitly for the cable example.
 Do not silently replace the pinned patched solver with a released package.
 
-See [Newton integration status](docs/newton-integration.md) for the current temporary
-private-API dependency and planned upstream interfaces. Discuss interface changes using
-a runnable case and structured evaluation results before changing the public package.
+Follow [AGENTS.md](AGENTS.md) for portable content and documentation scope.
+See the [cable runtime requirements](examples/cable_calibration/README.md#5-construct-or-rerun-a-stage-with-newton)
+for the pinned solver dependency. Discuss interface changes using a runnable case and
+structured evaluation results before changing the public package.

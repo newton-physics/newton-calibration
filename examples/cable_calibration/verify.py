@@ -9,8 +9,8 @@ import torch
 from task_tuning import Evidence, Experiment, Trace
 from task_tuning.data import Episode
 
-from .backends.a.validation import CableEvaluator
-from .backends.c.staged_evaluator import DistalDynamicEvaluator
+from .backends.staged_evaluator import DistalDynamicEvaluator
+from .backends.validation import CableEvaluator
 
 CASE = Path(__file__).resolve().parent
 
