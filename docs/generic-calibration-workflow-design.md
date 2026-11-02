@@ -83,7 +83,7 @@ Exceptions, cancellation, and cooperative deadlines are recorded. Rollout may in
 | episode records | Trial/experiment/repeat identity and traces |
 | identities | Template, parameter mapping, evidence, evaluator, purpose |
 
-Use Torch tensors for numeric batch results with explicit dtype/device/layout/masks. Solvers need not use Torch internally. Convert at optimizer boundaries as necessary. One trial may span multiple experiments/repeats and several execution batches. Missing, duplicate, extra, or failed episodes cannot shrink denominators or become zero error. Protocol-defined physical failure penalties differ from infrastructure failure.
+Use NumPy arrays for numeric batch results with explicit dtype/layout/masks. Solvers need not use NumPy internally. Convert at optimizer boundaries as necessary. One trial may span multiple experiments/repeats and several execution batches. Missing, duplicate, extra, or failed episodes cannot shrink denominators or become zero error. Protocol-defined physical failure penalties differ from infrastructure failure.
 
 RunState records phases, run ID, versions, frozen configuration, mappings, seeds, budgets by purpose, batches, historical best, analysis, optimizer checkpoints, decisions, failures, validation, and artifact references. Large arrays may live separately with hashes. Checkpoint persistence alone does not establish resume support or cross-machine replay.
 

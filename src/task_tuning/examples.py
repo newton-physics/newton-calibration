@@ -7,7 +7,6 @@ import math
 import time
 
 import numpy as np
-import torch
 
 from . import (
     CMAES,
@@ -30,10 +29,10 @@ from . import (
 
 
 def _trace(times, values):
-    values = torch.as_tensor(values, dtype=torch.float64).reshape(-1, 1)
-    positions = torch.zeros((len(times), 1, 3), dtype=torch.float64)
+    values = np.asarray(values, dtype=np.float64).reshape(-1, 1)
+    positions = np.zeros((len(times), 1, 3), dtype=np.float64)
     positions[:, 0, 0] = values[:, 0]
-    return Trace(times.clone(), values, positions)
+    return Trace(times.copy(), values, positions)
 
 
 class OscillatorEnvironment(Environment):
@@ -85,13 +84,13 @@ def oscillator_reference(times, parameters, settings):
     k, c, mass = parameters["stiffness"], parameters["damping"], parameters["mass"]
     equilibrium = settings["force"] / k
     if settings["mode"] == "static":
-        return torch.full((len(times), 1), equilibrium, dtype=torch.float64)
+        return np.full((len(times), 1), equilibrium, dtype=np.float64)
     rate = c / (2 * mass)
     omega = math.sqrt(k / mass - rate**2)
     a = settings["initial_x"] - equilibrium
     b = (settings["initial_velocity"] + rate * a) / omega
-    values = equilibrium + torch.exp(-rate * times) * (
-        a * torch.cos(omega * times) + b * torch.sin(omega * times)
+    values = equilibrium + np.exp(-rate * times) * (
+        a * np.cos(omega * times) + b * np.sin(omega * times)
     )
     return values[:, None]
 
@@ -171,11 +170,7 @@ def make_tuning(case, workspace="workspace", *, optimizer="cma_es", capacity=4):
         }
         experiments = []
         for name, config in settings.items():
-            times = (
-                torch.tensor([0.0], dtype=torch.float64)
-                if name == "static"
-                else torch.linspace(0.0, 3.0, 61, dtype=torch.float64)
-            )
+            times = np.array([0.0]) if name == "static" else np.linspace(0.0, 3.0, 61)
             experiments.append(
                 Experiment(
                     name, name, oscillator_reference(times, truth, config), times, scale=0.05
@@ -193,9 +188,9 @@ def make_tuning(case, workspace="workspace", *, optimizer="cma_es", capacity=4):
         }
         experiments = []
         for name, config in settings.items():
-            times = torch.linspace(0.0, 1.0, 41, dtype=torch.float64)
+            times = np.linspace(0.0, 1.0, 41)
             deceleration = 0.35 * fixed["gravity"]
-            moving = times.clamp_max(config["initial_speed"] / deceleration)
+            moving = np.minimum(times, config["initial_speed"] / deceleration)
             positions = config["initial_speed"] * moving - 0.5 * deceleration * moving**2
             experiments.append(Experiment(name, name, positions[:, None], times, scale=0.03))
         numeric = {"dt": 0.02, "integrator": "event_trapezoid", "dtype": "float64"}

@@ -7,7 +7,6 @@ import itertools
 from abc import ABC, abstractmethod
 
 import numpy as np
-import torch
 
 from .data import TrialBatch
 
@@ -25,29 +24,29 @@ class Optimizer(ABC):
 
     def initialize(self, parameters):
         self.dimension = parameters.dimension
-        self.initial = parameters.encode(parameters.baseline).numpy()
+        self.initial = parameters.encode(parameters.baseline)
         self._generation = 0
         self._pending = None
 
     def _batch(self, rows):
         if self._pending is not None:
             raise RuntimeError("tell the pending batch before asking again")
-        rows = torch.as_tensor(np.asarray(rows), dtype=torch.float64).reshape(-1, self.dimension)
-        if not len(rows) or not torch.isfinite(rows).all() or ((rows < 0) | (rows > 1)).any():
+        rows = np.array(rows, dtype=np.float64).reshape(-1, self.dimension)
+        if not len(rows) or not np.isfinite(rows).all() or ((rows < 0) | (rows > 1)).any():
             raise ValueError("optimizer produced invalid normalized proposals")
         ids = tuple(f"trial-{self._generation:05d}-{i:05d}" for i in range(len(rows)))
-        self._pending = TrialBatch(ids, rows.clone())
-        return TrialBatch(ids, rows.clone())
+        self._pending = TrialBatch(ids, rows.copy())
+        return TrialBatch(ids, rows.copy())
 
     def _accept(self, result):
         if (
             self._pending is None
             or result.trial_ids != self._pending.trial_ids
-            or not torch.equal(result.search_values.cpu(), self._pending.search_values)
+            or not np.array_equal(result.search_values, self._pending.search_values)
             or result.purpose != "train"
         ):
             raise ValueError("optimizer feedback does not match pending training batch")
-        if not torch.isfinite(result.feedback).all():
+        if not np.isfinite(result.feedback).all():
             raise ValueError("optimizer feedback must be finite")
         self._pending = None
         self._generation += 1
@@ -136,7 +135,7 @@ class CMAES(Optimizer):
 
     def tell(self, result):
         self._accept(result)
-        self._strategy.tell(self._last_rows, result.feedback.cpu().tolist())
+        self._strategy.tell(self._last_rows, result.feedback.tolist())
 
     def diagnostics(self):
         return {

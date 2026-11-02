@@ -3,9 +3,10 @@
 
 """Prepared observations; acquisition groups enforce independent holdout data."""
 
+import math
 from dataclasses import dataclass
 
-import torch
+import numpy as np
 
 from .data import identity
 
@@ -14,53 +15,51 @@ from .data import identity
 class Experiment:
     id: str
     group: str
-    reference: torch.Tensor
-    times: torch.Tensor | None = None
-    scale: float | torch.Tensor = 1.0
-    mask: torch.Tensor | None = None
+    reference: np.ndarray
+    times: np.ndarray | None = None
+    scale: float | np.ndarray = 1.0
+    mask: np.ndarray | None = None
     weight: float = 1.0
     repeats: int = 1
 
     def normalized(self):
-        reference = torch.as_tensor(self.reference, dtype=torch.float64).detach().cpu().clone()
-        if reference.ndim != 2 or not reference.numel():
-            raise ValueError("reference must be a nonempty [time, channel] tensor")
+        reference = np.array(self.reference, dtype=np.float64)
+        if reference.ndim != 2 or not reference.size:
+            raise ValueError("reference must be a nonempty [time, channel] array")
         times = (
-            torch.arange(len(reference), dtype=torch.float64)
+            np.arange(len(reference), dtype=np.float64)
             if self.times is None
-            else torch.as_tensor(self.times, dtype=torch.float64).detach().cpu().clone()
+            else np.array(self.times, dtype=np.float64)
         )
         mask = (
-            torch.ones_like(reference, dtype=torch.bool)
+            np.ones(reference.shape, dtype=bool)
             if self.mask is None
-            else torch.as_tensor(self.mask, dtype=torch.bool).detach().cpu().clone()
+            else np.array(self.mask, dtype=bool)
         )
-        scale = torch.broadcast_to(
-            torch.as_tensor(self.scale, dtype=torch.float64), reference.shape
-        )
+        scale = np.broadcast_to(np.asarray(self.scale, dtype=np.float64), reference.shape)
         if (
             not self.id
             or not self.group
             or self.repeats < 1
             or not self.weight > 0
-            or not torch.isfinite(torch.tensor(self.weight))
+            or not math.isfinite(self.weight)
         ):
             raise ValueError("invalid experiment identity, weight or repetitions")
         if mask.shape != reference.shape or not mask.any():
             raise ValueError("no valid observations, or mask shape mismatch")
-        if not torch.isfinite(reference[mask]).all():
+        if not np.isfinite(reference[mask]).all():
             raise ValueError("nonfinite reference observations")
-        if not torch.isfinite(scale).all() or (scale <= 0).any():
+        if not np.isfinite(scale).all() or (scale <= 0).any():
             raise ValueError("observation scales must be positive finite")
         if (
             times.shape != (len(reference),)
-            or not torch.isfinite(times).all()
+            or not np.isfinite(times).all()
             or (times < 0).any()
             or (times[1:] <= times[:-1]).any()
         ):
             raise ValueError("invalid observation time axis")
         return Experiment(
-            self.id, self.group, reference, times, scale.clone(), mask, self.weight, self.repeats
+            self.id, self.group, reference, times, scale.copy(), mask, self.weight, self.repeats
         )
 
 

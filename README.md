@@ -12,7 +12,7 @@ TaskTuning turns measured observations, a simulator adapter and a parameter spac
 
 ## Quick start
 
-Python 3.11+; the core requires NumPy and PyTorch. Newton is **not** a core dependency.
+Python 3.11+; the core requires NumPy. Newton is **not** a core dependency.
 
 ```bash
 git clone https://github.com/newton-physics/newton-calibration.git
@@ -45,7 +45,7 @@ Ten members compose a Tuning instance; `RunState` is owned by Tuning.
 | Template | Fixed experimental conditions, discretization and numerical refinements |
 | Parameters | Units, bounds, baselines and linear/log transforms |
 | Rollout | Isolated trial × experiment × repeat execution |
-| Evaluator | Batched Torch losses, metrics, constraints and residual features |
+| Evaluator | Batched NumPy losses, metrics, constraints and residual features |
 | Optimizer | GridSearch / CMA-ES ask and tell |
 | Decision | Sole continue/stop authority and all-phase budgets |
 | Validator | Frozen-candidate training retest and validation |
@@ -88,7 +88,7 @@ A → B addresses a boundary hypothesis prompted by left/right residuals. It is 
 
 | Task | Required environment |
 |---|---|
-| Generic synthetic demos | TaskTuning with NumPy/PyTorch; no Newton |
+| Generic synthetic demos | TaskTuning with NumPy; no Newton |
 | Re-score archived cable traces | Core dependencies on CPU; no Newton or new simulation |
 | Construct or rerun cable calibration | TaskTuning, SciPy, pinned Newton source and Warp; the recorded simulations used CUDA |
 | Run stage C (SLS) | The same stack plus the bundled SLS adaptation applied to the pinned Newton base |
@@ -118,7 +118,7 @@ python -m examples.cable_calibration.verify
 ruff check src tests examples/cable_calibration/run.py examples/cable_calibration/verify.py
 ```
 
-The core currently supports synchronous batches, threaded environment scheduling and Torch scoring. Thread speedup depends on the backend. It does not provide process-level forced termination, distributed multi-GPU execution, automatic resume, Bayesian optimization or PBT.
+The core currently supports synchronous batches, threaded environment scheduling and NumPy scoring. Thread speedup depends on the backend. It does not provide process-level forced termination, distributed multi-GPU execution, automatic resume, Bayesian optimization or PBT.
 
 Local SVD diagnostics are not confidence intervals or proofs of global identifiability. USDA output is a trajectory visualization, not a complete physical USD asset. **Search termination, training fit and accepted release are different outcomes.**
 

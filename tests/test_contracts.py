@@ -1,8 +1,8 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 Lightwheel
 # SPDX-License-Identifier: Apache-2.0
 
+import numpy as np
 import pytest
-import torch
 
 from task_tuning import Evidence, Experiment, Parameter, Parameters, Template
 
@@ -16,14 +16,14 @@ def test_parameter_invalid_bounds_and_log_domain():
 
 def test_rotated_parameters_roundtrip_and_no_silent_clipping():
     parameters = Parameters([Parameter("a", (0, 10), 5), Parameter("b", (0, 2), 1)])
-    basis = torch.tensor([[1.0, 1.0], [1.0, -1.0]], dtype=torch.float64) / 2**0.5
-    parameters.set_mapping(torch.tensor([0.5, 0.5]), basis)
-    value = torch.tensor([[7.0, 1.2]], dtype=torch.float64)
-    torch.testing.assert_close(parameters.decode(parameters.encode(value)), value)
-    assert not parameters.check_bounds(parameters.decode(torch.tensor([[1.0, 1.0]]))).all()
+    basis = np.array([[1.0, 1.0], [1.0, -1.0]]) / 2**0.5
+    parameters.set_mapping(np.array([0.5, 0.5]), basis)
+    value = np.array([[7.0, 1.2]])
+    np.testing.assert_allclose(parameters.decode(parameters.encode(value)), value)
+    assert not parameters.check_bounds(parameters.decode(np.array([[1.0, 1.0]]))).all()
     parameters.freeze()
     with pytest.raises(RuntimeError):
-        parameters.set_mapping(torch.zeros(2), torch.eye(2))
+        parameters.set_mapping(np.zeros(2), np.eye(2))
 
 
 def test_template_freezes_nested_settings_and_separates_parameters():
@@ -44,14 +44,14 @@ def test_template_freezes_nested_settings_and_separates_parameters():
 
 
 def test_evidence_rejects_same_acquisition_group_across_splits():
-    a = Experiment("a", "same_capture", torch.tensor([[1.0]]))
-    b = Experiment("b", "same_capture", torch.tensor([[2.0]]))
+    a = Experiment("a", "same_capture", np.array([[1.0]]))
+    b = Experiment("b", "same_capture", np.array([[2.0]]))
     with pytest.raises(ValueError, match="group"):
         Evidence([a], [b]).prepare()
 
 
 def test_evidence_rejects_missing_valid_observations():
-    bad = Experiment("bad", "g", torch.tensor([[float("nan")]]))
+    bad = Experiment("bad", "g", np.array([[np.nan]]))
     with pytest.raises(ValueError):
         Evidence([bad]).prepare()
 
@@ -60,9 +60,9 @@ def test_parameter_freeze_does_not_expose_mutable_bounds_or_mapping():
     parameters = Parameters([Parameter("x", (1.0, 3.0), 2.0)])
     parameters.freeze()
     fingerprint = parameters.parameter_space_id
-    parameters.bounds.zero_()
-    parameters.baseline.zero_()
-    parameters.snapshot()["basis"].zero_()
+    parameters.bounds[...] = 0
+    parameters.baseline[...] = 0
+    parameters.snapshot()["basis"][...] = 0
     assert parameters.parameter_space_id == fingerprint
     assert float(parameters.bounds[0, 0]) == 1.0
     assert float(parameters.baseline[0]) == 2.0

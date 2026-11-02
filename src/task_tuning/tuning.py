@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
-import torch
+import numpy as np
 
 from .data import BatchResult, RunState, TrialBatch, TuningResult, identity, plain, write_json
 
@@ -132,7 +132,7 @@ class Tuning:
             or len(set(trials.trial_ids)) != len(trials.trial_ids)
             or trials.search_values.ndim != 2
             or len(trials.search_values) != len(trials.trial_ids)
-            or not torch.isfinite(trials.search_values).all()
+            or not np.isfinite(trials.search_values).all()
             or ((trials.search_values < 0) | (trials.search_values > 1)).any()
         ):
             raise ValueError("invalid trial batch")
@@ -153,8 +153,8 @@ class Tuning:
         scores = self.evaluator.score_batch(episodes, trials.trial_ids, experiments)
         result = BatchResult(
             trials.trial_ids,
-            trials.search_values.clone(),
-            values.clone(),
+            trials.search_values.copy(),
+            values.copy(),
             *scores,
             episodes,
             {
@@ -167,11 +167,8 @@ class Tuning:
         )
         batch_id = f"batch-{self._counter:05d}"
         self._counter += 1
-        artifact = self.run_directory / "batches" / f"{batch_id}.pt"
-        artifact.parent.mkdir(exist_ok=True)
-        temporary = artifact.with_suffix(".tmp")
-        torch.save(asdict(result), temporary)
-        temporary.replace(artifact)
+        artifact = self.run_directory / "batches" / f"{batch_id}.json"
+        write_json(artifact, asdict(result))
         if purpose in {"train", "baseline"}:
             for i in range(len(result.trial_ids)):
                 if result.feasible[i] and (
@@ -191,8 +188,8 @@ class Tuning:
                 "batch_id": batch_id,
                 "purpose": purpose,
                 "trial_ids": result.trial_ids,
-                "objectives": result.objectives.clone(),
-                "valid_mask": result.valid_mask.clone(),
+                "objectives": result.objectives.copy(),
+                "valid_mask": result.valid_mask.copy(),
                 "identity": dict(result.identity),
                 "artifact": str(artifact.relative_to(self.run_directory)),
                 "wall_s": time.monotonic() - began,
@@ -208,7 +205,7 @@ class Tuning:
         return result
 
     def _physical_trials(self, values, prefix):
-        rows = torch.atleast_2d(torch.as_tensor(values, dtype=torch.float64))
+        rows = np.atleast_2d(np.asarray(values, dtype=np.float64))
         return TrialBatch(
             tuple(f"{prefix}-{i}" for i in range(len(rows))), self.parameters.encode(rows)
         )
@@ -262,9 +259,7 @@ class Tuning:
         self.state.template_snapshot = self.template.snapshot()
         versions = {
             "python": platform.python_version(),
-            "torch": str(torch.__version__),
             "platform": platform.platform(),
-            "device": str(self.evaluator.device),
         }
         for name in ("numpy", "cma", "pyglet"):
             try:
@@ -303,11 +298,11 @@ class Tuning:
             }
             raise ValueError("numerical qualification requires explicit refinement settings")
         # Include representative points; qualification is never fed to the optimizer.
-        anchors = torch.stack(
+        anchors = np.stack(
             [
                 self.parameters.baseline,
-                self.parameters.from_normalized(torch.full_like(self.parameters.baseline, 0.25)),
-                self.parameters.from_normalized(torch.full_like(self.parameters.baseline, 0.75)),
+                self.parameters.from_normalized(np.full_like(self.parameters.baseline, 0.25)),
+                self.parameters.from_normalized(np.full_like(self.parameters.baseline, 0.75)),
             ]
         )
         probes = self._physical_trials(anchors, "qualification")
@@ -330,7 +325,7 @@ class Tuning:
                 probes, self.evidence.train_data, "qualification", template=refined_template
             )
             good = bool(coarse.valid_mask.all() and refined.valid_mask.all())
-            difference = float((coarse.features - refined.features).abs().max()) if good else None
+            difference = float(np.abs(coarse.features - refined.features).max()) if good else None
             passed = good and difference <= self.template.precision_tolerance
             reports.append(
                 {
@@ -357,20 +352,20 @@ class Tuning:
         p = len(self.parameters.names)
         anchors = [
             self.parameters.to_normalized(self.parameters.baseline),
-            torch.full((p,), 0.25, dtype=torch.float64),
-            torch.full((p,), 0.75, dtype=torch.float64),
+            np.full(p, 0.25),
+            np.full(p, 0.75),
         ]
         jacobians = []
         for a, anchor in enumerate(anchors):
             perturbations = []
             spans = []
             for j in range(p):
-                left, right = anchor.clone(), anchor.clone()
+                left, right = anchor.copy(), anchor.copy()
                 left[j] = max(0, float(anchor[j]) - self.analysis_step)
                 right[j] = min(1, float(anchor[j]) + self.analysis_step)
                 perturbations.extend([left, right])
                 spans.append(float(right[j] - left[j]))
-            physical = self.parameters.from_normalized(torch.stack(perturbations))
+            physical = self.parameters.from_normalized(np.stack(perturbations))
             result = self.evaluate_batch(
                 self._physical_trials(physical, f"sensitivity-{a}"),
                 self.evidence.train_data,
@@ -381,13 +376,13 @@ class Tuning:
             columns = [
                 (result.features[2 * j + 1] - result.features[2 * j]) / spans[j] for j in range(p)
             ]
-            jacobians.append(torch.stack(columns, dim=1).cpu())
-        stacked = torch.cat(jacobians) / len(anchors) ** 0.5
+            jacobians.append(np.stack(columns, axis=1))
+        stacked = np.concatenate(jacobians) / len(anchors) ** 0.5
         report = {
-            "anchors": torch.stack(anchors),
+            "anchors": np.stack(anchors),
             "jacobian": stacked,
             "per_anchor_jacobians": jacobians,
-            "column_norms": stacked.norm(dim=0),
+            "column_norms": np.linalg.norm(stacked, axis=0),
             "step": self.analysis_step,
             "scope": "local finite differences on training data",
         }
@@ -397,22 +392,22 @@ class Tuning:
 
     def identifiability(self, sensitivity_report):
         j = sensitivity_report["jacobian"]
-        _, singular_values, vh = torch.linalg.svd(j, full_matrices=False)
+        _, singular_values, vh = np.linalg.svd(j, full_matrices=False)
         threshold = max(float(singular_values[0]) * self.rank_tolerance, 1e-10)
         rank = int((singular_values > threshold).sum())
         p = len(self.parameters.names)
         conclusive = rank == p or (rank > 0 and self.allow_rank_reduction)
         basis = vh[:rank].T
         transformed = j @ basis
-        norms = transformed.norm(dim=0)
-        correlation = (transformed.T @ transformed) / (norms[:, None] * norms[None, :]).clamp_min(
-            1e-30
+        norms = np.linalg.norm(transformed, axis=0)
+        correlation = (transformed.T @ transformed) / np.maximum(
+            norms[:, None] * norms[None, :], 1e-30
         )
         per_anchor = []
         for local in sensitivity_report["per_anchor_jacobians"]:
             effect = local @ basis
-            n = effect.norm(dim=0)
-            c = effect.T @ effect / (n[:, None] * n[None, :]).clamp_min(1e-30)
+            n = np.linalg.norm(effect, axis=0)
+            c = effect.T @ effect / np.maximum(n[:, None] * n[None, :], 1e-30)
             per_anchor.append(c)
         report = {
             "rank": rank,
@@ -475,9 +470,7 @@ class Tuning:
         if dict(loaded.baseline_parameters) != candidate["parameters"]:
             raise ValueError("exported/reloaded asset parameters differ from selected candidate")
         trials = self._physical_trials(
-            torch.tensor(
-                [loaded.baseline_parameters[k] for k in self.parameters.names], dtype=torch.float64
-            ),
+            np.array([loaded.baseline_parameters[k] for k in self.parameters.names]),
             "validation",
         )
 
@@ -515,7 +508,7 @@ class Tuning:
                     template=self.template if change is None else self.template.refined(change),
                 )
                 best_result, best_index = self._best
-                error = float((finer.features[0] - best_result.features[best_index]).abs().max())
+                error = float(np.abs(finer.features[0] - best_result.features[best_index]).max())
                 final_checks.append(
                     {
                         "passed": bool(finer.valid_mask.all())

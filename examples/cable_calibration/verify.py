@@ -4,7 +4,6 @@ import json
 from pathlib import Path
 
 import numpy as np
-import torch
 
 from task_tuning import Evidence, Experiment, Trace
 from task_tuning.data import Episode
@@ -30,11 +29,11 @@ def verify():
         for key, target in expected.items():
             stage, name = key.split("__", 1)
             exp = experiments[name]
-            values = torch.from_numpy(archive[key])
-            if values.shape != exp.reference.shape or not torch.isfinite(values).all():
+            values = archive[key]
+            if values.shape != exp.reference.shape or not np.isfinite(values).all():
                 raise ValueError(f"Invalid archived trace: {key}")
             error = (values - exp.reference)[exp.mask] * 1000
-            rmse, maximum = float(error.square().mean().sqrt()), float(error.abs().max())
+            rmse, maximum = float(np.sqrt(np.square(error).mean())), float(np.abs(error).max())
             np.testing.assert_allclose(
                 [rmse, maximum], [target["rmse_mm"], target["max_mm"]], rtol=0, atol=1e-8
             )

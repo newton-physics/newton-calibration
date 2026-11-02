@@ -2,7 +2,7 @@
 
 from dataclasses import replace
 
-import torch
+import numpy as np
 
 from .validation import CableEvaluator
 
@@ -30,7 +30,7 @@ class DistalDynamicEvaluator(CableEvaluator):
                 raise ValueError(
                     "distal dynamic scoring requires 15 XZ points over time"
                 )
-            mask = torch.zeros_like(experiment.mask)
+            mask = np.zeros_like(experiment.mask)
             mask[:, [25, 27, 29]] = experiment.mask[:, [25, 27, 29]]
             if not mask.any():
                 raise ValueError("no valid distal dynamic observations")
@@ -39,7 +39,7 @@ class DistalDynamicEvaluator(CableEvaluator):
             episodes, trial_ids, tuple(distal)
         )
         losses = 0.5 * (losses + distal_loss)
-        metrics[:, 0] = losses.sqrt()
-        metrics[:, 2] = torch.maximum(metrics[:, 2], distal_metrics[:, 2])
-        metrics = torch.cat((metrics, distal_loss[:, None]), dim=1)
+        metrics[:, 0] = np.sqrt(losses)
+        metrics[:, 2] = np.maximum(metrics[:, 2], distal_metrics[:, 2])
+        metrics = np.concatenate((metrics, distal_loss[:, None]), axis=1)
         return losses, metrics, constraints, valid & distal_valid, features

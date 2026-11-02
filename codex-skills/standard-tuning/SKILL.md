@@ -37,7 +37,7 @@ Inspect current interfaces before generating code. The [contract snapshot](refer
 3. Importing and constructing must not simulate. Guard execution with a main entry point. Resolve data and dependencies in the user's environment.
 4. Treat workspace as a reusable root; never overwrite previous runs. Associate the specification hash, source/dependency versions, and decision sources with the run using existing metadata or case records. Do not create a second RunState.
 5. In a fresh process, call the factory and check real member types, baselines, mappings, fixed/tuned sets, experiment IDs/groups, times/shapes, dependencies, paths, and devices. For construction-only requests, do not call prepare(), run(), or Environment.run().
-6. For authorized execution, call run() once on a fresh instance. Sensitivity and identifiability remain Tuning methods; batch scores remain Torch tensors; Optimizer updates state and Decision alone decides whether work continues.
+6. For authorized execution, call run() once on a fresh instance. Sensitivity and identifiability remain Tuning methods; batch scores remain NumPy arrays; Optimizer updates state and Decision alone decides whether work continues.
 7. Inspect termination, training retest, validation, numerical qualification, and asset export/reload. Report loss improvement, stopping, and acceptance separately.
 
 Currently prepare() creates directories, freezes data, and runs baseline and numerical qualification simulations. It is not a static check. Do not call prepare() and then run() on the same instance.

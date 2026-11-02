@@ -67,7 +67,7 @@ class NewtonRollout(Rollout):
                                     raise RuntimeError("packed model parameter readback mismatch")
                                 episode.applied_parameters = dict(actual)
                             traces = runner.run_batch(
-                                exp.times.clone(),
+                                exp.times.copy(),
                                 seed=int(settings["seed"]) + repeat,
                                 deadline=deadline,
                             )

@@ -56,7 +56,7 @@ class Rollout:
                     raise RuntimeError("parameter readback does not match requested values")
                 episode.applied_parameters = applied
                 seed = int(template.experiment_settings[exp.id]["seed"]) + repeat
-                episode.trace = environment.run(exp.times.clone(), seed=seed, deadline=deadline)
+                episode.trace = environment.run(exp.times.copy(), seed=seed, deadline=deadline)
                 if deadline is not None and time.monotonic() >= deadline:
                     raise TimeoutError("rollout exceeded cooperative deadline")
             except TimeoutError as error:

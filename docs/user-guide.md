@@ -16,13 +16,13 @@ Run these commands from the repository root. On Windows, activate `.venv\Scripts
 
 | Extra | Purpose |
 |---|---|
-| no extra | NumPy + PyTorch, GridSearch, headless scoring and USDA export |
+| no extra | NumPy, GridSearch, headless scoring and USDA export |
 | cma | CMA-ES optimizer |
 | gl | Pyglet playback of saved traces |
 | dev | Pytest, Ruff, pre-commit and package build tools |
 | cable | SciPy for the optional real-cable simulator adapters; Newton is installed separately |
 
-The examples under `examples/` are repository examples, not part of the installed core API. Run them from a checkout. CPU Torch is sufficient for the generic demos and archive verification. The real cable calibration uses Newton VBD with Warp CUDA for physics and CPU Torch for scoring. Install the pinned Newton checkout (plus the SLS patch for stage C) using the [cable environment instructions](../examples/cable_calibration/README.md#5-construct-or-rerun-a-stage-with-newton). The cable extra alone does not install this solver. The recorded environment is documented there separately from the generic package requirements.
+The examples under `examples/` are repository examples, not part of the installed core API. Run them from a checkout. The generic demos and archive verification run on the CPU. The real cable calibration uses Newton VBD with Warp CUDA for physics and NumPy on the CPU for scoring. Install the pinned Newton checkout (plus the SLS patch for stage C) using the [cable environment instructions](../examples/cable_calibration/README.md#5-construct-or-rerun-a-stage-with-newton). The cable extra alone does not install this solver. The recorded environment is documented there separately from the generic package requirements.
 
 ## 2. Run a complete synthetic calibration
 
@@ -122,7 +122,7 @@ workspace/
   <run-id>/
     resolved.json
     run_state.json
-    batches/*.pt
+    batches/*.json
     checkpoints/*.pkl
     candidate_asset.json       # once candidate export is reached
     result.json
@@ -133,7 +133,7 @@ workspace/
       manifest.json
 ```
 
-Batch/checkpoint references are relative to the run directory. Read tensor archives with `torch.load(path, weights_only=True)`. Checkpoints capture optimizer state; automatic resume is not implemented.
+Batch/checkpoint references are relative to the run directory. Batch records are JSON; nonfinite values, such as the objectives of failed trials, are written as `null`. Checkpoints capture optimizer state; automatic resume is not implemented.
 
 `resolved.json` stores observations, frozen settings, identities and versions. `run_state.json` records budget use and decisions. Release files include rebuilding conditions; candidate parameters alone are insufficient.
 

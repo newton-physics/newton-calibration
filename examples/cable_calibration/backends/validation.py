@@ -1,6 +1,6 @@
 """Per-experiment tolerances and explicit historical-data limitations."""
 
-import torch
+import numpy as np
 
 from task_tuning import Evaluator, Validator
 
@@ -26,9 +26,9 @@ class CableEvaluator(Evaluator):
             feature_blocks.append(
                 score[4] * (experiment.mask.sum().item() * experiment.repeats) ** 0.5
             )
-        worst = torch.stack(per_experiment).amax(dim=0)
-        features = torch.cat(feature_blocks, dim=1)
-        return losses, torch.cat((metrics, worst[:, None]), dim=1), constraints, valid, features
+        worst = np.stack(per_experiment).max(axis=0)
+        features = np.concatenate(feature_blocks, axis=1)
+        return losses, np.concatenate((metrics, worst[:, None]), axis=1), constraints, valid, features
 
 
 class HistoricalValidator(Validator):

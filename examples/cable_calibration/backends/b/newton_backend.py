@@ -7,7 +7,6 @@ import time
 
 import newton
 import numpy as np
-import torch
 import warp as wp
 from scipy.spatial.transform import Rotation
 
@@ -484,9 +483,9 @@ class CableEnvironment(Environment):
                 values, xyz = values[1:], xyz[1:]
             traces.append(
                 Trace(
-                    times.clone(),
-                    torch.tensor(np.array(values), dtype=torch.float64),
-                    torch.tensor(np.array(xyz), dtype=torch.float64),
+                    times.copy(),
+                    np.array(values, dtype=np.float64),
+                    np.array(xyz, dtype=np.float64),
                 )
             )
         return traces

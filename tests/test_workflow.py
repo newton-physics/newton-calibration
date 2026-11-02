@@ -3,8 +3,8 @@
 
 import json
 
+import numpy as np
 import pytest
-import torch
 
 from task_tuning.examples import make_tuning
 
@@ -27,7 +27,7 @@ def test_generic_run_recovers_parameters_and_reloads_asset(case, tmp_path):
 def test_changing_validation_does_not_change_training(tmp_path):
     first = make_tuning("sliding", tmp_path / "first", optimizer="grid")
     second = make_tuning("sliding", tmp_path / "second", optimizer="grid")
-    second.evidence.validation_data[0].reference.add_(10)
+    second.evidence.validation_data[0].reference[...] += 10
     result_a, result_b = first.run(), second.run()
     assert result_a.parameters == result_b.parameters
     assert result_a.acceptance == "accepted"
@@ -36,7 +36,7 @@ def test_changing_validation_does_not_change_training(tmp_path):
     b = [x["objectives"] for x in second.state.batch_history if x["purpose"] == "train"]
     assert len(a) == len(b)
     for left, right in zip(a, b, strict=True):
-        torch.testing.assert_close(left, right, rtol=0, atol=0)
+        np.testing.assert_array_equal(left, right)
 
 
 def test_workspace_keeps_repeated_runs_and_their_intermediate_files(tmp_path):
@@ -59,8 +59,8 @@ def test_workspace_keeps_repeated_runs_and_their_intermediate_files(tmp_path):
         assert result.asset_path.is_relative_to(result.run_directory)
         for record in tuning.state.batch_history:
             batch_path = result.run_directory / record["artifact"]
-            batch = torch.load(batch_path, weights_only=True)
-            assert batch["trial_ids"] == record["trial_ids"]
+            batch = json.loads(batch_path.read_text())
+            assert batch["trial_ids"] == list(record["trial_ids"])
         assert {"baseline", "analysis", "train", "validation"} <= {
             record["purpose"] for record in tuning.state.batch_history
         }

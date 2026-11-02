@@ -19,8 +19,6 @@ python -m build
 ```
 
 Core tests and the archived cable verifier require no Newton installation or GPU.
-For CPU-only development, install Torch from its CPU wheel index before installing
-the project. The CI workflow uses this setup.
 
 Ruff owns formatting and import ordering; the existing package uses a 100-column limit.
 Use descriptive errors, explicit units and real behavioral tests. Do not bypass
@@ -49,7 +47,7 @@ qualify a Newton/CUDA environment or rerun the cable optimization.
 ## Licensing and integration
 
 Existing runtime dependencies retain their own licenses: NumPy uses BSD-3-Clause
-with bundled components under additional permissive licenses, PyTorch/CMA-ES use
+with bundled components under additional permissive licenses, CMA-ES uses
 BSD-3-Clause, SciPy uses BSD licensing, and optional Pyglet uses BSD licensing.
 Consult the installed distributions for their complete notices; these dependencies
 are not relicensed by this repository.
@@ -57,7 +55,7 @@ are not relicensed by this repository.
 Original contributions are Apache-2.0; retain third-party notices and identify new
 dependency licenses. See [NOTICE](NOTICE) for the original contribution and Newton patch.
 
-Keep NumPy and Torch as the existing core runtime; CMA-ES, cable preprocessing and GL
+Keep NumPy as the only core runtime dependency; CMA-ES, cable preprocessing and GL
 playback remain optional extras. Newton is installed explicitly for the cable example.
 Do not silently replace the pinned patched solver with a released package.
 

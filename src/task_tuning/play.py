@@ -7,7 +7,6 @@ import json
 from pathlib import Path
 
 import numpy as np
-import torch
 
 
 class Play:
@@ -28,16 +27,16 @@ class Play:
             if (
                 left.positions is None
                 or right.positions is None
-                or not torch.equal(left.times, right.times)
+                or not np.array_equal(left.times, right.times)
             ):
                 continue
             for label, trace in (("baseline", left), ("calibrated", right)):
-                positions = torch.as_tensor(trace.positions, dtype=torch.float64).cpu()
+                positions = np.array(trace.positions, dtype=np.float64)
                 if (
                     positions.ndim != 3
                     or positions.shape[0] != len(trace.times)
                     or positions.shape[-1] != 3
-                    or not torch.isfinite(positions).all()
+                    or not np.isfinite(positions).all()
                 ):
                     raise ValueError("Play requires finite [time, point, xyz] positions")
                 tracks.append(
@@ -45,8 +44,8 @@ class Play:
                         "experiment": key[0],
                         "repeat": key[1],
                         "label": label,
-                        "times": trace.times.cpu().clone(),
-                        "positions": positions.clone(),
+                        "times": np.array(trace.times, dtype=np.float64),
+                        "positions": positions,
                     }
                 )
         return {"accepted": accepted, "tracks": tracks}
@@ -117,7 +116,7 @@ class Play:
             960, 640, caption="Tuning: baseline / calibrated", visible=not headless
         )
         groups = sorted({(x["experiment"], x["repeat"]) for x in tracks})
-        coordinates = np.concatenate([x["positions"].numpy().reshape(-1, 3) for x in tracks])
+        coordinates = np.concatenate([x["positions"].reshape(-1, 3) for x in tracks])
         low, high = coordinates[:, :2].min(0), coordinates[:, :2].max(0)
         span = np.maximum(high - low, 0.1)
         start = min(float(x["times"][0]) for x in tracks)
@@ -132,19 +131,19 @@ class Play:
             batch = pyglet.graphics.Batch()
             objects = []
             for track in tracks:
-                times = track["times"].numpy()
+                times = track["times"]
                 index = min(
                     np.searchsorted(times, start + elapsed, side="right") - 1, len(times) - 1
                 )
                 index = max(0, index)
-                points = track["positions"][index].numpy()
+                points = track["positions"][index]
                 color = (65, 165, 255) if track["label"] == "baseline" else (255, 128, 38)
                 row = groups.index((track["experiment"], track["repeat"]))
                 offset = np.array([60, 60 + row * row_height])
                 size = np.array([840, max(row_height - 45, 10)])
                 xy = offset + (points[:, :2] - (low + high) / 2) / span * size + size / 2
                 if points.shape[0] == 1:
-                    trail = track["positions"][: index + 1, 0, :2].numpy()
+                    trail = track["positions"][: index + 1, 0, :2]
                     trail = offset + (trail - (low + high) / 2) / span * size + size / 2
                     for a, b in zip(trail[:-1], trail[1:]):
                         objects.append(shapes.Line(*a, *b, thickness=1, color=color, batch=batch))

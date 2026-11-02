@@ -15,7 +15,7 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any
 
-import torch
+import numpy as np
 
 
 def plain(value: Any) -> Any:
@@ -25,8 +25,8 @@ def plain(value: Any) -> Any:
         return {str(k): plain(v) for k, v in value.items()}
     if isinstance(value, (list, tuple)):
         return [plain(v) for v in value]
-    if isinstance(value, torch.Tensor):
-        return plain(value.detach().cpu().tolist())
+    if isinstance(value, (np.ndarray, np.generic)):
+        return plain(value.tolist())
     if isinstance(value, Path):
         return str(value)
     if isinstance(value, float) and not math.isfinite(value):
@@ -59,9 +59,9 @@ def write_json(path: Path, value: Any) -> None:
 
 @dataclass
 class Trace:
-    times: torch.Tensor
-    values: torch.Tensor
-    positions: torch.Tensor | None = None  # [time, point, xyz], optional visualization
+    times: np.ndarray
+    values: np.ndarray
+    positions: np.ndarray | None = None  # [time, point, xyz], optional visualization
 
 
 @dataclass
@@ -82,36 +82,37 @@ class Episode:
 @dataclass
 class TrialBatch:
     trial_ids: tuple[str, ...]
-    search_values: torch.Tensor
+    search_values: np.ndarray
 
 
 @dataclass
 class BatchResult:
     trial_ids: tuple[str, ...]
-    search_values: torch.Tensor
-    parameter_values: torch.Tensor
-    objectives: torch.Tensor
-    metrics: torch.Tensor
-    constraints: torch.Tensor
-    valid_mask: torch.Tensor
-    features: torch.Tensor
+    search_values: np.ndarray
+    parameter_values: np.ndarray
+    objectives: np.ndarray
+    metrics: np.ndarray
+    constraints: np.ndarray
+    valid_mask: np.ndarray
+    features: np.ndarray
     episode_records: tuple[Episode, ...]
     identity: dict[str, str]
     purpose: str
 
     @property
     def feasible(self):
-        return self.valid_mask & (self.constraints <= 0).all(dim=1)
+        return self.valid_mask & (self.constraints <= 0).all(axis=1)
 
     @property
     def feedback(self):
         # Feasible < 1, constraint violation in [1, 2), failed == 3.
-        loss = self.objectives.clamp_min(0)
+        # Invalid rows have infinite objectives; zero them so inf / inf is never formed.
+        loss = np.where(self.valid_mask, np.maximum(self.objectives, 0), 0.0)
         scores = loss / (1 + loss)
         if self.constraints.shape[1]:
-            violation = self.constraints.clamp_min(0).amax(dim=1)
-            scores = torch.where(self.feasible, scores, 1 + violation / (1 + violation))
-        return torch.where(self.valid_mask, scores, torch.full_like(scores, 3.0))
+            violation = np.maximum(self.constraints, 0).max(axis=1)
+            scores = np.where(self.feasible, scores, 1 + violation / (1 + violation))
+        return np.where(self.valid_mask, scores, 3.0)
 
 
 @dataclass(frozen=True)

@@ -169,19 +169,17 @@ After installation, check the interpreter, imported solver path, package version
 python - <<'PY'
 import sys
 import newton
-import torch
 import warp as wp
 
 print("Python:", sys.version)
 print("Interpreter:", sys.executable)
 print("Newton:", newton.__file__)
-print("Torch:", torch.__version__, "Torch CUDA available:", torch.cuda.is_available())
 print("Warp:", wp.__version__)
 print("Warp devices:", wp.get_devices())
 PY
 ```
 
-For the archived CUDA settings, Warp must discover a CUDA device and the selected `cuda:0` must be usable with its NVIDIA driver. `torch.cuda.is_available() == False` is expected with CPU PyTorch and does not diagnose Warp's CUDA support. The factory separately checks the requested Newton source and pinned VBD hashes. Stage C imports the patched checkout selected by `--newton-source`, even when the base checkout is the environment's editable installation.
+For the archived CUDA settings, Warp must discover a CUDA device and the selected `cuda:0` must be usable with its NVIDIA driver. The factory separately checks the requested Newton source and pinned VBD hashes. Stage C imports the patched checkout selected by `--newton-source`, even when the base checkout is the environment's editable installation.
 
 This preflight initializes device discovery but does not simulate the cable. Successful imports/device discovery and factory construction are preliminary checks; actual numerical qualification occurs inside a new authorized `run()`.
 
@@ -199,7 +197,7 @@ python -m examples.cable_calibration.run --stage C \
 
 The archived Decision configurations cap their own run time at 740 s (A), 2180 s (B), 480 s (B*), and 2200 s (C). These are formal run budgets, not all historical setup/diagnostic costs. New qualification can stop a run before search. Runtime, recovered values, and acceptance are not guaranteed to reproduce exactly across hardware or dependencies. A nonaccepted result returns CLI exit code 1.
 
-The recorded simulations used Warp CUDA on an RTX 5070 Ti Laptop GPU; generic Torch scoring can remain on CPU. --device cpu is an explicit change of numerical conditions and requires new qualification. The factory never reuses a historical qualification pass.
+The recorded simulations used Warp CUDA on an RTX 5070 Ti Laptop GPU; scoring runs on the CPU. --device cpu is an explicit change of numerical conditions and requires new qualification. The factory never reuses a historical qualification pass.
 
 Core tests, archive scoring, factory construction, and trajectory replay serve different purposes. None substitutes for a new numerical qualification and independent validation of a changed Newton/CUDA environment.
 

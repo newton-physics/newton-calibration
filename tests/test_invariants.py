@@ -4,8 +4,8 @@
 import math
 from dataclasses import replace
 
+import numpy as np
 import pytest
-import torch
 
 from task_tuning import (
     CMAES,
@@ -37,8 +37,8 @@ class SumEnvironment(Environment):
         value = sum(self.applied_parameters.values())
         return Trace(
             times,
-            torch.full((len(times), 1), value, dtype=torch.float64),
-            torch.zeros((len(times), 1, 3), dtype=torch.float64),
+            np.full((len(times), 1), value, dtype=np.float64),
+            np.zeros((len(times), 1, 3), dtype=np.float64),
         )
 
 
@@ -50,8 +50,8 @@ class SumAsset(Asset):
 def make_sum(workspace, allow_reduction=False):
     parameters = Parameters([Parameter("a", (0.5, 3.5), 1.5), Parameter("b", (0.5, 3.5), 1.5)])
     evidence = Evidence(
-        [Experiment("train", "capture1", torch.tensor([[4.0]]))],
-        [Experiment("val", "capture2", torch.tensor([[4.0]]))],
+        [Experiment("train", "capture1", np.array([[4.0]]))],
+        [Experiment("val", "capture2", np.array([[4.0]]))],
     )
     template = Template(
         numeric_settings={"dt": 0.1},
@@ -96,7 +96,7 @@ def test_explicit_reduced_space_preserves_fixed_null_direction(tmp_path):
     report = tuning.state.analysis_reports["identifiability"]
     assert report["fixed_unidentified_directions"] == 1
     with pytest.raises(ValueError, match="subspace"):
-        tuning.parameters.encode(torch.tensor([[1.0, 3.0]]))
+        tuning.parameters.encode(np.array([[1.0, 3.0]]))
 
 
 def test_batch_capacity_does_not_change_trials_or_scores(tmp_path):
@@ -106,7 +106,7 @@ def test_batch_capacity_does_not_change_trials_or_scores(tmp_path):
     assert ra.parameters == rb.parameters
     for x, y in zip(a.state.batch_history, b.state.batch_history, strict=True):
         assert x["trial_ids"] == y["trial_ids"]
-        torch.testing.assert_close(x["objectives"], y["objectives"], rtol=0, atol=0)
+        np.testing.assert_array_equal(x["objectives"], y["objectives"])
 
 
 def test_decision_owns_budget_and_optimizer_has_no_stop(tmp_path):
@@ -194,10 +194,10 @@ def test_validation_uses_exported_asset_and_detects_corruption(tmp_path):
 
 
 def test_scoring_rejects_missing_duplicate_and_nan():
-    evidence = Evidence([Experiment("e", "g", torch.tensor([[0.0], [1.0]]))])
+    evidence = Evidence([Experiment("e", "g", np.array([[0.0], [1.0]]))])
     evidence.prepare()
     experiment = evidence.train_data[0]
-    trace = Trace(experiment.times, experiment.reference.clone())
+    trace = Trace(experiment.times, experiment.reference.copy())
     episode = Episode("trial", "e", 0, "completed", trace)
     evaluator = Evaluator()
     for episodes in [(), (episode, episode)]:
@@ -206,21 +206,21 @@ def test_scoring_rejects_missing_duplicate_and_nan():
     trace.values[0, 0] = float("nan")
     loss, _, _, valid, _ = evaluator.score_batch((episode,), ("trial",), (experiment,))
     assert not valid[0]
-    assert not torch.isfinite(loss[0])
+    assert not np.isfinite(loss[0])
 
 
 def test_cross_entropy_scores_probability_distributions():
-    evidence = Evidence([Experiment("e", "g", torch.tensor([[0.25, 0.75]]))])
+    evidence = Evidence([Experiment("e", "g", np.array([[0.25, 0.75]]))])
     evidence.prepare()
     experiment = evidence.train_data[0]
     episode = Episode(
-        "trial", "e", 0, "completed", Trace(experiment.times, experiment.reference.clone())
+        "trial", "e", 0, "completed", Trace(experiment.times, experiment.reference.copy())
     )
     evaluator = Evaluator(loss="cross_entropy")
     loss, _, _, valid, _ = evaluator.score_batch((episode,), ("trial",), (experiment,))
     assert valid[0]
     assert float(loss[0]) == pytest.approx(-0.25 * math.log(0.25) - 0.75 * math.log(0.75))
-    episode.trace.values = torch.tensor([[0.3, 0.3]])
+    episode.trace.values = np.array([[0.3, 0.3]])
     assert not evaluator.score_batch((episode,), ("trial",), (experiment,))[3][0]
 
 
@@ -267,18 +267,6 @@ def test_cma_es_recovers_two_parameters_with_same_parent(tmp_path):
     assert result.parameters["damping"] == pytest.approx(0.7, rel=0.03)
     checkpoint = tuning.state.optimizer_snapshot["checkpoint"]
     assert (tuning.run_directory / checkpoint).stat().st_size > 0
-
-
-def test_scoring_device_can_be_cuda():
-    if not torch.cuda.is_available():
-        pytest.skip("CUDA unavailable")
-    evidence = Evidence([Experiment("e", "g", torch.tensor([[1.0]]))])
-    evidence.prepare()
-    exp = evidence.train_data[0]
-    raw = (Episode("t", "e", 0, "completed", Trace(exp.times, exp.reference.clone())),)
-    scores = Evaluator(device="cuda").score_batch(raw, ("t",), (exp,))
-    assert scores[0].device.type == "cuda"
-    assert float(scores[0][0]) == 0
 
 
 class CorruptDynamics(SumAsset):

@@ -91,7 +91,7 @@ class NewtonRollout(Rollout):
                                     )
                                 episode.applied_parameters = dict(actual)
                             traces = runner.run_batch(
-                                exp.times.clone(),
+                                exp.times.copy(),
                                 seed=int(settings["seed"]) + repeat,
                                 deadline=deadline,
                             )
