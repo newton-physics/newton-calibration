@@ -17,9 +17,9 @@ from .tuning import Tuning
 from .validator import Validator
 
 __all__ = [
+    "CMAES",
     "Asset",
     "BatchResult",
-    "CMAES",
     "Decision",
     "DecisionResult",
     "Environment",

@@ -15,9 +15,7 @@ uv sync --extra cma --extra cable --extra dev
 uv run task-tuning demo --case oscillator --optimizer cma_es
 ```
 
-The calibration lint migration profile can be checked with
-`ruff check --config ruff-newton.toml .` and `ruff format --check --config ruff-newton.toml .`.
-The default checks use the Ruff configuration in `pyproject.toml`.
+The default Ruff checks use the shared Newton profile in `ruff-newton.toml`.
 
 ## Tests
 

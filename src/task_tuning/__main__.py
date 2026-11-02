@@ -32,11 +32,9 @@ def main():
     if args.command == "inspect":
         print((args.run_directory / "result.json").read_text())
         return 0
-    from .examples import make_tuning
+    from .examples import make_tuning  # noqa: PLC0415
 
-    tuning = make_tuning(
-        args.case, args.workspace, optimizer=args.optimizer, capacity=args.capacity
-    )
+    tuning = make_tuning(args.case, args.workspace, optimizer=args.optimizer, capacity=args.capacity)
     result = tuning.run()
     print(json.dumps(plain(result), indent=2, ensure_ascii=False))
     if args.gl or args.headless_gl:

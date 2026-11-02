@@ -50,9 +50,7 @@ def build_tuning(stage, *, newton_source, workspace="workspace/cable", device=No
     config = json.loads(config_path.read_text())
     backend_stage = "b" if stage == "Bstar" else stage.lower()
     package = f"{__package__}.backends.{backend_stage}"
-    backend = importlib.import_module(
-        package + (".sls_backend" if stage == "C" else ".newton_backend")
-    )
+    backend = importlib.import_module(package + (".sls_backend" if stage == "C" else ".newton_backend"))
     rollout = importlib.import_module(package + ".rollout")
     evaluator_type = DistalDynamicEvaluator if stage in ("Bstar", "C") else CableEvaluator
     parameters = Parameters([Parameter(**p) for p in config["parameters"]])
@@ -69,13 +67,8 @@ def build_tuning(stage, *, newton_source, workspace="workspace/cable", device=No
     sources = {
         "historical_run": config["historical_run_id"],
         "portable_config_sha256": hashlib.sha256(config_path.read_bytes()).hexdigest(),
-        "processed_data_sha256": hashlib.sha256(
-            (CASE / "data/experiments.json").read_bytes()
-        ).hexdigest(),
-        "adapter_hashes": {
-            str(p.relative_to(CASE)): hashlib.sha256(p.read_bytes()).hexdigest()
-            for p in adapter_paths
-        },
+        "processed_data_sha256": hashlib.sha256((CASE / "data/experiments.json").read_bytes()).hexdigest(),
+        "adapter_hashes": {str(p.relative_to(CASE)): hashlib.sha256(p.read_bytes()).hexdigest() for p in adapter_paths},
         "solver_vbd_hashes": solver_hashes,
         "interpretation": "New run; historical precision and acceptance are not reused.",
         "validation": "With-plug data are historical diagnostics, not an independent holdout.",
@@ -94,9 +87,7 @@ def build_tuning(stage, *, newton_source, workspace="workspace/cable", device=No
         parameters=parameters,
         template=Template(**data),
         rollout=rollout.NewtonRollout(capacity=8),
-        optimizer=GridSearch(levels=17, batch_size=8)
-        if stage == "Bstar"
-        else CMAES(batch_size=8, sigma=0.2, seed=42),
+        optimizer=GridSearch(levels=17, batch_size=8) if stage == "Bstar" else CMAES(batch_size=8, sigma=0.2, seed=42),
         decision=Decision(**config["decision"]),
         validator=HistoricalValidator(max_objective=1.0, max_error=3.0),
         play=Play(),
@@ -110,22 +101,15 @@ def main():
     parser.add_argument("--stage", choices=("A", "B", "Bstar", "C"), required=True)
     parser.add_argument("--newton-source", type=Path, required=True)
     parser.add_argument("--workspace", type=Path, default=Path("workspace/cable"))
-    parser.add_argument(
-        "--device", help="Optional new device setting; changes numerical conditions"
-    )
+    parser.add_argument("--device", help="Optional new device setting; changes numerical conditions")
     parser.add_argument("--run", action="store_true", help="Start qualification and a NEW search")
     args = parser.parse_args()
-    tuning = build_tuning(
-        args.stage, newton_source=args.newton_source, workspace=args.workspace, device=args.device
-    )
-    print(
-        f"stage={args.stage}, parameters={tuning.parameters.names}, "
-        f"run_directory={tuning.run_directory}"
-    )
+    tuning = build_tuning(args.stage, newton_source=args.newton_source, workspace=args.workspace, device=args.device)
+    print(f"stage={args.stage}, parameters={tuning.parameters.names}, run_directory={tuning.run_directory}")
     if not args.run:
         print("Constructed only. No simulation performed. Add --run to start a new calibration.")
         return 0
-    import warp as wp
+    import warp as wp  # noqa: PLC0415
 
     cache = tuning.workspace / ".warp_cache"
     cache.mkdir(parents=True, exist_ok=True)
