@@ -75,9 +75,7 @@ class OscillatorAsset(Asset):
     def create_environment(self, template, parameter_values, experiment_settings):
         if template.numeric_settings["integrator"] != "rk4":
             raise ValueError("OscillatorAsset supports the declared RK4 integrator")
-        return OscillatorEnvironment(
-            parameter_values, template.numeric_settings["dt"], experiment_settings
-        )
+        return OscillatorEnvironment(parameter_values, template.numeric_settings["dt"], experiment_settings)
 
 
 def oscillator_reference(times, parameters, settings):
@@ -89,9 +87,7 @@ def oscillator_reference(times, parameters, settings):
     omega = math.sqrt(k / mass - rate**2)
     a = settings["initial_x"] - equilibrium
     b = (settings["initial_velocity"] + rate * a) / omega
-    values = equilibrium + np.exp(-rate * times) * (
-        a * np.cos(omega * times) + b * np.sin(omega * times)
-    )
+    values = equilibrium + np.exp(-rate * times) * (a * np.cos(omega * times) + b * np.sin(omega * times))
     return values[:, None]
 
 
@@ -122,9 +118,7 @@ class SlidingAsset(Asset):
     def create_environment(self, template, parameter_values, experiment_settings):
         if template.numeric_settings["integrator"] != "event_trapezoid":
             raise ValueError("SlidingAsset requires event_trapezoid")
-        return SlidingEnvironment(
-            parameter_values, template.numeric_settings["dt"], experiment_settings
-        )
+        return SlidingEnvironment(parameter_values, template.numeric_settings["dt"], experiment_settings)
 
 
 def make_tuning(case, workspace="workspace", *, optimizer="cma_es", capacity=4):
@@ -171,11 +165,7 @@ def make_tuning(case, workspace="workspace", *, optimizer="cma_es", capacity=4):
         experiments = []
         for name, config in settings.items():
             times = np.array([0.0]) if name == "static" else np.linspace(0.0, 3.0, 61)
-            experiments.append(
-                Experiment(
-                    name, name, oscillator_reference(times, truth, config), times, scale=0.05
-                )
-            )
+            experiments.append(Experiment(name, name, oscillator_reference(times, truth, config), times, scale=0.05))
         numeric = {"dt": 0.02, "integrator": "rk4", "dtype": "float64"}
     elif case == "sliding":
         parameters = Parameters([Parameter("friction", (0.05, 0.65), 0.15)])

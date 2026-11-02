@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 Lightwheel
 # SPDX-License-Identifier: Apache-2.0
 
+import json
 import math
 from dataclasses import replace
 
@@ -213,9 +214,7 @@ def test_cross_entropy_scores_probability_distributions():
     evidence = Evidence([Experiment("e", "g", np.array([[0.25, 0.75]]))])
     evidence.prepare()
     experiment = evidence.train_data[0]
-    episode = Episode(
-        "trial", "e", 0, "completed", Trace(experiment.times, experiment.reference.copy())
-    )
+    episode = Episode("trial", "e", 0, "completed", Trace(experiment.times, experiment.reference.copy()))
     evaluator = Evaluator(loss="cross_entropy")
     loss, _, _, valid, _ = evaluator.score_batch((episode,), ("trial",), (experiment,))
     assert valid[0]
@@ -242,8 +241,6 @@ def test_gl_usd_outputs_do_not_affect_acceptance_or_optimizer(tmp_path):
     assert result.acceptance == "accepted"
     stage = Usd.Stage.Open(str(tuning.run_directory / "comparison.usda"))
     assert stage and stage.GetTimeCodesPerSecond() == 1
-    import json
-
     provenance = json.loads(stage.GetDefaultPrim().GetAttribute("provenance").Get())
     assert provenance["identity"]["template"] == tuning.template.template_id
     assert provenance["calibrated_parameters"] == result.parameters

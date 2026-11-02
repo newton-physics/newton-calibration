@@ -22,7 +22,7 @@ class Environment(ABC):
     def run(self, times, *, seed, deadline):
         """Return a Trace at requested observation times; obey the monotonic deadline."""
 
-    def close(self):
+    def close(self):  # noqa: B027
         pass
 
 
