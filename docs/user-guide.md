@@ -64,7 +64,7 @@ Use a fresh instance for each run. Do not call `prepare()` followed by `run()` o
 
 ## 4. Assemble your own case
 
-Use [the synthetic factories](../src/newton_calibration/examples.py) as the smallest complete examples, and [the cable factory](../examples/cable_calibration/run.py) for real observations and custom solver members.
+Use [the synthetic factories](../newton_calibration/examples.py) as the smallest complete examples, and [the cable factory](../examples/cable_calibration/run.py) for real observations and custom solver members.
 
 1. **Evidence:** create Experiment objects with reference `[T,D]`, times `[T]`, broadcastable positive scales, a Boolean `[T,D]` mask, weights and acquisition-group IDs. Separate training and validation acquisition groups. Slicing one recording does not create an independent experiment.
 2. **Parameters:** define units, bounds, baselines and linear/log transforms. The asset baseline must match exactly. Define only the parameters you are actually fitting.
@@ -177,7 +177,7 @@ These CLI commands run a new demo, then display saved comparison traces. Playbac
 ```bash
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q
 python -m examples.cable_calibration.verify
-ruff check src tests examples/cable_calibration/run.py examples/cable_calibration/verify.py
+ruff check newton_calibration tests examples/cable_calibration/run.py examples/cable_calibration/verify.py
 ```
 
 The frozen cable backend files preserve historical source bytes and formatting for provenance. New factory/verification code is checked separately. See the case README for optional solver-dependent construction checks and their limits.

@@ -26,11 +26,11 @@ Issues = "https://github.com/newton-physics/newton-calibration/issues"
 newton-calibration = "newton_calibration.__main__:main"
 
 [tool.setuptools.packages.find]
-where = ["src"]
+include = ["newton_calibration*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["."]
 addopts = "-ra"
 
 [tool.ruff]
