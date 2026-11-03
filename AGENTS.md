@@ -27,6 +27,14 @@ python -m examples.cable_calibration.verify                             # archiv
 
 The CPU suite uses synthetic cases and archived cable evidence. Run new Newton simulations separately with the pinned solver and record the hardware and scope of validation.
 
+## Documentation
+
+```bash
+uv run --extra docs -m sphinx -W --keep-going -b html docs docs/_build/html
+```
+
+The configuration follows Newton's documentation. Put calibration pages in `docs/calibration/` and list them in `docs/calibration/_toctree.rst`.
+
 ## PR Instructions
 
 - If opening a pull request on GitHub, use the template in `.github/PULL_REQUEST_TEMPLATE.md`.

@@ -9,5 +9,7 @@ dist/
 runs/
 tmp/
 .venv-tuning/
+docs/_build/
+docs/calibration/_generated/
 workspace/*
 !workspace/.gitkeep
