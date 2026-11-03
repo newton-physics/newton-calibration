@@ -22,7 +22,9 @@ github_version = os.environ.get("GITHUB_REF_NAME") or "main"
 
 project = "Newton Calibration"
 author = "The Newton Developers"
-copyright = f"{datetime.date.today().year}, The Newton Developers"
+copyright = (
+    f"{datetime.date.today().year}, The Newton Developers. Documentation licensed under CC-BY-4.0"
+)
 with open(project_root / "pyproject.toml", "rb") as f:
     release = tomllib.load(f)["project"]["version"]
 
