@@ -11,7 +11,7 @@ from .data import plain
 
 
 def main():
-    parser = argparse.ArgumentParser(prog="task-tuning")
+    parser = argparse.ArgumentParser(prog="newton-calibration")
     commands = parser.add_subparsers(dest="command", required=True)
     demo = commands.add_parser("demo", help="run a non-cable synthetic qualification case")
     demo.add_argument("--case", choices=("oscillator", "sliding"), default="oscillator")

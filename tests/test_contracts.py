@@ -4,7 +4,7 @@
 import numpy as np
 import pytest
 
-from task_tuning import Evidence, Experiment, Parameter, Parameters, Template
+from newton_calibration import Evidence, Experiment, Parameter, Parameters, Template
 
 
 def test_parameter_invalid_bounds_and_log_domain():

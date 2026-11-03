@@ -2,11 +2,11 @@
 
 Composable, evidence-based simulation parameter calibration for the Newton ecosystem.
 
-The framework uses the `task_tuning` Python package and `task-tuning` CLI. The core remains simulator-independent; the cable example provides a Newton VBD adapter.
+The framework uses the `newton_calibration` Python package and `newton-calibration` CLI. The core remains simulator-independent; the cable example provides a Newton VBD adapter.
 
 [Contributing](CONTRIBUTING.md) · [Repository instructions](AGENTS.md) · [Apache-2.0 license](LICENSE)
 
-TaskTuning turns measured observations, a simulator adapter and a parameter space into one traceable `Tuning.run()`. It checks numerical accuracy and local identifiability, performs batched search, reloads the candidate, and validates before releasing an asset.
+Newton Calibration turns measured observations, a simulator adapter and a parameter space into one traceable `Tuning.run()`. It checks numerical accuracy and local identifiability, performs batched search, reloads the candidate, and validates before releasing an asset.
 
 [Local report preview](docs/publishing-results.md) · [User guide](docs/user-guide.md) · [Codex skills](docs/codex-skills.md) · [Cable A → B → C example](examples/cable_calibration/README.md)
 
@@ -22,16 +22,16 @@ source .venv/bin/activate
 python -m pip install -e ".[cma,dev]"
 
 # A complete CPU calibration using an independent analytical reference:
-task-tuning demo --case sliding --optimizer grid --workspace workspace/sliding
+newton-calibration demo --case sliding --optimizer grid --workspace workspace/sliding
 
 # Two parameters, CMA-ES:
-task-tuning demo --case oscillator --optimizer cma_es --workspace workspace/oscillator
+newton-calibration demo --case oscillator --optimizer cma_es --workspace workspace/oscillator
 
 # Re-score the real cable's archived results, without Newton or simulation:
 python -m examples.cable_calibration.verify
 ```
 
-Use `task-tuning inspect workspace/sliding/<run-id>` to read a result.
+Use `newton-calibration inspect workspace/sliding/<run-id>` to read a result.
 The demo CLI exits with code 0 only for an accepted result. See the [user guide](docs/user-guide.md) for installation, API usage, outputs and failure interpretation.
 
 ## Architecture
@@ -88,9 +88,9 @@ A → B addresses a boundary hypothesis prompted by left/right residuals. It is 
 
 | Task | Required environment |
 |---|---|
-| Generic synthetic demos | TaskTuning with NumPy; no Newton |
+| Generic synthetic demos | Newton Calibration with NumPy; no Newton |
 | Re-score archived cable traces | Core dependencies on CPU; no Newton or new simulation |
-| Construct or rerun cable calibration | TaskTuning, SciPy, pinned Newton source and Warp; the recorded simulations used CUDA |
+| Construct or rerun cable calibration | Newton Calibration, SciPy, pinned Newton source and Warp; the recorded simulations used CUDA |
 | Run stage C (SLS) | The same stack plus the bundled SLS adaptation applied to the pinned Newton base |
 
 The historical cable environment used Python 3.12.13, Newton 1.6.0.dev0 at commit `d37f4d3d341ccce1e06a1dff21e9a054759b4855`, Warp 1.17.0, and an RTX 5070 Ti Laptop GPU. PyTorch 2.9.1+cpu handled scoring: **CPU PyTorch does not imply CPU Newton simulation**.

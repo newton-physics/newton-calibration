@@ -1,6 +1,6 @@
 ---
 name: tuning-adapter
-description: Implement minimal task_tuning member subclasses or solver adapters when existing members cannot express an already specified calibration requirement. Cover assets, environments, batching, scoring, optimization, validation, or presentation contracts. Do not use for constructor-only changes or replace Tuning.run() with another calibration loop.
+description: Implement minimal newton_calibration member subclasses or solver adapters when existing members cannot express an already specified calibration requirement. Cover assets, environments, batching, scoring, optimization, validation, or presentation contracts. Do not use for constructor-only changes or replace Tuning.run() with another calibration loop.
 ---
 
 # Tuning Adapter

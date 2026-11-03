@@ -16,7 +16,7 @@ Record configuration rationale here. Tuning's RunState and workspace remain auth
 |---|---|---|---|
 | Reference data and preprocessing | | | |
 | Asset and measurements | | | |
-| task_tuning / solver / interpreter | | | |
+| newton_calibration / solver / interpreter | | | |
 
 ## Shared decisions
 

@@ -5,9 +5,9 @@ import time
 
 import newton
 import warp as wp
-from task_tuning.data import Episode
+from newton_calibration.data import Episode
 
-from task_tuning import Rollout, SimulationError
+from newton_calibration import Rollout, SimulationError
 
 from .newton_backend import CableEnvironment
 

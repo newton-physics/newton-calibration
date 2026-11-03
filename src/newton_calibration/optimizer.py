@@ -111,7 +111,7 @@ class CMAES(Optimizer):
         try:
             import cma
         except ImportError as error:
-            raise ImportError("install task-tuning[cma] to use CMAES") from error
+            raise ImportError("install newton-calibration[cma] to use CMAES") from error
         self._rng = np.random.RandomState(self.seed)
         self._strategy = cma.CMAEvolutionStrategy(
             self.initial,

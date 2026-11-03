@@ -3,8 +3,8 @@
 
 import pytest
 
-from task_tuning import Template
-from task_tuning.examples import make_tuning
+from newton_calibration import Template
+from newton_calibration.examples import make_tuning
 
 
 def fixed_tuning(tmp_path):

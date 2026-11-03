@@ -1,6 +1,6 @@
 ---
 name: tuning-environment
-description: Design or revise Asset, Template, Rollout, and Play for task_tuning calibration, including physical and experimental conditions, numerical accuracy, parameter binding, parallel simulation, and comparisons. Use for environment and execution decisions; never promote an old case's numerics to universal defaults.
+description: Design or revise Asset, Template, Rollout, and Play for calibration with newton_calibration, including physical and experimental conditions, numerical accuracy, parameter binding, parallel simulation, and comparisons. Use for environment and execution decisions; never promote an old case's numerics to universal defaults.
 ---
 
 # Tuning Environment

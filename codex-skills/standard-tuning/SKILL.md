@@ -1,17 +1,17 @@
 ---
 name: standard-tuning
-description: Create, configure, or use task_tuning for simulation parameter calibration. Resolve consequential unknowns from existing evidence and targeted questions, select member objects, and construct a real Tuning instance. Use for new calibration tasks, measured or teleoperation data, and configuration changes across modules. Do not start this workflow for score explanations, theory questions, or ordinary debugging.
+description: Create, configure, or use newton_calibration for simulation parameter calibration. Resolve consequential unknowns from existing evidence and targeted questions, select member objects, and construct a real Tuning instance. Use for new calibration tasks, measured or teleoperation data, and configuration changes across modules. Do not start this workflow for score explanations, theory questions, or ordinary debugging.
 ---
 
 # Standard Tuning
 
-Compose one traceable `task_tuning.Tuning` using its existing lifecycle. This skill and its four sibling skills form a module; they require neither another scheduler nor multiple agents.
+Compose one traceable `newton_calibration.Tuning` using its existing lifecycle. This skill and its four sibling skills form a module; they require neither another scheduler nor multiple agents.
 
 ## Establish the requested scope
 
 Preserve the user's scope: design, construction, calibration execution, or a local change. Design requests do not require implementation; construction requests do not authorize simulation. When calibration is already authorized and the required inputs and checks are ready, proceed without asking for the same authorization again.
 
-Read the conversation, project notes, existing TUNING-SPEC.md, asset and data metadata, interfaces, and historical results. Locate the actual task_tuning and solver imports with the user's interpreter. Do not hardcode the skill author's environment or treat old example settings as verified defaults. Report missing dependencies honestly; never substitute empty look-alike classes.
+Read the conversation, project notes, existing TUNING-SPEC.md, asset and data metadata, interfaces, and historical results. Locate the actual newton_calibration and solver imports with the user's interpreter. Do not hardcode the skill author's environment or treat old example settings as verified defaults. Report missing dependencies honestly; never substitute empty look-alike classes.
 
 ## Shared decisions and routing
 
