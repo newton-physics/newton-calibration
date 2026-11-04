@@ -26,7 +26,7 @@ def migrate_asset(source: Path, destination: Path) -> None:
     }:
         record["asset_type"] = asset_type.replace("task_tuning.", "newton_calibration.", 1)
     record["schema"] = "newton-calibration-asset/1"
-    payload = json.dumps(record, indent=2, ensure_ascii=False, allow_nan=False) + "\n"
+    payload = json.dumps(record, indent=2, allow_nan=False) + "\n"
     with destination.open("x", encoding="utf-8") as output:
         try:
             output.write(payload)

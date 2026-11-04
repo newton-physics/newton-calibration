@@ -27,12 +27,15 @@ def test_reload_migrated_export(tmp_path):
 def test_external_asset_and_config_preserved(tmp_path):
     """Preserve third-party identities and opaque configuration."""
     record = json.loads(LEGACY.read_text())
-    record.update(asset_type="custom.CableAsset", config={"label": "task_tuning.examples"})
+    record.update(
+        asset_type="custom.CableAsset", config={"label": "task_tuning.examples \u03bb \ud800"}
+    )
     source, dest = tmp_path / "source.json", tmp_path / "out.json"
     source.write_text(json.dumps(record))
     with pytest.raises(FileExistsError):
         migrate_asset(source, source)
     migrate_asset(source, dest)
+    assert dest.read_bytes().isascii()
     assert json.loads(dest.read_text()) == {**record, "schema": "newton-calibration-asset/1"}
 
 
