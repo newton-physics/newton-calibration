@@ -129,9 +129,7 @@ class BatchedOscillatorAsset(OscillatorAsset):
     def create_batch_environment(self, template, parameter_values, experiment_settings):
         if template.numeric_settings["integrator"] != "rk4":
             raise ValueError("OscillatorAsset supports the declared RK4 integrator")
-        return OscillatorBatchEnvironment(
-            parameter_values, template.numeric_settings["dt"], experiment_settings
-        )
+        return OscillatorBatchEnvironment(parameter_values, template.numeric_settings["dt"], experiment_settings)
 
 
 def oscillator_reference(times, parameters, settings):
@@ -177,9 +175,7 @@ class SlidingAsset(Asset):
         return SlidingEnvironment(parameter_values, template.numeric_settings["dt"], experiment_settings)
 
 
-def make_tuning(
-    case, workspace="workspace", *, optimizer=None, capacity=4, batched=False, worlds=None
-):
+def make_tuning(case, workspace="workspace", *, optimizer=None, capacity=4, batched=False, worlds=None):
     if case == "oscillator":
         parameters = Parameters(
             [

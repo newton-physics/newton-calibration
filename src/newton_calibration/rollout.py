@@ -22,9 +22,7 @@ class Rollout:
     def __init__(self, capacity=1, *, worlds=None, parameter_rtol=1e-10, parameter_atol=1e-12):
         if capacity < 1:
             raise ValueError("capacity must be positive")
-        if worlds is not None and (
-            isinstance(worlds, bool) or not isinstance(worlds, int) or worlds < 1
-        ):
+        if worlds is not None and (isinstance(worlds, bool) or not isinstance(worlds, int) or worlds < 1):
             raise ValueError("worlds must be None or a positive integer")
         if any(not math.isfinite(x) or x < 0 for x in (parameter_rtol, parameter_atol)):
             raise ValueError("parameter readback tolerances must be finite and nonnegative")
@@ -66,9 +64,7 @@ class Rollout:
                         live.append((episode, values))
                 size = self.worlds or max(len(live), 1)
                 for start in range(0, len(live), size):
-                    self._run_chunk(
-                        template, asset, exp, repeat, live[start : start + size], deadline
-                    )
+                    self._run_chunk(template, asset, exp, repeat, live[start : start + size], deadline)
         return tuple(
             by_key[trial_id, exp.id, repeat]
             for trial_id, _ in trials
@@ -84,9 +80,7 @@ class Rollout:
             environment = template.instantiate_batch(asset, [values for _, values in chunk], exp)
             applied = list(environment.applied_parameters)
             if len(applied) != len(chunk):
-                raise RuntimeError(
-                    "batch environment did not report one parameter mapping per member"
-                )
+                raise RuntimeError("batch environment did not report one parameter mapping per member")
             for (episode, values), reported in zip(chunk, applied, strict=True):
                 actual = dict(reported)
                 self._check_readback(template, values, actual)

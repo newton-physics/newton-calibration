@@ -69,17 +69,13 @@ def test_failing_member_fails_alone(tmp_path):
 
     class OneBadAsset(BatchedOscillatorAsset):
         def create_batch_environment(self, template, parameter_values, experiment_settings):
-            return OneBadMember(
-                parameter_values, template.numeric_settings["dt"], experiment_settings
-            )
+            return OneBadMember(parameter_values, template.numeric_settings["dt"], experiment_settings)
 
     tuning, trials, experiments = _rollout_inputs(tmp_path, batched=True)
     tuning.asset = OneBadAsset(tuning.asset.baseline_parameters)
     live = [t for t in trials if t[1] is not None]
     episodes = _episodes(tuning, live, experiments[:1])
-    assert [e.status for e in episodes] == ["completed", "numerical_failure"] + ["completed"] * (
-        len(live) - 2
-    )
+    assert [e.status for e in episodes] == ["completed", "numerical_failure"] + ["completed"] * (len(live) - 2)
     assert episodes[1].error == "member diverged" and episodes[1].trace is None
 
 
@@ -93,9 +89,7 @@ def test_readback_mismatch_fails_the_chunk(tmp_path):
 
     class WrongAsset(BatchedOscillatorAsset):
         def create_batch_environment(self, template, parameter_values, experiment_settings):
-            return WrongReadback(
-                parameter_values, template.numeric_settings["dt"], experiment_settings
-            )
+            return WrongReadback(parameter_values, template.numeric_settings["dt"], experiment_settings)
 
     tuning, trials, experiments = _rollout_inputs(tmp_path / "chunk", batched=True)
     tuning.asset = WrongAsset(tuning.asset.baseline_parameters)
@@ -113,9 +107,7 @@ def test_readback_mismatch_fails_the_chunk(tmp_path):
 def test_batched_oscillator_run_is_accepted(tmp_path):
     """The full lifecycle accepts the batched oscillator and matches the per-episode run."""
     single = make_tuning("oscillator", tmp_path / "single", optimizer="grid")
-    batched = make_tuning(
-        "oscillator", tmp_path / "batched", optimizer="grid", batched=True, worlds=16
-    )
+    batched = make_tuning("oscillator", tmp_path / "batched", optimizer="grid", batched=True, worlds=16)
     a, b = single.run(), batched.run()
     assert b.acceptance == "accepted", batched.state.errors
     assert a.parameters == b.parameters
