@@ -25,8 +25,21 @@ reviewability, and maintenance burden are covered by the
 
 In this document, *must* identifies a requirement, *should* identifies the
 normal choice from which a well-justified exception may be made, and *may*
-identifies an allowed choice. Breaking changes must follow the deprecation
-policy even when the replacement would better follow these guidelines.
+identifies an allowed choice. Breaking changes must follow the
+:ref:`deprecation-policy` even when the replacement would better follow these
+guidelines.
+
+.. _deprecation-policy:
+
+Public API compatibility and deprecation
+----------------------------------------
+
+This project has no fixed deprecation period. A pull request proposing an
+incompatible public API change must describe the affected API, its replacement,
+the migration steps, and the proposed transition and removal timing. Maintainers
+must agree to that plan during review before the change is merged. Retain
+deprecated compatibility paths until the agreed removal point, and document
+the migration alongside the affected API.
 
 Public API surface
 ------------------
@@ -91,7 +104,7 @@ Mark experimental public API explicitly
 Mark every user-facing experimental API in the public docstring or concept
 page where users encounter it. The marker is part of the compatibility
 contract: it must identify the exact module, type, callable, parameter, or mode
-that may change without the normal deprecation period. Describe relevant
+that may change without the normal deprecation process. Describe relevant
 limitations alongside the marker.
 
 Use a domain-local experimental namespace only for a cohesive new subsystem
@@ -254,7 +267,7 @@ Documentation and comments
   paths. Never reference private modules from user-facing documentation.
 - State SI units for physical quantities in public API docstrings, for example
   ``Particle positions [m], shape [particle_count, 3].`` Use ``[m or rad]``
-  for joint-dependent values and ``[N, N路m]`` for spatial force vectors.
+  for joint-dependent values and ``[N, N·m]`` for spatial force vectors.
   Describe compound arrays per component. Do not add units to non-physical
   fields.
 - Keep inline comments brief and reserve them for non-obvious intent,
