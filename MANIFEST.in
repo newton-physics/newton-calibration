@@ -3,3 +3,4 @@ graft docs
 graft examples
 graft codex-skills
 global-exclude __pycache__ *.py[cod]
+include tests/fixtures/legacy-sliding-asset.json
