@@ -15,7 +15,11 @@ def main():
     commands = parser.add_subparsers(dest="command", required=True)
     demo = commands.add_parser("demo", help="run a non-cable synthetic qualification case")
     demo.add_argument("--case", choices=("oscillator", "sliding"), default="oscillator")
-    demo.add_argument("--optimizer", choices=("grid", "cma_es"), default="cma_es")
+    demo.add_argument(
+        "--optimizer",
+        choices=("grid", "cma_es"),
+        help="default: grid for sliding, cma_es for oscillator",
+    )
     demo.add_argument(
         "--workspace",
         type=Path,
@@ -32,11 +36,9 @@ def main():
     if args.command == "inspect":
         print((args.run_directory / "result.json").read_text())
         return 0
-    from .examples import make_tuning
+    from .examples import make_tuning  # noqa: PLC0415
 
-    tuning = make_tuning(
-        args.case, args.workspace, optimizer=args.optimizer, capacity=args.capacity
-    )
+    tuning = make_tuning(args.case, args.workspace, optimizer=args.optimizer, capacity=args.capacity)
     result = tuning.run()
     print(json.dumps(plain(result), indent=2, ensure_ascii=False))
     if args.gl or args.headless_gl:

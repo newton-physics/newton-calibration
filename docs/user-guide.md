@@ -181,3 +181,21 @@ ruff check src tests examples/cable_calibration/run.py examples/cable_calibratio
 ```
 
 The frozen cable backend files preserve historical source bytes and formatting for provenance. New factory/verification code is checked separately. See the case README for optional solver-dependent construction checks and their limits.
+
+## Running candidates together
+
+The oscillator example can integrate several candidates in one environment:
+
+```python
+from newton_calibration.examples import make_tuning
+
+tuning = make_tuning("oscillator", optimizer="grid", batched=True, worlds=4)
+result = tuning.run()
+```
+
+An asset opts in by implementing `Asset.create_batch_environment`. Its
+`BatchEnvironment` reports the applied parameters for each member and returns
+one `Trace` or `SimulationError` per candidate, in input order. Each chunk
+uses one experiment and repeat. `Rollout(worlds=4)` limits the candidates per
+chunk. Assets with only `create_environment` continue to use one environment
+per episode with the configured thread capacity.

@@ -10,7 +10,7 @@ import platform
 import shutil
 import time
 from dataclasses import asdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
@@ -54,7 +54,7 @@ class Tuning:
             play,
         )
         self.workspace = Path(workspace).expanduser().resolve()
-        run_name = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid4().hex[:8]
+        run_name = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid4().hex[:8]
         self.run_directory = self.workspace / run_name
         if not 0 < analysis_step <= 0.25 or not 0 < rank_tolerance < 1:
             raise ValueError("invalid analysis step or rank tolerance")
@@ -86,14 +86,7 @@ class Tuning:
             "minimum_batch": count if minimum_batch is None else minimum_batch,
             "reserve_rollouts": (
                 sum(e.repeats for e in self.evidence.validation_data)
-                + (
-                    1
-                    + (
-                        1
-                        if self.template.qualification_mode == "repeatability"
-                        else len(self.template.refinements)
-                    )
-                )
+                + (1 + (1 if self.template.qualification_mode == "repeatability" else len(self.template.refinements)))
                 * sum(e.repeats for e in self.evidence.train_data)
                 if purpose not in {"validation", "training_retest", "failure"}
                 else 0
@@ -193,9 +186,7 @@ class Tuning:
                 "identity": dict(result.identity),
                 "artifact": str(artifact.relative_to(self.run_directory)),
                 "wall_s": time.monotonic() - began,
-                "best_objective": (
-                    self.state.best_candidate["objective"] if self.state.best_candidate else None
-                ),
+                "best_objective": (self.state.best_candidate["objective"] if self.state.best_candidate else None),
             }
         )
         self._save()
@@ -206,9 +197,7 @@ class Tuning:
 
     def _physical_trials(self, values, prefix):
         rows = np.atleast_2d(np.asarray(values, dtype=np.float64))
-        return TrialBatch(
-            tuple(f"{prefix}-{i}" for i in range(len(rows))), self.parameters.encode(rows)
-        )
+        return TrialBatch(tuple(f"{prefix}-{i}" for i in range(len(rows))), self.parameters.encode(rows))
 
     def prepare(self):
         if self._started:
@@ -220,9 +209,7 @@ class Tuning:
         self._clock = time.monotonic()
         self.evidence.prepare()
         self.asset = self.asset.load_or_create()
-        if dict(self.asset.baseline_parameters) != self.parameters.as_dict(
-            self.parameters.baseline
-        ):
+        if dict(self.asset.baseline_parameters) != self.parameters.as_dict(self.parameters.baseline):
             raise ValueError("asset baseline and Parameters baseline disagree")
         if set(self.parameters.names) & set(self.template.fixed_parameters):
             raise ValueError("calibrated and fixed parameter sets overlap")
@@ -231,9 +218,7 @@ class Tuning:
             if e.id not in self.template.experiment_settings:
                 raise ValueError(f"template missing experiment {e.id}")
         self.template.freeze()
-        package_sources = {
-            p.name: identity(p.read_text()) for p in Path(__file__).parent.glob("*.py")
-        }
+        package_sources = {p.name: identity(p.read_text()) for p in Path(__file__).parent.glob("*.py")}
         self.state.identity = {
             "template": self.template.template_id,
             "asset": self.asset.asset_id,
@@ -308,11 +293,7 @@ class Tuning:
         probes = self._physical_trials(anchors, "qualification")
         coarse = self.evaluate_batch(probes, self.evidence.train_data, "qualification")
         reports = []
-        changes = (
-            (None,)
-            if self.template.qualification_mode == "repeatability"
-            else self.template.refinements
-        )
+        changes = (None,) if self.template.qualification_mode == "repeatability" else self.template.refinements
         for change in changes:
             refined_template = self.template if change is None else self.template.refined(change)
             if (
@@ -321,9 +302,7 @@ class Tuning:
                 and (refined_template.discretization == self.template.discretization)
             ):
                 raise ValueError("refinement must actually change numerical or discrete settings")
-            refined = self.evaluate_batch(
-                probes, self.evidence.train_data, "qualification", template=refined_template
-            )
+            refined = self.evaluate_batch(probes, self.evidence.train_data, "qualification", template=refined_template)
             good = bool(coarse.valid_mask.all() and refined.valid_mask.all())
             difference = float(np.abs(coarse.features - refined.features).max()) if good else None
             passed = good and difference <= self.template.precision_tolerance
@@ -373,9 +352,7 @@ class Tuning:
             )
             if not result.valid_mask.all():
                 raise ValueError("sensitivity probes failed; do not treat them as zero sensitivity")
-            columns = [
-                (result.features[2 * j + 1] - result.features[2 * j]) / spans[j] for j in range(p)
-            ]
+            columns = [(result.features[2 * j + 1] - result.features[2 * j]) / spans[j] for j in range(p)]
             jacobians.append(np.stack(columns, axis=1))
         stacked = np.concatenate(jacobians) / len(anchors) ** 0.5
         report = {
@@ -400,9 +377,7 @@ class Tuning:
         basis = vh[:rank].T
         transformed = j @ basis
         norms = np.linalg.norm(transformed, axis=0)
-        correlation = (transformed.T @ transformed) / np.maximum(
-            norms[:, None] * norms[None, :], 1e-30
-        )
+        correlation = (transformed.T @ transformed) / np.maximum(norms[:, None] * norms[None, :], 1e-30)
         per_anchor = []
         for local in sensitivity_report["per_anchor_jacobians"]:
             effect = local @ basis
@@ -422,9 +397,7 @@ class Tuning:
             "scope": "local; not a proof of global uniqueness",
         }
         if conclusive and self.orthogonalize:
-            self.parameters.set_mapping(
-                self.parameters.to_normalized(self.parameters.baseline), basis
-            )
+            self.parameters.set_mapping(self.parameters.to_normalized(self.parameters.baseline), basis)
         elif conclusive and rank < p:
             raise ValueError("rank reduction requires combination mapping")
         self.parameters.freeze()
@@ -457,14 +430,9 @@ class Tuning:
         analysis = self.state.analysis_reports.get("identifiability", {})
         if not analysis.get("conclusive", False):
             return "inconclusive", None
-        if (
-            candidate["objective"] > self.validator.max_objective
-            or candidate["max_error"] > self.validator.max_error
-        ):
+        if candidate["objective"] > self.validator.max_objective or candidate["max_error"] > self.validator.max_error:
             return "rejected_training", None
-        candidate_path = self.asset.export(
-            candidate["parameters"], self.run_directory / "candidate_asset.json"
-        )
+        candidate_path = self.asset.export(candidate["parameters"], self.run_directory / "candidate_asset.json")
         self.state.artifact_refs["candidate_asset"] = str(candidate_path)
         loaded = self.asset.reload(candidate_path)
         if dict(loaded.baseline_parameters) != candidate["parameters"]:
@@ -494,11 +462,7 @@ class Tuning:
             report = self.validator.validate(loaded, self.evidence.validation_data, evaluate)
             # Retest under the explicitly selected qualification policy.
             final_checks = []
-            changes = (
-                (None,)
-                if self.template.qualification_mode == "repeatability"
-                else self.template.refinements
-            )
+            changes = (None,) if self.template.qualification_mode == "repeatability" else self.template.refinements
             for change in changes:
                 finer = self.evaluate_batch(
                     trials,
@@ -511,8 +475,7 @@ class Tuning:
                 error = float(np.abs(finer.features[0] - best_result.features[best_index]).max())
                 final_checks.append(
                     {
-                        "passed": bool(finer.valid_mask.all())
-                        and error <= self.template.precision_tolerance,
+                        "passed": bool(finer.valid_mask.all()) and error <= self.template.precision_tolerance,
                         "feature_difference_max": error,
                     }
                 )
@@ -591,9 +554,7 @@ class Tuning:
                         temporary = checkpoint.with_suffix(".tmp")
                         temporary.write_bytes(self.optimizer.checkpoint())
                         temporary.replace(checkpoint)
-                        self.state.optimizer_snapshot["checkpoint"] = str(
-                            checkpoint.relative_to(self.run_directory)
-                        )
+                        self.state.optimizer_snapshot["checkpoint"] = str(checkpoint.relative_to(self.run_directory))
                     self._save()
             except WorkStopped as stop:
                 self.state.termination_reason = stop.reason
@@ -621,9 +582,7 @@ class Tuning:
                     )
                     self.comparison["identity"] = plain(self.state.identity)
                     self.comparison["baseline_parameters"] = dict(self.asset.baseline_parameters)
-                    self.comparison["calibrated_parameters"] = self.state.best_candidate[
-                        "parameters"
-                    ]
+                    self.comparison["calibrated_parameters"] = self.state.best_candidate["parameters"]
                     self.play.export_usd(self.comparison, self.run_directory / "comparison.usda")
                     self.state.artifact_refs["comparison_usd"] = "comparison.usda"
                 except Exception as error:

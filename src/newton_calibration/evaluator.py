@@ -14,9 +14,7 @@ class Evaluator:
     def __init__(self, *, loss="squared_error", max_normalized_error=None):
         if loss not in {"squared_error", "cross_entropy"}:
             raise ValueError("unsupported scoring loss")
-        if max_normalized_error is not None and (
-            not math.isfinite(max_normalized_error) or max_normalized_error <= 0
-        ):
+        if max_normalized_error is not None and (not math.isfinite(max_normalized_error) or max_normalized_error <= 0):
             raise ValueError("invalid constraint threshold")
         self.loss = loss
         self.max_normalized_error = max_normalized_error

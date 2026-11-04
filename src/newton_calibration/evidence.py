@@ -31,19 +31,9 @@ class Experiment:
             if self.times is None
             else np.array(self.times, dtype=np.float64)
         )
-        mask = (
-            np.ones(reference.shape, dtype=bool)
-            if self.mask is None
-            else np.array(self.mask, dtype=bool)
-        )
+        mask = np.ones(reference.shape, dtype=bool) if self.mask is None else np.array(self.mask, dtype=bool)
         scale = np.broadcast_to(np.asarray(self.scale, dtype=np.float64), reference.shape)
-        if (
-            not self.id
-            or not self.group
-            or self.repeats < 1
-            or not self.weight > 0
-            or not math.isfinite(self.weight)
-        ):
+        if not self.id or not self.group or self.repeats < 1 or not self.weight > 0 or not math.isfinite(self.weight):
             raise ValueError("invalid experiment identity, weight or repetitions")
         if mask.shape != reference.shape or not mask.any():
             raise ValueError("no valid observations, or mask shape mismatch")
@@ -58,9 +48,7 @@ class Experiment:
             or (times[1:] <= times[:-1]).any()
         ):
             raise ValueError("invalid observation time axis")
-        return Experiment(
-            self.id, self.group, reference, times, scale.copy(), mask, self.weight, self.repeats
-        )
+        return Experiment(self.id, self.group, reference, times, scale.copy(), mask, self.weight, self.repeats)
 
 
 class Evidence:
@@ -82,6 +70,4 @@ class Evidence:
         self.evidence_id = self.fingerprint()
 
     def fingerprint(self):
-        return identity(
-            {"train": self.train_data, "validation": self.validation_data, "sources": self.sources}
-        )
+        return identity({"train": self.train_data, "validation": self.validation_data, "sources": self.sources})

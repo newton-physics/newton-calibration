@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 Lightwheel
 # SPDX-License-Identifier: Apache-2.0
 
+import json
 import math
 from dataclasses import replace
 
@@ -213,9 +214,7 @@ def test_cross_entropy_scores_probability_distributions():
     evidence = Evidence([Experiment("e", "g", np.array([[0.25, 0.75]]))])
     evidence.prepare()
     experiment = evidence.train_data[0]
-    episode = Episode(
-        "trial", "e", 0, "completed", Trace(experiment.times, experiment.reference.copy())
-    )
+    episode = Episode("trial", "e", 0, "completed", Trace(experiment.times, experiment.reference.copy()))
     evaluator = Evaluator(loss="cross_entropy")
     loss, _, _, valid, _ = evaluator.score_batch((episode,), ("trial",), (experiment,))
     assert valid[0]
@@ -242,7 +241,6 @@ def test_gl_usd_outputs_do_not_affect_acceptance_or_optimizer(tmp_path):
     assert result.acceptance == "accepted"
     stage = Usd.Stage.Open(str(tuning.run_directory / "comparison.usda"))
     assert stage and stage.GetTimeCodesPerSecond() == 1
-    import json
 
     provenance = json.loads(stage.GetDefaultPrim().GetAttribute("provenance").Get())
     assert provenance["identity"]["template"] == tuning.template.template_id
@@ -298,3 +296,10 @@ def test_reloaded_asset_is_resimulated_even_when_parameter_metadata_matches(tmp_
     assert not tuning.state.analysis_reports["training_retest"]["passed"]
     assert "training_retest" in tuning.state.budget_usage
     assert not (tuning.run_directory / "release").exists()
+
+
+def test_cma_es_rejects_one_parameter():
+    """Reject an unsupported search before asking pycma for a generation."""
+    parameters = Parameters([Parameter("k", (0.0005, 0.05), 0.003, "m", "log")])
+    with pytest.raises(ValueError, match="GridSearch"):
+        CMAES(batch_size=4).initialize(parameters)

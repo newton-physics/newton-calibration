@@ -6,6 +6,7 @@
 import copy
 import json
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from pathlib import Path
 
 from .data import identity, immutable, plain, write_json
@@ -22,8 +23,28 @@ class Environment(ABC):
     def run(self, times, *, seed, deadline):
         """Return a Trace at requested observation times; obey the monotonic deadline."""
 
-    def close(self):
+    def close(self):  # noqa: B027
         pass
+
+
+class BatchEnvironment(ABC):
+    """Several candidates of one experiment, simulated together.
+
+    ``applied_parameters`` holds one mapping per member, read back from the model.
+    """
+
+    applied_parameters: Sequence[dict[str, float]]
+
+    @abstractmethod
+    def run(self, times, *, seed, deadline):
+        """Return one Trace per member at the requested times, in member order.
+
+        A member that fails physically returns a SimulationError in its slot; the
+        other members still return their traces. An exception fails the whole batch.
+        """
+
+    def close(self):
+        return None
 
 
 class Asset(ABC):
@@ -48,6 +69,18 @@ class Asset(ABC):
     @abstractmethod
     def create_environment(self, template, parameter_values, experiment_settings):
         """One fresh environment, with the applied parameter values available for readback."""
+
+    def create_batch_environment(self, template, parameter_values, experiment_settings):
+        """One fresh BatchEnvironment for a sequence of parameter mappings.
+
+        Rollout uses this when the asset overrides it; otherwise it creates one
+        environment per episode.
+        """
+        raise NotImplementedError
+
+    @property
+    def supports_batch(self):
+        return type(self).create_batch_environment is not Asset.create_batch_environment
 
     def export(self, parameter_values, path):
         path = Path(path)
