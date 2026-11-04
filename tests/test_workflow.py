@@ -6,7 +6,7 @@ import json
 import numpy as np
 import pytest
 
-from task_tuning.examples import make_tuning
+from newton_calibration.examples import make_tuning
 
 
 @pytest.mark.parametrize("case", ["oscillator", "sliding"])

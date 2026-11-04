@@ -14,7 +14,7 @@ If your organization is not listed, the EasyCLA workflow lets you add it and ide
 
 # Contributing to Newton Calibration
 
-Newton Calibration welcomes contributions from the community. In order to avoid any surprises and to increase the chance of contributions being merged, we encourage contributors to communicate their plans proactively by opening a GitHub Issue or starting a Discussion in the corresponding repository. Keep each pull request focused on a single feature or bug fix, and write clear, concise commit messages.
+Newton Calibration provides the `newton_calibration` package and `newton-calibration` CLI. In order to avoid any surprises and to increase the chance of contributions being merged, we encourage contributors to communicate their plans proactively by opening a GitHub issue. Keep each pull request focused on a single feature or bug fix, and write clear, concise commit messages.
 
 Use [AGENTS.md](AGENTS.md) for environment setup and development workflows. Code and public API changes must follow the [source code and public API guidelines](CODING_GUIDELINES.rst). Reviewers may use the suggested [review guidelines](REVIEW_GUIDELINES.rst).
 
@@ -22,10 +22,7 @@ There are several ways to participate:
 
 ## Questions, Discussions, Suggestions
 
-* Help answer questions or contribute to technical discussion in [GitHub Discussions](https://github.com/newton-physics/newton-calibration/discussions) and Issues.
-* If you have a question, suggestion or discussion topic, start a new [GitHub Discussion](https://github.com/newton-physics/newton-calibration/discussions) if there is no existing topic.
-* Once somebody shares a satisfying answer to the question, click "Mark as answer".
-* [GitHub Issues](https://github.com/newton-physics/newton-calibration/issues) should only be used for bugs and features. Specifically, issues that result in a code or documentation change. We may convert issues to discussions if these conditions are not met.
+* Use [GitHub Issues](https://github.com/newton-physics/newton-calibration/issues) for questions, bug reports and feature proposals.
 
 ## Reporting a Bug
 
@@ -64,7 +61,7 @@ There are several ways to participate:
 * Discuss your proposal ideally before starting with implementation. Open a GitHub Issue or Discussion to:
   * propose and motivate the new feature;
   * detail technical specifications;
-  * and list changes or additions to the public `task_tuning` API.
+  * and list changes or additions to the public `newton_calibration` API.
 * Wait for feedback from [Project Members](https://github.com/newton-physics/newton-governance/blob/main/CONTRIBUTING.md#project-members) before proceeding.
 * Implement the feature following the [source code guidelines](CODING_GUIDELINES.rst).
 * Add comprehensive testing for the new feature.
@@ -87,7 +84,7 @@ Do not add a second search, stopping, validation or recording loop; `Decision` a
 
 ## Adding a Calibration Case
 
-Cases live under `examples/`, one directory each, and use the public `task_tuning` API only. A case consists of:
+Cases live under `examples/`, one directory each, and use the public `newton_calibration` API only. A case consists of:
 
 * a backend that builds the scene and implements `Asset` and `Environment`, with parameter readback from the model;
 * a data loader that turns the recordings into `Experiment`s and experiment settings from one source;

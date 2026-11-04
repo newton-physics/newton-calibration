@@ -33,13 +33,13 @@ jobs:
           python -m examples.cable_calibration.verify
       - name: Synthetic calibration demos
         run: |
-          task-tuning demo --case sliding --optimizer grid --workspace "$RUNNER_TEMP/sliding"
-          task-tuning demo --case oscillator --optimizer cma_es --workspace "$RUNNER_TEMP/oscillator"
+          newton-calibration demo --case sliding --optimizer grid --workspace "$RUNNER_TEMP/sliding"
+          newton-calibration demo --case oscillator --optimizer cma_es --workspace "$RUNNER_TEMP/oscillator"
       - name: Build package and check installed wheel
         run: |
           python -m build
-          python -m pip uninstall -y task-tuning
+          python -m pip uninstall -y newton-calibration
           python -m pip install --no-deps dist/*.whl
           cd "$RUNNER_TEMP"
-          python -c "from task_tuning import Template, Tuning"
-          task-tuning demo --case sliding --optimizer grid --workspace "$RUNNER_TEMP/wheel-sliding"
+          python -c "from newton_calibration import Template, Tuning"
+          newton-calibration demo --case sliding --optimizer grid --workspace "$RUNNER_TEMP/wheel-sliding"

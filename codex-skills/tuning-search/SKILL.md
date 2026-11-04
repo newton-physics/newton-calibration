@@ -1,6 +1,6 @@
 ---
 name: tuning-search
-description: Configure Parameters, Optimizer, and Decision for task_tuning calibration, including parameter ranges and combinations, identifiability, search strategy, budgets, and stopping. Use for task configuration changes, not ordinary optimization theory questions.
+description: Configure Parameters, Optimizer, and Decision for calibration with newton_calibration, including parameter ranges and combinations, identifiability, search strategy, budgets, and stopping. Use for task configuration changes, not ordinary optimization theory questions.
 ---
 
 # Tuning Search

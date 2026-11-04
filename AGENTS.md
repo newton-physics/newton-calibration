@@ -12,7 +12,7 @@ Run `uvx pre-commit run -a` to lint and format before committing. Use `uv` for a
 ```bash
 # Install with the optional extras
 uv sync --extra cma --extra cable --extra dev
-uv run task-tuning demo --case oscillator --optimizer cma_es
+uv run newton-calibration demo --case oscillator --optimizer cma_es
 ```
 
 The default Ruff checks use the shared Newton profile in `ruff-newton.toml`.

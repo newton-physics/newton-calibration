@@ -30,7 +30,7 @@
 **Minimal reproduction:**
 
 ```python
-import task_tuning
+import newton_calibration
 
 # Code that demonstrates the bug
 ```
@@ -41,7 +41,7 @@ import task_tuning
      Provide a code example showing what this PR enables. -->
 
 ```python
-import task_tuning
+import newton_calibration
 
 # Code that demonstrates the new capability
 ```

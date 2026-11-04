@@ -58,9 +58,9 @@ deprecated, and remove them only after the required deprecation period.
 
 Python may still allow users to reach implementation details through other
 paths, but accessibility does not make those paths public or stable. The
-public API is what :mod:`task_tuning` exports in its ``__all__``. Names with a
+public API is what :mod:`newton_calibration` exports in its ``__all__``. Names with a
 leading underscore, and everything under ``examples/``, are internal: examples
-and documentation must import through :mod:`task_tuning`.
+and documentation must import through :mod:`newton_calibration`.
 
 Update the user guide whenever a public symbol or module is added, removed,
 or renamed.
@@ -71,7 +71,7 @@ Keep namespaces shallow and purposeful
 Balance a discoverable top-level namespace against excessively deep import
 paths:
 
-- Reserve the :mod:`task_tuning` root for concepts needed in every
+- Reserve the :mod:`newton_calibration` root for concepts needed in every
   calibration: the lifecycle, its members and the data records. Adding a root
   symbol requires justification that it belongs in typical user code rather
   than a specialized domain.
@@ -92,7 +92,7 @@ An internal implementation may be deeply organized when that improves
 maintenance. These restrictions concern the public import path, not the layout
 of private modules.
 
-Keep public imports lightweight. Importing :mod:`task_tuning` or a lightweight
+Keep public imports lightweight. Importing :mod:`newton_calibration` or a lightweight
 public module must not eagerly initialize optional backends or load heavy,
 provider-specific dependencies. Use lazy loading at optional-dependency and
 backend boundaries, and account for import-time cost when assigning a symbol
@@ -302,7 +302,7 @@ When reviewing a new or substantially changed public API, check that:
 - each public symbol has one canonical export and the relevant ``__all__`` is
   updated;
 - the namespace is shallow, purposeful, and not unnecessarily added to
-  the :mod:`task_tuning` root;
+  the :mod:`newton_calibration` root;
 - names cluster with their concept family and remain clear out of context;
 - members of an API family use consistent vocabulary, parameter grouping,
   options, and safe defaults;

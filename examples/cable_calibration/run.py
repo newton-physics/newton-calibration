@@ -10,7 +10,7 @@ import json
 import sys
 from pathlib import Path
 
-from task_tuning import (
+from newton_calibration import (
     CMAES,
     Decision,
     Evidence,

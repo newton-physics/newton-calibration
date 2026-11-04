@@ -8,7 +8,7 @@ This example follows a real 17 cm free cable from a stiffness/damping fit, throu
 
 ## 1. Verify the reported results without simulation
 
-From the repository root, after installing TaskTuning:
+From the repository root, after installing Newton Calibration:
 
 ```bash
 python -m examples.cable_calibration.verify
@@ -142,23 +142,23 @@ The adapter uses `compute_geometric_rod_kappa_cached_z`, the solver moment/strai
 
 Use a separate environment if an existing Newton installation must remain intact. Python 3.12 matches the recorded minor version. Activate that environment and use its `python -m pip` for all installations below. These instructions target the recorded Linux setup; other platforms have not been qualified for this cable example.
 
-The TaskTuning `cable` extra installs SciPy, not Newton. A plain `pip install newton` or the current tip of the SLS branch does not select the tested solver sources. Install the pinned checkout and apply the archived adaptation as shown, rather than substituting a same-named package or another revision.
+The `cable` extra installs SciPy, not Newton. A plain `pip install newton` or the current tip of the SLS branch does not select the tested solver sources. Install the pinned checkout and apply the archived adaptation as shown, rather than substituting a same-named package or another revision.
 
-From the TaskTuning repository root:
+From the repository root:
 
 ```bash
 python -m pip install -e ".[cable,cma]"
-git clone https://github.com/newton-physics/newton.git ../newton-task-tuning-base
-git -C ../newton-task-tuning-base checkout --detach d37f4d3d341ccce1e06a1dff21e9a054759b4855
-python -m pip install -e ../newton-task-tuning-base "warp-lang==1.17.0"
+git clone https://github.com/newton-physics/newton.git ../newton-calibration-base
+git -C ../newton-calibration-base checkout --detach d37f4d3d341ccce1e06a1dff21e9a054759b4855
+python -m pip install -e ../newton-calibration-base "warp-lang==1.17.0"
 
-git -C ../newton-task-tuning-base worktree add --detach ../newton-task-tuning-sls d37f4d3d341ccce1e06a1dff21e9a054759b4855
-git -C ../newton-task-tuning-sls apply "$PWD/examples/cable_calibration/solver/sls-adapted.patch"
+git -C ../newton-calibration-base worktree add --detach ../newton-calibration-sls d37f4d3d341ccce1e06a1dff21e9a054759b4855
+git -C ../newton-calibration-sls apply "$PWD/examples/cable_calibration/solver/sls-adapted.patch"
 
-python -m examples.cable_calibration.run --stage A --newton-source ../newton-task-tuning-base
-python -m examples.cable_calibration.run --stage B --newton-source ../newton-task-tuning-base
-python -m examples.cable_calibration.run --stage Bstar --newton-source ../newton-task-tuning-base
-python -m examples.cable_calibration.run --stage C --newton-source ../newton-task-tuning-sls
+python -m examples.cable_calibration.run --stage A --newton-source ../newton-calibration-base
+python -m examples.cable_calibration.run --stage B --newton-source ../newton-calibration-base
+python -m examples.cable_calibration.run --stage Bstar --newton-source ../newton-calibration-base
+python -m examples.cable_calibration.run --stage C --newton-source ../newton-calibration-sls
 ```
 
 ### Check the active interpreter and runtime
@@ -191,7 +191,7 @@ To launch a **new** calibration, add --run and select a workspace:
 
 ```bash
 python -m examples.cable_calibration.run --stage C \
-  --newton-source ../newton-task-tuning-sls \
+  --newton-source ../newton-calibration-sls \
   --workspace workspace/cable-sls --run
 ```
 

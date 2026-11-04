@@ -3,7 +3,7 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "task-tuning"
+name = "newton-calibration"
 version = "0.2.0"
 description = "Composable, evidence-based calibration for the Newton ecosystem"
 readme = "README.md"
@@ -23,7 +23,7 @@ Repository = "https://github.com/newton-physics/newton-calibration"
 Issues = "https://github.com/newton-physics/newton-calibration/issues"
 
 [project.scripts]
-task-tuning = "task_tuning.__main__:main"
+newton-calibration = "newton_calibration.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

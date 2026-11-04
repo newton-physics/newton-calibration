@@ -2,7 +2,7 @@
 
 [Home](../README.md) · [Skill sources](../codex-skills/) · [Design](tuning-skills-module-design.md)
 
-The five skill directories are a coordinated configuration module for TaskTuning. They are text instructions, not a Python dependency, MCP server or second runtime.
+The five skill directories are a coordinated configuration module for Newton Calibration. They are text instructions, not a Python dependency, MCP server or second runtime.
 
 ## Install the complete group
 

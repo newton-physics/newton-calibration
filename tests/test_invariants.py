@@ -8,7 +8,7 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
-from task_tuning import (
+from newton_calibration import (
     CMAES,
     Asset,
     Decision,
@@ -26,8 +26,8 @@ from task_tuning import (
     Tuning,
     Validator,
 )
-from task_tuning.data import Episode
-from task_tuning.examples import make_tuning
+from newton_calibration.data import Episode
+from newton_calibration.examples import make_tuning
 
 
 class SumEnvironment(Environment):
