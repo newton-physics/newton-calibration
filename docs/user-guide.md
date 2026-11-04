@@ -86,6 +86,19 @@ For a deliberately fixed solver configuration, select `qualification_mode="repea
 
 The numerical analysis records `mode="repeatability"` and `scope="fixed_configuration_only"`; the final validation report and saved template also retain the selected policy. An accepted result is conditional on that policy. Budget reservation includes the final repeated evaluation. Combining this mode with refinements raises an error. It is not selected automatically for cable cases.
 
+### Migrate a saved asset from task_tuning
+
+To reuse an asset exported before the package rename, write a converted copy:
+
+```bash
+python -m newton_calibration.migrate_asset old-asset.json new-asset.json
+```
+
+The output path must be new. The converter updates the asset schema and the names of built-in
+example classes, preserving parameter values, configuration and externally defined class names.
+Pass the converted file to the matching asset's `reload()` method. Keep the original export
+with its run records for provenance.
+
 ## 5. Scores and thresholds
 
 Default squared-error loss normalizes residuals by observation scales and weights. Do not confuse a dimensionless objective, physical coordinate RMSE and maximum coordinate error.
@@ -168,16 +181,3 @@ ruff check src tests examples/cable_calibration/run.py examples/cable_calibratio
 ```
 
 The frozen cable backend files preserve historical source bytes and formatting for provenance. New factory/verification code is checked separately. See the case README for optional solver-dependent construction checks and their limits.
-
-### Migrate a saved asset from task_tuning
-
-To reuse an asset exported before the package rename, write a converted copy:
-
-```bash
-python -m newton_calibration.migrate_asset old-asset.json new-asset.json
-```
-
-The output path must be new. The converter updates the asset schema and the names of built-in
-example classes, preserving parameter values, configuration and externally defined class names.
-Pass the converted file to the matching asset's `reload()` method. Keep the original export
-with its run records for provenance.
