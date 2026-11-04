@@ -1,0 +1,8 @@
+{
+  "schema": "task-tuning-asset/1",
+  "asset_type": "task_tuning.examples.SlidingAsset",
+  "parameters": {
+    "friction": 0.35
+  },
+  "config": {}
+}

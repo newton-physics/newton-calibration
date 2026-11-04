@@ -168,3 +168,16 @@ ruff check src tests examples/cable_calibration/run.py examples/cable_calibratio
 ```
 
 The frozen cable backend files preserve historical source bytes and formatting for provenance. New factory/verification code is checked separately. See the case README for optional solver-dependent construction checks and their limits.
+
+### Migrate a saved asset from task_tuning
+
+To reuse an asset exported before the package rename, write a converted copy:
+
+```bash
+python -m newton_calibration.migrate_asset old-asset.json new-asset.json
+```
+
+The output path must be new. The converter updates the asset schema and the names of built-in
+example classes, preserving parameter values, configuration and externally defined class names.
+Pass the converted file to the matching asset's `reload()` method. Keep the original export
+with its run records for provenance.
