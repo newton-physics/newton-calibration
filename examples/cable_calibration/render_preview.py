@@ -36,9 +36,7 @@ def main():
             "axes.labelcolor": "#172e40",
         }
     )
-    fig, (bars, traces) = plt.subplots(
-        1, 2, figsize=(12, 5.4), gridspec_kw={"width_ratios": [1, 1.5]}
-    )
+    fig, (bars, traces) = plt.subplots(1, 2, figsize=(12, 5.4), gridspec_kw={"width_ratios": [1, 1.5]})
     fig.patch.set_facecolor("#f7f5ef")
     for ax in (bars, traces):
         ax.set_facecolor("#f7f5ef")
@@ -62,7 +60,7 @@ def main():
         label="Measured",
     )
     with np.load(CASE / "data/traces.npz", allow_pickle=False) as archive:
-        for stage, color, label in zip(stages, colors, ["A", "B", "B*", "C (SLS)"]):
+        for stage, color, label in zip(stages, colors, ["A", "B", "B*", "C (SLS)"], strict=True):
             traces.plot(
                 times[valid],
                 archive[f"{stage}__noplug_release"][valid, 29] * 1000,
@@ -74,9 +72,7 @@ def main():
     traces.set_xlabel("Time after release (s)")
     traces.set_ylabel("z (mm)")
     traces.legend(frameon=False, ncol=3, loc="lower right", fontsize=9)
-    fig.suptitle(
-        "CABLE CALIBRATION  /  A → B → C", x=0.065, y=0.965, ha="left", fontsize=17, weight="bold"
-    )
+    fig.suptitle("CABLE CALIBRATION  /  A → B → C", x=0.065, y=0.965, ha="left", fontsize=17, weight="bold")
     fig.text(
         0.065,
         0.885,

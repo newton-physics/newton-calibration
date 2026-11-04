@@ -34,9 +34,7 @@ def verify():
                 raise ValueError(f"Invalid archived trace: {key}")
             error = (values - exp.reference)[exp.mask] * 1000
             rmse, maximum = float(np.sqrt(np.square(error).mean())), float(np.abs(error).max())
-            np.testing.assert_allclose(
-                [rmse, maximum], [target["rmse_mm"], target["max_mm"]], rtol=0, atol=1e-8
-            )
+            np.testing.assert_allclose([rmse, maximum], [target["rmse_mm"], target["max_mm"]], rtol=0, atol=1e-8)
             evaluator = DistalDynamicEvaluator() if stage in ("Bstar", "C") else CableEvaluator()
             episode = Episode("archived", name, 0, "completed", Trace(exp.times, values))
             score = evaluator.score_batch((episode,), ("archived",), (exp,))
@@ -56,9 +54,7 @@ def verify():
     comparison = json.loads((CASE / "archive/C-comparison.json").read_text())
     for stage, label in (("Bstar", "Kelvin best"), ("C", "SLS best")):
         target = comparison["metrics"]["noplug_release"][label]["objective"]
-        np.testing.assert_allclose(
-            results[f"{stage}__noplug_release"]["objective"], target, rtol=0, atol=1e-10
-        )
+        np.testing.assert_allclose(results[f"{stage}__noplug_release"]["objective"], target, rtol=0, atol=1e-10)
     before = results["Bstar__noplug_release"]["objective"]
     after = results["C__noplug_release"]["objective"]
     return {

@@ -4,6 +4,7 @@
 """Read-only GL comparison and portable USDA point animation."""
 
 import json
+from itertools import pairwise
 from pathlib import Path
 
 import numpy as np
@@ -12,23 +13,15 @@ import numpy as np
 class Play:
     def compare(self, baseline, calibrated, references=None, *, accepted=False):
         before = {
-            (e.experiment_id, e.repeat): e.trace
-            for e in baseline
-            if e.status == "completed" and e.trace is not None
+            (e.experiment_id, e.repeat): e.trace for e in baseline if e.status == "completed" and e.trace is not None
         }
         after = {
-            (e.experiment_id, e.repeat): e.trace
-            for e in calibrated
-            if e.status == "completed" and e.trace is not None
+            (e.experiment_id, e.repeat): e.trace for e in calibrated if e.status == "completed" and e.trace is not None
         }
         tracks = []
         for key in sorted(before.keys() & after.keys()):
             left, right = before[key], after[key]
-            if (
-                left.positions is None
-                or right.positions is None
-                or not np.array_equal(left.times, right.times)
-            ):
+            if left.positions is None or right.positions is None or not np.array_equal(left.times, right.times):
                 continue
             for label, trace in (("baseline", left), ("calibrated", right)):
                 positions = np.array(trace.positions, dtype=np.float64)
@@ -76,9 +69,7 @@ class Play:
             for key in ("identity", "baseline_parameters", "calibrated_parameters")
             if key in comparison
         }
-        lines.append(
-            "    custom string provenance = " + json.dumps(json.dumps(provenance, sort_keys=True))
-        )
+        lines.append("    custom string provenance = " + json.dumps(json.dumps(provenance, sort_keys=True)))
         for i, track in enumerate(tracks):
             color = "(0.25, 0.65, 1)" if track["label"] == "baseline" else "(1, 0.5, 0.15)"
             lines.extend(
@@ -92,9 +83,7 @@ class Play:
                 ]
             )
             for time, points in zip(track["times"], track["positions"], strict=True):
-                coordinates = ", ".join(
-                    "(" + ", ".join(f"{float(v):.12g}" for v in p) + ")" for p in points
-                )
+                coordinates = ", ".join("(" + ", ".join(f"{float(v):.12g}" for v in p) + ")" for p in points)
                 lines.append(f"            {float(time):.12g}: [{coordinates}],")
             lines.extend(["        }", "    }"])
         lines.append("}")
@@ -112,9 +101,7 @@ class Play:
         tracks = comparison["tracks"]
         if not tracks:
             raise ValueError("no tracks to display")
-        window = pyglet.window.Window(
-            960, 640, caption="Tuning: baseline / calibrated", visible=not headless
-        )
+        window = pyglet.window.Window(960, 640, caption="Tuning: baseline / calibrated", visible=not headless)
         groups = sorted({(x["experiment"], x["repeat"]) for x in tracks})
         coordinates = np.concatenate([x["positions"].reshape(-1, 3) for x in tracks])
         low, high = coordinates[:, :2].min(0), coordinates[:, :2].max(0)
@@ -132,9 +119,7 @@ class Play:
             objects = []
             for track in tracks:
                 times = track["times"]
-                index = min(
-                    np.searchsorted(times, start + elapsed, side="right") - 1, len(times) - 1
-                )
+                index = min(np.searchsorted(times, start + elapsed, side="right") - 1, len(times) - 1)
                 index = max(0, index)
                 points = track["positions"][index]
                 color = (65, 165, 255) if track["label"] == "baseline" else (255, 128, 38)
@@ -145,7 +130,7 @@ class Play:
                 if points.shape[0] == 1:
                     trail = track["positions"][: index + 1, 0, :2]
                     trail = offset + (trail - (low + high) / 2) / span * size + size / 2
-                    for a, b in zip(trail[:-1], trail[1:]):
+                    for a, b in pairwise(trail):
                         objects.append(shapes.Line(*a, *b, thickness=1, color=color, batch=batch))
                 if track["label"] == "baseline":
                     objects.append(
@@ -158,7 +143,7 @@ class Play:
                     )
                 for point in xy:
                     objects.append(shapes.Circle(*point, radius=5, color=color, batch=batch))
-                for a, b in zip(xy[:-1], xy[1:]):
+                for a, b in pairwise(xy):
                     objects.append(shapes.Line(*a, *b, thickness=2, color=color, batch=batch))
             objects.append(
                 pyglet.text.Label(

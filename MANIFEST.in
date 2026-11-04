@@ -1,4 +1,6 @@
 include AGENTS.md CONTRIBUTING.md .pre-commit-config.yaml index.html .nojekyll
+include CODING_GUIDELINES.rst REVIEW_GUIDELINES.rst
+include ruff-newton.toml scripts/check_warp_array_syntax.py changelog/README.md .github/PULL_REQUEST_TEMPLATE.md
 graft docs
 graft examples
 graft codex-skills

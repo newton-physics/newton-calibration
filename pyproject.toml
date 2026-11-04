@@ -34,10 +34,4 @@ pythonpath = ["src"]
 addopts = "-ra"
 
 [tool.ruff]
-line-length = 100
-target-version = "py311"
-# Preserve archived adapter snapshots and their recorded hashes.
-extend-exclude = ["examples/cable_calibration/backends"]
-
-[tool.ruff.lint]
-select = ["E", "F", "I"]
+extend = "ruff-newton.toml"
