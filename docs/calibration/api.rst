@@ -4,13 +4,14 @@
 API Reference
 =============
 
-.. currentmodule:: task_tuning
+.. currentmodule:: newton_calibration
 
 .. autosummary::
    :toctree: _generated
    :nosignatures:
 
    Asset
+   BatchEnvironment
    BatchResult
    CMAES
    Decision

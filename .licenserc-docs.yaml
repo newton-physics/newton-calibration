@@ -15,6 +15,7 @@ header:
 
   paths:
     - "**/*.rst"
+    - "docs/calibration/**/*.md"
 
   paths-ignore:
     - "docs/calibration/_generated/**"

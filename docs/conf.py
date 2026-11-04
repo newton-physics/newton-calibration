@@ -22,9 +22,7 @@ github_version = os.environ.get("GITHUB_REF_NAME") or "main"
 
 project = "Newton Calibration"
 author = "The Newton Developers"
-copyright = (
-    f"{datetime.date.today().year}, The Newton Developers. Documentation licensed under CC-BY-4.0"
-)
+copyright = f"{datetime.date.today().year}, The Newton Developers. Documentation licensed under CC-BY-4.0"
 with open(project_root / "pyproject.toml", "rb") as f:
     release = tomllib.load(f)["project"]["version"]
 
@@ -103,9 +101,7 @@ html_theme_options = {
     "show_prev_next": False,
     "use_edit_page_button": False,
     "logo": {
-        "text": (
-            f"Newton Calibration <span style='font-size: 0.8em; color: #888;'>({release})</span>"
-        ),
+        "text": f"Newton Calibration <span style='font-size: 0.8em; color: #888;'>({release})</span>",
     },
     "icon_links": [
         {
