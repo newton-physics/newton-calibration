@@ -6,6 +6,7 @@ import json
 import numpy as np
 import pytest
 
+from task_tuning.__main__ import main
 from task_tuning.examples import make_tuning
 
 
@@ -22,6 +23,15 @@ def test_generic_run_recovers_parameters_and_reloads_asset(case, tmp_path):
     assert report["validation_report"]["passed"]
     assert report["budget_usage"]["analysis"]["rollouts"] > 0
     assert report["template_snapshot"]["numeric_settings"]
+
+
+def test_sliding_cli_runs_without_an_optimizer_flag(tmp_path, monkeypatch, capsys):
+    """Run the sliding demo with its default optimizer and accept the fitted asset."""
+    monkeypatch.setattr(
+        "sys.argv", ["task-tuning", "demo", "--case", "sliding", "--workspace", str(tmp_path)]
+    )
+    assert main() == 0
+    assert json.loads(capsys.readouterr().out)["acceptance"] == "accepted"
 
 
 def test_changing_validation_does_not_change_training(tmp_path):
