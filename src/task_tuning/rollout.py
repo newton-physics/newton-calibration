@@ -87,8 +87,8 @@ class Rollout:
                 raise RuntimeError(
                     "batch environment did not report one parameter mapping per member"
                 )
-            for (episode, values), actual in zip(chunk, applied, strict=True):
-                actual = dict(actual)
+            for (episode, values), reported in zip(chunk, applied, strict=True):
+                actual = dict(reported)
                 self._check_readback(template, values, actual)
                 episode.applied_parameters = actual
             seed = int(template.experiment_settings[exp.id]["seed"]) + repeat

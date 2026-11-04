@@ -44,7 +44,7 @@ class BatchEnvironment(ABC):
         """
 
     def close(self):
-        pass
+        return None
 
 
 class Asset(ABC):
