@@ -8,8 +8,12 @@ from itertools import product
 import numpy as np
 import pytest
 
-from task_tuning import Rollout, SimulationError
-from task_tuning.examples import BatchedOscillatorAsset, OscillatorBatchEnvironment, make_tuning
+from newton_calibration import Rollout, SimulationError
+from newton_calibration.examples import (
+    BatchedOscillatorAsset,
+    OscillatorBatchEnvironment,
+    make_tuning,
+)
 
 
 def _rollout_inputs(tmp_path, **kwargs):

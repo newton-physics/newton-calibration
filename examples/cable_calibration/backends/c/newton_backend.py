@@ -10,7 +10,7 @@ import numpy as np
 import warp as wp
 from scipy.spatial.transform import Rotation
 
-from task_tuning import Asset, Environment, SimulationError, Trace
+from newton_calibration import Asset, Environment, SimulationError, Trace
 
 
 def solver_frame_rotation(template):

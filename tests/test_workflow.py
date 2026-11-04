@@ -6,8 +6,8 @@ import json
 import numpy as np
 import pytest
 
-from task_tuning.__main__ import main
-from task_tuning.examples import make_tuning
+from newton_calibration.__main__ import main
+from newton_calibration.examples import make_tuning
 
 
 @pytest.mark.parametrize("case", ["oscillator", "sliding"])
@@ -28,7 +28,8 @@ def test_generic_run_recovers_parameters_and_reloads_asset(case, tmp_path):
 def test_sliding_cli_runs_without_an_optimizer_flag(tmp_path, monkeypatch, capsys):
     """Run the sliding demo with its default optimizer and accept the fitted asset."""
     monkeypatch.setattr(
-        "sys.argv", ["task-tuning", "demo", "--case", "sliding", "--workspace", str(tmp_path)]
+        "sys.argv",
+        ["newton-calibration", "demo", "--case", "sliding", "--workspace", str(tmp_path)],
     )
     assert main() == 0
     assert json.loads(capsys.readouterr().out)["acceptance"] == "accepted"

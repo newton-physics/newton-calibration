@@ -1,6 +1,6 @@
 # Contributing to Newton Calibration
 
-The framework uses the `task_tuning` package and `task-tuning` CLI. Keep pull requests
+The framework uses the `newton_calibration` package and `newton-calibration` CLI. Keep pull requests
 focused and describe the behavior changed, its validation and any remaining limitations.
 
 ## Development

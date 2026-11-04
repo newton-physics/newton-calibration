@@ -1,4 +1,4 @@
-# TaskTuning user guide
+# Newton Calibration user guide
 
 [Home](../README.md) · [Skills](codex-skills.md) · [Real cable example](../examples/cable_calibration/README.md)
 
@@ -27,9 +27,9 @@ The examples under `examples/` are repository examples, not part of the installe
 ## 2. Run a complete synthetic calibration
 
 ```bash
-task-tuning demo --case sliding --optimizer grid --workspace workspace/sliding
-task-tuning demo --case oscillator --optimizer cma_es --capacity 4 --workspace workspace/oscillator
-task-tuning inspect workspace/oscillator/<run-id>
+newton-calibration demo --case sliding --optimizer grid --workspace workspace/sliding
+newton-calibration demo --case oscillator --optimizer cma_es --capacity 4 --workspace workspace/oscillator
+newton-calibration inspect workspace/oscillator/<run-id>
 ```
 
 Replace `<run-id>` with the created UTC timestamp/random-suffix directory. Sliding fits friction; the oscillator fits stiffness and damping against independently calculated analytical observations.
@@ -41,7 +41,7 @@ CLI exit code 0 means the result is accepted; 1 means that a completed demo did 
 ## 3. Use the Python API
 
 ```python
-from task_tuning.examples import make_tuning
+from newton_calibration.examples import make_tuning
 
 tuning = make_tuning(
     "oscillator",
@@ -64,7 +64,7 @@ Use a fresh instance for each run. Do not call `prepare()` followed by `run()` o
 
 ## 4. Assemble your own case
 
-Use [the synthetic factories](../src/task_tuning/examples.py) as the smallest complete examples, and [the cable factory](../examples/cable_calibration/run.py) for real observations and custom solver members.
+Use [the synthetic factories](../src/newton_calibration/examples.py) as the smallest complete examples, and [the cable factory](../examples/cable_calibration/run.py) for real observations and custom solver members.
 
 1. **Evidence:** create Experiment objects with reference `[T,D]`, times `[T]`, broadcastable positive scales, a Boolean `[T,D]` mask, weights and acquisition-group IDs. Separate training and validation acquisition groups. Slicing one recording does not create an independent experiment.
 2. **Parameters:** define units, bounds, baselines and linear/log transforms. The asset baseline must match exactly. Define only the parameters you are actually fitting.
@@ -141,8 +141,8 @@ Batch/checkpoint references are relative to the run directory. Batch records are
 
 ```bash
 python -m pip install -e ".[gl]"
-task-tuning demo --case sliding --optimizer grid --workspace workspace/view --gl
-task-tuning demo --case sliding --optimizer grid --workspace workspace/headless --headless-gl --gl-frames 30
+newton-calibration demo --case sliding --optimizer grid --workspace workspace/view --gl
+newton-calibration demo --case sliding --optimizer grid --workspace workspace/headless --headless-gl --gl-frames 30
 ```
 
 These CLI commands run a new demo, then display saved comparison traces. Playback itself does not advance physics. GL currently uses an XY projection, and USDA export is animated points/trajectories, not a mesh or physical Newton scene. Headless GL still needs a working graphics context.
@@ -174,7 +174,7 @@ The frozen cable backend files preserve historical source bytes and formatting f
 The oscillator example can integrate several candidates in one environment:
 
 ```python
-from task_tuning.examples import make_tuning
+from newton_calibration.examples import make_tuning
 
 tuning = make_tuning("oscillator", optimizer="grid", batched=True, worlds=4)
 result = tuning.run()

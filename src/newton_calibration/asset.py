@@ -87,7 +87,7 @@ class Asset(ABC):
         write_json(
             path,
             {
-                "schema": "task-tuning-asset/1",
+                "schema": "newton-calibration-asset/1",
                 "asset_type": self.snapshot()["type"],
                 "parameters": parameter_values,
                 "config": self.config,
@@ -98,7 +98,7 @@ class Asset(ABC):
     def reload(self, path):
         data = json.loads(Path(path).read_text())
         if (
-            data["schema"] != "task-tuning-asset/1"
+            data["schema"] != "newton-calibration-asset/1"
             or data["asset_type"] != self.snapshot()["type"]
             or data["config"] != plain(self.config)
         ):

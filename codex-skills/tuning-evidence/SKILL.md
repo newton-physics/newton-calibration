@@ -1,6 +1,6 @@
 ---
 name: tuning-evidence
-description: Configure or revise Evidence, Evaluator, and Validator for task_tuning calibration, including measured or teleoperation observations, train/holdout splits, loss, weights, and acceptance thresholds. Use for configuration decisions, not merely reading a score or explaining an existing loss.
+description: Configure or revise Evidence, Evaluator, and Validator for calibration with newton_calibration, including measured or teleoperation observations, train/holdout splits, loss, weights, and acceptance thresholds. Use for configuration decisions, not merely reading a score or explaining an existing loss.
 ---
 
 # Tuning Evidence

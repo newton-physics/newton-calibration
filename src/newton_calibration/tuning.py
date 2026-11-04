@@ -269,7 +269,7 @@ class Tuning:
         write_json(
             self.run_directory / "resolved.json",
             {
-                "schema": "task-tuning/0.2",
+                "schema": "newton-calibration/0.2",
                 "workspace": str(self.workspace),
                 "run_directory": str(self.run_directory),
                 "identity": self.state.identity,

@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from task_tuning import Evaluator, Validator
+from newton_calibration import Evaluator, Validator
 
 
 class CableEvaluator(Evaluator):
