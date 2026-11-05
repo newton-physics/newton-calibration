@@ -6,6 +6,8 @@ The framework uses the `newton_calibration` Python package and `newton-calibrati
 
 [Contributing](CONTRIBUTING.md) · [Repository instructions](AGENTS.md) · [Apache-2.0 license](LICENSE)
 
+Code is licensed under [Apache-2.0](LICENSE). Documentation files with a CC-BY-4.0 SPDX header, such as the site pages in [docs](docs/) and the guidelines, are licensed under [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/).
+
 Newton Calibration turns measured observations, a simulator adapter and a parameter space into one traceable `Tuning.run()`. It checks numerical accuracy and local identifiability, performs batched search, reloads the candidate, and validates before releasing an asset.
 
 [Local report preview](docs/publishing-results.md) · [User guide](docs/user-guide.md) · [Codex skills](docs/codex-skills.md) · [Cable A → B → C example](examples/cable_calibration/README.md)
