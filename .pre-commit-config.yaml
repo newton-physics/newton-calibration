@@ -56,4 +56,4 @@ repos:
         language: pygrep
         entry: patch\.dict\s*\((?:\s*|[^()]*\bin_dict\s*=\s*)["']?sys\.modules\b
         args: [--multiline]
-        files: ^tests/.*\.py$
+        files: ^newton_calibration/tests/.*\.py$

@@ -115,7 +115,7 @@ See [installation and usage](docs/codex-skills.md). Skills do not install Python
 python -m pip install -e ".[cma,dev]"
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q
 python -m examples.cable_calibration.verify
-ruff check newton_calibration tests examples/cable_calibration/run.py examples/cable_calibration/verify.py
+ruff check newton_calibration examples/cable_calibration/run.py examples/cable_calibration/verify.py
 ```
 
 The core currently supports synchronous batches, threaded environments, optional multi-candidate environments and NumPy scoring. Thread speedup depends on the backend. It does not provide process-level forced termination, distributed multi-GPU execution, automatic resume, Bayesian optimization or PBT.

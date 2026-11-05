@@ -4,5 +4,5 @@ include ruff-newton.toml scripts/check_warp_array_syntax.py changelog/README.md 
 graft docs
 graft examples
 graft codex-skills
+graft newton_calibration/tests
 global-exclude __pycache__ *.py[cod]
-include tests/fixtures/legacy-sliding-asset.json

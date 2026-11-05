@@ -43,5 +43,5 @@ jobs:
           cd "$RUNNER_TEMP"
           python -c "from newton_calibration import Template, Tuning"
           newton-calibration demo --case sliding --optimizer grid --workspace "$RUNNER_TEMP/wheel-sliding"
-          python -m newton_calibration.migrate_asset "$GITHUB_WORKSPACE/tests/fixtures/legacy-sliding-asset.json" migrated.json
+          python -m newton_calibration.migrate_asset "$GITHUB_WORKSPACE/newton_calibration/tests/fixtures/legacy-sliding-asset.json" migrated.json
           python -c "from newton_calibration.examples import SlidingAsset; assert SlidingAsset({}).reload('migrated.json').baseline_parameters['friction'] == 0.35"

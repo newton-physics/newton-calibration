@@ -27,9 +27,13 @@ newton-calibration = "newton_calibration.__main__:main"
 
 [tool.setuptools.packages.find]
 include = ["newton_calibration*"]
+exclude = ["newton_calibration.tests*"]
+
+[tool.setuptools.exclude-package-data]
+newton_calibration = ["tests/**"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["newton_calibration/tests"]
 pythonpath = ["."]
 addopts = "-ra"
 

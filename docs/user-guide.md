@@ -177,7 +177,7 @@ These CLI commands run a new demo, then display saved comparison traces. Playbac
 ```bash
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q
 python -m examples.cable_calibration.verify
-ruff check newton_calibration tests examples/cable_calibration/run.py examples/cable_calibration/verify.py
+ruff check newton_calibration examples/cable_calibration/run.py examples/cable_calibration/verify.py
 ```
 
 The frozen cable backend files preserve historical source bytes and formatting for provenance. New factory/verification code is checked separately. See the case README for optional solver-dependent construction checks and their limits.
