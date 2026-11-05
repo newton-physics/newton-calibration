@@ -113,7 +113,7 @@ See [installation and usage](docs/codex-skills.md). Skills do not install Python
 
 ```bash
 python -m pip install -e ".[cma,dev]"
-PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q
+python -m newton_calibration.tests
 python -m examples.cable_calibration.verify
 ruff check newton_calibration examples/cable_calibration/run.py examples/cable_calibration/verify.py
 ```

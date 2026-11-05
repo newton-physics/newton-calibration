@@ -281,7 +281,8 @@ Documentation and comments
 Tests and repository conventions
 --------------------------------
 
-- Use pytest for calibration tests and run them with ``python -m pytest``.
+- Write calibration tests as ``unittest.TestCase`` classes and run them with
+  ``python -m newton_calibration.tests``.
 - Give every test function or method a triple-double-quoted docstring. Begin
   with a concise, imperative summary of the behavior being verified. Add a
   Google-style body after a blank line only when the test needs more context.
