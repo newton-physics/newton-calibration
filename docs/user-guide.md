@@ -19,7 +19,7 @@ Run these commands from the repository root. On Windows, activate `.venv\Scripts
 | no extra | NumPy, GridSearch, headless scoring and USDA export |
 | cma | CMA-ES optimizer |
 | gl | Pyglet playback of saved traces |
-| dev | Pytest, Ruff, pre-commit and package build tools |
+| dev | Ruff, pre-commit and package build tools |
 | cable | SciPy for the optional real-cable simulator adapters; Newton is installed separately |
 
 The examples under `examples/` are repository examples, not part of the installed core API. Run them from a checkout. The generic demos and archive verification run on the CPU. The real cable calibration uses Newton VBD with Warp CUDA for physics and NumPy on the CPU for scoring. Install the pinned Newton checkout (plus the SLS patch for stage C) using the [cable environment instructions](../examples/cable_calibration/README.md#5-construct-or-rerun-a-stage-with-newton). The cable extra alone does not install this solver. The recorded environment is documented there separately from the generic package requirements.
@@ -175,7 +175,7 @@ These CLI commands run a new demo, then display saved comparison traces. Playbac
 ## 10. Checks
 
 ```bash
-PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q
+python -m newton_calibration.tests
 python -m examples.cable_calibration.verify
 ruff check newton_calibration examples/cable_calibration/run.py examples/cable_calibration/verify.py
 ```

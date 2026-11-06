@@ -51,7 +51,7 @@ repos:
         types: [python]
         exclude: ^(scripts/check_warp_array_syntax\.py$|examples/cable_calibration/backends/)
       - id: no-patch-dict-sys-modules
-        name: use monkeypatch.setitem for individual sys.modules entries
+        name: patch individual sys.modules entries instead of patch.dict(sys.modules)
         # patch.dict also drops modules first imported inside it (e.g. Warp internals).
         language: pygrep
         entry: patch\.dict\s*\((?:\s*|[^()]*\bin_dict\s*=\s*)["']?sys\.modules\b

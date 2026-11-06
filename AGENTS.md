@@ -20,9 +20,9 @@ The default Ruff checks use the shared Newton profile in `ruff-newton.toml`.
 ## Tests
 
 ```bash
-uv run --extra cma --extra dev -m pytest -q
-uv run --extra cma --extra dev -m pytest -q newton_calibration/tests/test_workflow.py  # one file
-python -m examples.cable_calibration.verify                                            # archived cable scoring, CPU
+uv run --extra cma --extra dev -m newton_calibration.tests
+uv run --extra cma --extra dev -m newton_calibration.tests -k test_workflow  # matching tests
+python -m examples.cable_calibration.verify                                  # archived cable scoring, CPU
 ```
 
 The CPU suite uses synthetic cases and archived cable evidence. Run new Newton simulations separately with the pinned solver and record the hardware and scope of validation.

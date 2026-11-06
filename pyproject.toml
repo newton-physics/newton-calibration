@@ -16,7 +16,7 @@ dependencies = ["numpy>=1.26"]
 cma = ["cma>=4,<5"]
 cable = ["scipy>=1.11"]
 gl = ["pyglet>=2.1,<3"]
-dev = ["pytest>=8", "ruff==0.16.10", "pre-commit>=4,<5", "build>=1,<2"]
+dev = ["ruff==0.16.10", "pre-commit>=4,<5", "build>=1,<2"]
 
 [project.urls]
 Repository = "https://github.com/newton-physics/newton-calibration"
@@ -31,11 +31,6 @@ exclude = ["newton_calibration.tests*"]
 
 [tool.setuptools.exclude-package-data]
 newton_calibration = ["tests/**"]
-
-[tool.pytest.ini_options]
-testpaths = ["newton_calibration/tests"]
-pythonpath = ["."]
-addopts = "-ra"
 
 [tool.ruff]
 extend = "ruff-newton.toml"

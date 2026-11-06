@@ -13,7 +13,7 @@
 <!-- How were these changes verified? Include commands, test names,
      or manual steps. Example:
      ```
-     uv run --extra cma --extra dev -m pytest -q newton_calibration/tests/test_relevant.py
+     uv run --extra cma --extra dev -m newton_calibration.tests -k test_relevant
      ``` -->
 
 ## Bug fix
