@@ -14,6 +14,7 @@ from newton_calibration import (
     Asset,
     Decision,
     Environment,
+    Episode,
     Evaluator,
     Evidence,
     Experiment,
@@ -27,7 +28,6 @@ from newton_calibration import (
     Tuning,
     Validator,
 )
-from newton_calibration.data import Episode
 from newton_calibration.examples import make_tuning
 from newton_calibration.tests.unittest_utils import TempPathTestCase
 

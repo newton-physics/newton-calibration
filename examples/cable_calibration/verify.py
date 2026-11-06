@@ -5,8 +5,7 @@ from pathlib import Path
 
 import numpy as np
 
-from newton_calibration import Evidence, Experiment, Trace
-from newton_calibration.data import Episode
+from newton_calibration import Episode, Evidence, Experiment, Trace
 
 from .backends.staged_evaluator import DistalDynamicEvaluator
 from .backends.validation import CableEvaluator

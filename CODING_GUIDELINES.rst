@@ -57,10 +57,18 @@ Keep such aliases out of the preferred API documentation, mark them as
 deprecated, and remove them only after the required deprecation period.
 
 Python may still allow users to reach implementation details through other
-paths, but accessibility does not make those paths public or stable. The
-public API is what :mod:`newton_calibration` exports in its ``__all__``. Names with a
-leading underscore, and everything under ``examples/``, are internal: examples
-and documentation must import through :mod:`newton_calibration`.
+paths, but accessibility does not make those paths public or stable. The core
+public API is what :mod:`newton_calibration` exports in its ``__all__``.
+:mod:`newton_calibration.examples` separately exports the bundled synthetic demo
+helpers, and :mod:`newton_calibration.migrate_asset` exports the asset migration
+utility. Their explicit export lists do not duplicate core objects.
+
+Implementation lives under ``newton_calibration/_src/``. Public modules are thin
+re-export layers; CLI modules only forward execution to the implementation.
+Names with a leading underscore, and everything under the repository's
+``examples/`` directory, are internal. Examples and documentation must import
+core objects through :mod:`newton_calibration`. The frozen cable backends retain
+their historical imports through compatibility modules to preserve source hashes.
 
 Update the user guide whenever a public symbol or module is added, removed,
 or renamed.

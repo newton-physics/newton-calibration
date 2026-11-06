@@ -3,18 +3,18 @@
 
 """Public objects for composable, batch parameter tuning."""
 
-from .asset import Asset, BatchEnvironment, Environment, SimulationError
-from .data import BatchResult, DecisionResult, RunState, Trace, TrialBatch, TuningResult
-from .decision import Decision
-from .evaluator import Evaluator
-from .evidence import Evidence, Experiment
-from .optimizer import CMAES, GridSearch, Optimizer
-from .parameters import Parameter, Parameters
-from .play import Play
-from .rollout import Rollout
-from .template import Template
-from .tuning import Tuning
-from .validator import Validator
+from ._src.asset import Asset, BatchEnvironment, Environment, SimulationError
+from ._src.data import BatchResult, DecisionResult, Episode, RunState, Trace, TrialBatch, TuningResult
+from ._src.decision import Decision
+from ._src.evaluator import Evaluator
+from ._src.evidence import Evidence, Experiment
+from ._src.optimizer import CMAES, GridSearch, Optimizer
+from ._src.parameters import Parameter, Parameters
+from ._src.play import Play
+from ._src.rollout import Rollout
+from ._src.template import Template
+from ._src.tuning import Tuning
+from ._src.validator import Validator
 
 __all__ = [
     "CMAES",
@@ -24,6 +24,7 @@ __all__ = [
     "Decision",
     "DecisionResult",
     "Environment",
+    "Episode",
     "Evaluator",
     "Evidence",
     "Experiment",

@@ -40,6 +40,26 @@ CLI exit code 0 means the result is accepted; 1 means that a completed demo did 
 
 ## 3. Use the Python API
 
+Import core objects directly from `newton_calibration`. Its `__all__` is the
+supported core API:
+
+| Purpose | Public objects |
+|---|---|
+| Lifecycle and result | `Tuning`, `TuningResult`, `RunState` |
+| Evidence and observations | `Evidence`, `Experiment`, `Trace`, `Episode` |
+| Simulation | `Asset`, `Environment`, `BatchEnvironment`, `SimulationError`, `Template`, `Rollout` |
+| Search and evaluation | `Parameter`, `Parameters`, `Optimizer`, `GridSearch`, `CMAES`, `Evaluator`, `TrialBatch`, `BatchResult` |
+| Decisions and validation | `Decision`, `DecisionResult`, `Validator`, `Play` |
+
+For example, `from newton_calibration import Episode, Rollout` supplies the
+episode record and execution member for a custom rollout. `Episode` identifies
+one trial, experiment and repeat, together with its status, trace, error and
+applied parameters. `BatchResult.episode_records` retains these records.
+
+The separate `newton_calibration.examples` module provides the bundled synthetic
+demo factory and its asset/environment classes; it does not define the core
+lifecycle. Use it to try the API with an already assembled demo:
+
 ```python
 from newton_calibration.examples import make_tuning
 
@@ -64,7 +84,7 @@ Use a fresh instance for each run. Do not call `prepare()` followed by `run()` o
 
 ## 4. Assemble your own case
 
-Use [the synthetic factories](../newton_calibration/examples.py) as the smallest complete examples, and [the cable factory](../examples/cable_calibration/run.py) for real observations and custom solver members.
+Use [the bundled synthetic demo helpers](../newton_calibration/examples.py) for complete demo instances, and [the cable factory](../examples/cable_calibration/run.py) as an example of assembling real observations and custom solver members through the public API.
 
 1. **Evidence:** create Experiment objects with reference `[T,D]`, times `[T]`, broadcastable positive scales, a Boolean `[T,D]` mask, weights and acquisition-group IDs. Separate training and validation acquisition groups. Slicing one recording does not create an independent experiment.
 2. **Parameters:** define units, bounds, baselines and linear/log transforms. The asset baseline must match exactly. Define only the parameters you are actually fitting.
@@ -98,6 +118,23 @@ The output path must be new. The converter updates the asset schema and the name
 example classes, preserving parameter values, configuration and externally defined class names.
 Pass the converted file to the matching asset's `reload()` method. Keep the original export
 with its run records for provenance.
+
+### Import compatibility
+
+The former core module paths (`asset`, `data`, `decision`, `evaluator`, `evidence`,
+`optimizer`, `parameters`, `play`, `rollout`, `template`, `tuning`, `validator`)
+remain deprecated compatibility aliases. Replace imports such as
+`from newton_calibration.data import Episode` with
+`from newton_calibration import Episode`. No removal release is scheduled; removal
+requires an agreed transition under the project's deprecation policy. Internal
+helpers are outside the supported API.
+
+The documented `newton_calibration.examples` helpers and
+`newton_calibration.migrate_asset.migrate_asset` utility retain their entry points,
+as do both command-line entry points. Built-in demo assets retain the type names
+stored in existing asset exports, so implementation reorganization does not
+require converting those exports. Externally defined asset classes retain their
+own module and class identities.
 
 ## 5. Scores and thresholds
 
@@ -149,6 +186,11 @@ workspace/
 Batch/checkpoint references are relative to the run directory. Batch records are JSON; nonfinite values, such as the objectives of failed trials, are written as `null`. Checkpoints capture optimizer state; automatic resume is not implemented.
 
 `resolved.json` stores observations, frozen settings, identities and versions. `run_state.json` records budget use and decisions. Release files include rebuilding conditions; candidate parameters alone are insufficient.
+
+New runs record production source hashes using paths relative to the installed
+package, covering public entry points and nested implementation files. Test
+sources are excluded. A source reorganization changes the code identity of new
+runs; retained historical run records and their hashes remain unchanged.
 
 ## 8. Playback
 
