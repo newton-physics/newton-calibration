@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+# SPDX-License-Identifier: Apache-2.0
+
 """Re-score archived cable traces on CPU; never starts Newton or an optimizer."""
 
 import json

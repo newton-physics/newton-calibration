@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 Lightwheel
+# SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
 # SPDX-License-Identifier: Apache-2.0
 
 """Independent per-experiment validation through a restricted evaluation callback."""
