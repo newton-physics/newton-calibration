@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+# SPDX-FileCopyrightText: Copyright (c) 2026 Lightwheel
 # SPDX-License-Identifier: Apache-2.0
 
 import contextlib

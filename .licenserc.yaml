@@ -10,7 +10,7 @@ header:
       SPDX-License-Identifier: Apache-2.0
     # SkyWalking Eyes lowercases text and normalizes "(c)" to "copyright".
     pattern: |
-      spdx-filecopyrighttext: copyright copyright \d{4} the newton developers
+      spdx-filecopyrighttext: copyright copyright \d{4} (the newton developers|lightwheel)
       spdx-license-identifier: apache-2\.0
 
   paths:
@@ -21,5 +21,16 @@ header:
     # These are retained software example fixtures, including their reports.
     - "examples/cable_calibration/data/asset.md"
     - "examples/cable_calibration/reports/*.html"
+
+  # Local environments, build products, and run outputs are not project source.
+  paths-ignore:
+    - ".venv/**"
+    - ".venv-tuning/**"
+    - ".runtime-deps/**"
+    - "build/**"
+    - "dist/**"
+    - "runs/**"
+    - "tmp/**"
+    - "workspace/**"
 
   comment: never

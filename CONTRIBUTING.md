@@ -138,7 +138,9 @@ using the year the file was first created:
 Documentation uses the same copyright line with `CC-BY-4.0`, inside an HTML
 comment for Markdown/HTML or `..` comments for reStructuredText. Keep skill YAML
 front matter first and place its Markdown header immediately after it. Retain
-applicable third-party notices when adapting source.
+applicable third-party notices when adapting source. Both `Lightwheel` and
+`The Newton Developers` are accepted copyright owners; preserve existing
+Lightwheel headers rather than replacing them to satisfy the check.
 
 The **License Check** workflow uses Newton's Apache SkyWalking Eyes v0.8.0
 checker and validates all Python files, YAML/TOML configuration, and

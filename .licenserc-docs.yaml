@@ -12,7 +12,7 @@ header:
       SPDX-License-Identifier: CC-BY-4.0
     # SkyWalking Eyes lowercases text and normalizes "(c)" to "copyright".
     pattern: |
-      spdx-filecopyrighttext: copyright copyright \d{4} the newton developers
+      spdx-filecopyrighttext: copyright copyright \d{4} (the newton developers|lightwheel)
       spdx-license-identifier: cc-by-4\.0
 
   paths:
@@ -21,6 +21,15 @@ header:
     - "**/*.html"
 
   paths-ignore:
+    # Local environments, build products, and run outputs are not project docs.
+    - ".venv/**"
+    - ".venv-tuning/**"
+    - ".runtime-deps/**"
+    - "build/**"
+    - "dist/**"
+    - "runs/**"
+    - "tmp/**"
+    - "workspace/**"
     # Retain the upstream license verbatim and the fixtures' Apache-2.0 terms.
     - "examples/cable_calibration/solver/NEWTON-LICENSE.md"
     - "examples/cable_calibration/data/asset.md"
