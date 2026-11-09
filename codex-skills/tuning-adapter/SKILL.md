@@ -3,6 +3,11 @@ name: tuning-adapter
 description: Implement minimal newton_calibration member subclasses or solver adapters when existing members cannot express an already specified calibration requirement. Cover assets, environments, batching, scoring, optimization, validation, or presentation contracts. Do not use for constructor-only changes or replace Tuning.run() with another calibration loop.
 ---
 
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 # Tuning Adapter
 
 Read the shared specification, current base classes, and callers. Prefer constructor configuration, then a minimal case-specific subclass, then a shared change only for a demonstrated common gap. State the unsupported behavior, affected methods, and tests before editing. Avoid an unnecessary registry or framework.

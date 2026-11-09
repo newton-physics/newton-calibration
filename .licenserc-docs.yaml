@@ -1,0 +1,35 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+# SPDX-License-Identifier: Apache-2.0
+
+header:
+  # Skill headers follow required YAML front matter, including descriptions.
+  license-location-threshold: 2048
+  license:
+    spdx-id: CC-BY-4.0
+    copyright-owner: The Newton Developers
+    content: |
+      SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+      SPDX-License-Identifier: CC-BY-4.0
+    # SkyWalking Eyes lowercases text and normalizes "(c)" to "copyright".
+    pattern: |
+      spdx-filecopyrighttext: copyright copyright \d{4} the newton developers
+      spdx-license-identifier: cc-by-4\.0
+
+  paths:
+    - "**/*.rst"
+    - "**/*.md"
+    - "**/*.html"
+
+  paths-ignore:
+    # Retain the upstream license verbatim and the fixtures' Apache-2.0 terms.
+    - "examples/cable_calibration/solver/NEWTON-LICENSE.md"
+    - "examples/cable_calibration/data/asset.md"
+    - "examples/cable_calibration/reports/*.html"
+
+  language:
+    reStructuredText:
+      extensions:
+        - ".rst"
+      comment_style_id: DoubleDot
+
+  comment: never

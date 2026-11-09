@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+# SPDX-License-Identifier: Apache-2.0
+
 interface:
   display_name: "Tuning Adapter"
   short_description: "Implement minimal calibration member adapters"

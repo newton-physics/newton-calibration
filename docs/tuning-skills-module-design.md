@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 # Design of the Tuning skills module
 
 See [usage and validation scope](tuning-skills-implementation.md) and [installation and usage](codex-skills.md).

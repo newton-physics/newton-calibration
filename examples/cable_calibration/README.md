@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 # Cable calibration: A → B → C
 
 [Repository](../../README.md) · [Specification](TUNING-SPEC.md) · [English HTML report](reports/cable_calibration_en.html) · [Chinese HTML report](reports/cable_calibration_zh.html)

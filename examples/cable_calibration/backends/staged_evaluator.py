@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+# SPDX-License-Identifier: Apache-2.0
+
 """Dynamic waveform emphasis while retaining full-coordinate numeric checks."""
 
 from dataclasses import replace

@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 # Skill behavior acceptance scenarios
 
 Use independent temporary cases without overwriting assets or historical runs. A fully specified non-cable case checks generality; a real case checks uncertainty handling. Format validation does not replace behavior checks. Mark unexecuted scenarios honestly.

@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 # newton_calibration contracts and version checks
 
 This is an interface snapshot, not a fixed SDK. Use the selected interpreter to inspect newton_calibration.__file__, signatures, and callers. Follow the actual implementation and record differences; do not force a version rollback.

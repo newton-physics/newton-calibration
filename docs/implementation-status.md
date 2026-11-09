@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 # Capabilities and limits
 
 The core provides two synthetic systems and the [real cable example](../examples/cable_calibration/README.md). A successful synthetic calibration does not imply cable acceptance.

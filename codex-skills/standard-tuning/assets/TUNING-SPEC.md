@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 # Tuning task specification
 
 Record configuration rationale here. Tuning's RunState and workspace remain authoritative for execution state. Remove instructions and irrelevant fields when filling this template; retain unresolved issues rather than presenting prompts as conclusions.

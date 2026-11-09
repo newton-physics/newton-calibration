@@ -3,6 +3,11 @@ name: tuning-environment
 description: Design or revise Asset, Template, Rollout, and Play for calibration with newton_calibration, including physical and experimental conditions, numerical accuracy, parameter binding, parallel simulation, and comparisons. Use for environment and execution decisions; never promote an old case's numerics to universal defaults.
 ---
 
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 # Tuning Environment
 
 Read the shared specification and actual interfaces. Separate three layers:

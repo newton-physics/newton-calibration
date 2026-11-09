@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 # Tuning object relationships
 
 The diagram describes responsibility and ownership. Consult current Python signatures for executable APIs.

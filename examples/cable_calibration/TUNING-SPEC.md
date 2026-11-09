@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 # Cable calibration specification and decision record
 
 This is a curated English export of the original case specification. Historical outcomes remain in [archive](archive/); exact runnable configuration is in [configs](configs/). The original workspace and records are unchanged. See [provenance](archive/provenance.json) for historical run identities and original evidence fingerprints.

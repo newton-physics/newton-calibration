@@ -3,6 +3,11 @@ name: tuning-search
 description: Configure Parameters, Optimizer, and Decision for calibration with newton_calibration, including parameter ranges and combinations, identifiability, search strategy, budgets, and stopping. Use for task configuration changes, not ordinary optimization theory questions.
 ---
 
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 # Tuning Search
 
 Read the shared specification, actual interfaces, and evidence/environment decisions.

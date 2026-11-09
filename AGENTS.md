@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 # Newton Calibration Development Guidelines
 
 Read and follow the canonical [source code and public API guidelines](CODING_GUIDELINES.rst) before changing or reviewing code. This file contains agent-specific workflow instructions; the linked guide is authoritative for coding and API design.

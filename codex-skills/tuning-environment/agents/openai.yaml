@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+# SPDX-License-Identifier: Apache-2.0
+
 interface:
   display_name: "Tuning Environment"
   short_description: "Qualify physics, numerics, and simulation"

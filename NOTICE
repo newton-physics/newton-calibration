@@ -11,3 +11,8 @@ Source revisions and hashes are recorded alongside the patch.
 
 Archived cable observations, outputs and reports retain their provenance.
 Historical experimental results are not new validation results for this seed.
+
+Project documentation is licensed under Creative Commons Attribution 4.0
+International; see LICENSE-DOCS. Bundled software example fixtures, including
+archived observations, outputs, reports, and solver adaptations, retain their
+Apache-2.0 terms.

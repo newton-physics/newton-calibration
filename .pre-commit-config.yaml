@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+# SPDX-License-Identifier: Apache-2.0
+
 ci:
   autofix_commit_msg: |
     [pre-commit.ci] auto code formatting

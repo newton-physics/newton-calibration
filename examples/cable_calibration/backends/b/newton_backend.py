@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+# SPDX-License-Identifier: Apache-2.0
+
 """Newton VBD rod adapter. No optimization or scoring logic lives here."""
 
 from __future__ import annotations

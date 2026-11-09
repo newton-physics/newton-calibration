@@ -3,6 +3,11 @@ name: tuning-evidence
 description: Configure or revise Evidence, Evaluator, and Validator for calibration with newton_calibration, including measured or teleoperation observations, train/holdout splits, loss, weights, and acceptance thresholds. Use for configuration decisions, not merely reading a score or explaining an existing loss.
 ---
 
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 # Tuning Evidence
 
 Read the case specification and actual member interfaces. Update the shared TUNING-SPEC.md; do not create a separate workflow.

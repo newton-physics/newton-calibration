@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 # Object-oriented calibration workflow
 
 The generic implementation includes two synthetic examples; see [capabilities and limits](implementation-status.md) for verified scope and limitations. The [cable example](../examples/cable_calibration/README.md) extends members without replacing the lifecycle.

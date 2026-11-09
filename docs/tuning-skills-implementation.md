@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 # Tuning skills usage and validation
 
 The five source directories are distributed in [codex-skills](../codex-skills/). Install them as siblings using the [installation guide](codex-skills.md); the repository does not assume they are already installed on another machine.

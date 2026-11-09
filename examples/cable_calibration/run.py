@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+# SPDX-License-Identifier: Apache-2.0
+
 """Compose a fresh real Tuning from a portable stage configuration.
 
 Construction does not simulate. CLI execution requires --run.

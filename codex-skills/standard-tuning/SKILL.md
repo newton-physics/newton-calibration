@@ -3,6 +3,11 @@ name: standard-tuning
 description: Create, configure, or use newton_calibration for simulation parameter calibration. Resolve consequential unknowns from existing evidence and targeted questions, select member objects, and construct a real Tuning instance. Use for new calibration tasks, measured or teleoperation data, and configuration changes across modules. Do not start this workflow for score explanations, theory questions, or ordinary debugging.
 ---
 
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 # Standard Tuning
 
 Compose one traceable `newton_calibration.Tuning` using its existing lifecycle. This skill and its four sibling skills form a module; they require neither another scheduler nor multiple agents.
