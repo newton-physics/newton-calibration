@@ -119,37 +119,9 @@ Before proposing to add project-maintained assets to `newton-assets`:
 
 ## Licensing
 
-Original contributions are Apache-2.0; retain third-party notices and identify the license of every new dependency. See [NOTICE](NOTICE) for the original contribution and the Newton patch. Runtime dependencies keep their own licenses: NumPy, SciPy, CMA-ES and Pyglet are BSD-licensed; consult the installed distributions for their complete notices.
-
-Project documentation uses [CC-BY-4.0](LICENSE-DOCS), following Newton's
-contribution requirements. Bundled software example fixtures, including
-archived reports, remain Apache-2.0. JSON, binary data, and the solver patch
-retain their existing format and provenance; their terms are recorded in
-[NOTICE](NOTICE) and the accompanying license files.
-
-Python source and comment-capable configuration files must carry these headers,
-using the year the file was first created:
-
-```python
-# SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
-# SPDX-License-Identifier: Apache-2.0
-```
-
-Documentation uses the same copyright line with `CC-BY-4.0`, inside an HTML
-comment for Markdown/HTML or `..` comments for reStructuredText. Keep skill YAML
-front matter first and place its Markdown header immediately after it. Retain
-applicable third-party notices when adapting source. Both `Lightwheel` and
-`The Newton Developers` are accepted copyright owners; preserve existing
-Lightwheel headers rather than replacing them to satisfy the check.
-
-The **License Check** workflow uses Newton's Apache SkyWalking Eyes v0.8.0
-checker and validates all Python files, YAML/TOML configuration, and
-Markdown/HTML/reStructuredText documentation, including examples and skills.
-The configuration files distinguish documentation from Apache-2.0 example
-fixtures and exclude the verbatim upstream license text. Run both checks locally
-from the repository root with Docker:
-
-```bash
-docker run --rm -v "$PWD:/github/workspace:ro" apache/skywalking-eyes:0.8.0 header check
-docker run --rm -v "$PWD:/github/workspace:ro" apache/skywalking-eyes:0.8.0 -c .licenserc-docs.yaml header check
-```
+Code and bundled software example fixtures, including archived reports, use
+[Apache-2.0](LICENSE); project documentation uses [CC-BY-4.0](LICENSE-DOCS).
+CI checks SPDX headers and accepts both `The Newton Developers` and `Lightwheel`
+as copyright owners. Preserve existing notices and example/solver provenance
+(see [NOTICE](NOTICE)), and identify the license of every new dependency;
+dependencies retain their own licenses.
