@@ -5,19 +5,18 @@ SPDX-License-Identifier: CC-BY-4.0
 
 # Newton Calibration
 
-Composable, evidence-based simulation parameter calibration for the Newton ecosystem.
+Newton Calibration is a toolbox for fitting simulation parameters to measured data. It supplies components, for example `Evidence`, `Parameters`, `Asset`, `Evaluator`, `Optimizer` and `Validator`. You select, configure and extend these components to build a calibration workflow for your own system.
 
-The framework uses the `newton_calibration` Python package and `newton-calibration` CLI. The core remains simulator-independent; the cable example provides a Newton VBD adapter.
+The goal is a collection of recipes: complete calibration workflows for typical problems that you can adapt to your own case.
 
-[Contributing](CONTRIBUTING.md) · [Repository instructions](AGENTS.md) · [Apache-2.0 license](LICENSE)
+> **Pre-release.** This package has not had a release yet. The API, file formats and command line can change without notice.
 
-Newton Calibration turns measured observations, a simulator adapter and a parameter space into one traceable `Tuning.run()`. It checks numerical accuracy and local identifiability, performs batched search, reloads the candidate, and validates before releasing an asset.
+## Requirements
 
-[Local report preview](docs/publishing-results.md) · [User guide](docs/user-guide.md) · [Codex skills](docs/codex-skills.md) · [Cable A → B → C example](examples/cable_calibration/README.md)
+- Python 3.11 or later. NumPy is the only core dependency.
+- The [cable example](examples/cable_calibration/README.md) needs a pinned Newton revision to simulate. Its archived results used a CUDA GPU. A different device changes the numerical conditions.
 
 ## Quick start
-
-Python 3.11+; the core requires NumPy. Newton is **not** a core dependency.
 
 ```bash
 git clone https://github.com/newton-physics/newton-calibration.git
@@ -130,3 +129,7 @@ Local SVD diagnostics are not confidence intervals or proofs of global identifia
 See [capabilities and limits](docs/implementation-status.md) and [skills usage](docs/tuning-skills-implementation.md).
 
 Reports are bundled for [local viewing](docs/publishing-results.md). See [development and validation](CONTRIBUTING.md).
+
+## License
+
+[Apache-2.0](LICENSE). See [NOTICE](NOTICE) for attribution.
