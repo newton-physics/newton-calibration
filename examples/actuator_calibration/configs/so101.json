@@ -1,0 +1,87 @@
+{
+  "schema": "actuator-calibration/1",
+  "description": "SO-101 arm: PD gains, armature and joint friction from replayed position commands",
+  "asset": {
+    "path": "robot_assets/so101_camera_mass_23g_at_camera.usd",
+    "usd_sha256": "d25d09201be7cdc49b91528113e91768987a30412bc995a0abd14a45effd1b0f",
+    "provenance": "SO-101 articulation with a 23 g camera payload, from the dataset at the pinned revision",
+    "fixed_base": true
+  },
+  "joint_groups": [
+    {
+      "names": ["Rotation", "Pitch", "Elbow", "Wrist_Pitch", "Wrist_Roll", "Jaw"],
+      "delay_ms": 0,
+      "effort_limit": 3.35,
+      "velocity_limit": 30.0,
+      "parameters": {
+        "stiffness": {"bounds": [1.0, 80.0], "baseline": 40.0, "unit": "N m/rad", "transform": "log"},
+        "damping": {"bounds": [0.01, 5.0], "baseline": 2.0, "unit": "N m s/rad", "transform": "log"},
+        "dry_friction": {"bounds": [0.0, 1.0], "baseline": 0.25, "unit": "N m"},
+        "viscous_friction": {"bounds": [0.0, 2.0], "baseline": 0.75, "unit": "N m s/rad"},
+        "armature": {"bounds": [0.0, 0.1], "baseline": 0.05, "unit": "kg m^2"}
+      }
+    }
+  ],
+  "simulation": {
+    "physics_freq": 250,
+    "control_freq": 50,
+    "solver": "newton",
+    "integrator": "implicitfast",
+    "iterations": 5,
+    "ls_iterations": 2
+  },
+  "refinements": [
+    {"numeric_settings": {"physics_freq": 500}},
+    {"numeric_settings": {"iterations": 10, "ls_iterations": 4}}
+  ],
+  "pointwise_precision_tolerance_rad": 0.02,
+  "dataset": {
+    "provider": "huggingface",
+    "repo_id": "nvidia/Anchor-Lab",
+    "revision": "be6010113e7b769e68f2779fbdf321908725f929",
+    "dt": 0.02,
+    "buffer_time": 0.2,
+    "joint_name_mapping": {
+      "rotation": "Rotation",
+      "pitch": "Pitch",
+      "elbow": "Elbow",
+      "wrist_pitch": "Wrist_Pitch",
+      "wrist_roll": "Wrist_Roll",
+      "jaw": "Jaw"
+    },
+    "train": {
+      "data/so101_arm_50motion/so101-sysid-50motion-train-chirp-sweep.parquet": "76dc0a35ebb7b0f2b4f707d1317d1ea57414d1868e8416bb267f3883c9d22011",
+      "data/so101_arm_50motion/so101-sysid-50motion-train-gripper-cycles.parquet": "4fbf4eb3b13b5adab9e0fe07175e65c0b81d10c4aea4f7768137be9eb1e1ba91",
+      "data/so101_arm_50motion/so101-sysid-50motion-train-multisine.parquet": "e09d192d669c9e24c4457bcb1048e5033f743d6ebb60460b3615ff44f8fd4dac",
+      "data/so101_arm_50motion/so101-sysid-50motion-train-random-waypoints.parquet": "533d91009c92dd69114fbfbf5ae5fe7c40d25e246c930338f44637d5f6f0120d",
+      "data/so101_arm_50motion/so101-sysid-50motion-train-staircase-motion.parquet": "1410b66dfb8e91505e6553d13bc62d380945a7fc97eea8cdb00b7c9d2737462f",
+      "data/so101_arm_50motion/so101-sysid-50motion-train-wave-motion.parquet": "133af04bb886897cf314651759743a352cbfa2f66f5a23e63b3142f962005550"
+    },
+    "validation": {
+      "data/so101_arm_50motion/so101-sysid-50motion-heldout-backlash-detection.parquet": "6a8ef3730346e71edced7a8f6c4d7aa8257520f736f1d7d86abb562be9376ef6",
+      "data/so101_arm_50motion/so101-sysid-50motion-heldout-coupled-joints.parquet": "dfbf12fbfeb6d11185183d18a40573ec86051c48bbe3a12283d7b7cc6bc87e21",
+      "data/so101_arm_50motion/so101-sysid-50motion-heldout-custom-motion.parquet": "ae77c410261131e4fe12a9e9a9a80a018b3830fccbcd9014f6258d4df4afe442",
+      "data/so101_arm_50motion/so101-sysid-50motion-heldout-diagonal-sweep.parquet": "efcf2d67eafb75798022c949049b059c9a3a8fab9bfd1d857a678a477c303fb8",
+      "data/so101_arm_50motion/so101-sysid-50motion-heldout-frequency-sweep.parquet": "2cfde5c773d1d6d2ef9d9642f4c0e5318c64b03cfce70576b5e76d52d0c8e592",
+      "data/so101_arm_50motion/so101-sysid-50motion-heldout-friction-gravity.parquet": "24cca20c3656c9c1c8fb6bfd13e3311bf20155b1fc3a4694a6b054ad443cf65e",
+      "data/so101_arm_50motion/so101-sysid-50motion-heldout-hold-under-gravity.parquet": "396aafab580c049de51f41dc48952b30da2a0a911b8be9f982af54b413c946d2",
+      "data/so101_arm_50motion/so101-sysid-50motion-heldout-square-pattern.parquet": "d79818a568d8dcfb514551d0ffa83f63c607ea48878eb0db8b22c16f1c58f238"
+    }
+  },
+  "search": {
+    "world_count": 64,
+    "sigma": 0.125,
+    "seed": 42,
+    "max_generations": 100,
+    "patience": 5,
+    "relative_improvement_tolerance": 0.001,
+    "max_seconds": 14400
+  },
+  "analysis": {
+    "allow_rank_reduction": false
+  },
+  "acceptance": {
+    "max_objective_rad2": 0.0025,
+    "max_error_rad": 0.5
+  }
+}

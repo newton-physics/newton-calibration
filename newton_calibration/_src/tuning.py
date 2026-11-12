@@ -6,8 +6,8 @@
 from __future__ import annotations
 
 import importlib.metadata
+import math
 import platform
-import shutil
 import time
 from dataclasses import asdict
 from datetime import UTC, datetime
@@ -440,8 +440,21 @@ class Tuning:
         candidate_path = self.asset.export(candidate["parameters"], self.run_directory / "candidate_asset.json")
         self.state.artifact_refs["candidate_asset"] = str(candidate_path)
         loaded = self.asset.reload(candidate_path)
-        if dict(loaded.baseline_parameters) != candidate["parameters"]:
+        reloaded = dict(loaded.baseline_parameters)
+        # Assets that store parameters at reduced precision reload within the Rollout readback tolerance.
+        rtol = getattr(self.rollout, "parameter_rtol", 0.0)
+        atol = getattr(self.rollout, "parameter_atol", 0.0)
+        if reloaded.keys() != candidate["parameters"].keys() or any(
+            not math.isclose(float(reloaded[k]), float(v), rel_tol=rtol, abs_tol=atol)
+            for k, v in candidate["parameters"].items()
+        ):
             raise ValueError("exported/reloaded asset parameters differ from selected candidate")
+        self.state.analysis_reports["export_roundtrip"] = {
+            "selected": candidate["parameters"],
+            "reloaded": reloaded,
+            "readback_rtol": rtol,
+            "readback_atol": atol,
+        }
         trials = self._physical_trials(
             np.array([loaded.baseline_parameters[k] for k in self.parameters.names]),
             "validation",
@@ -506,14 +519,14 @@ class Tuning:
             acceptance = "unvalidated"
         published = None
         if acceptance == "accepted":
-            published = self.run_directory / "release" / "asset.json"
-            published.parent.mkdir(exist_ok=True)
-            shutil.copyfile(candidate_path, published)
-            write_json(published.parent / "template.json", self.template.snapshot())
+            release = self.run_directory / "release"
+            release.mkdir(exist_ok=True)
+            published = loaded.release(candidate_path, release)
+            write_json(release / "template.json", self.template.snapshot())
             write_json(
-                published.parent / "manifest.json",
+                release / "manifest.json",
                 {
-                    "asset": "asset.json",
+                    "asset": published.name,
                     "template": "template.json",
                     "identity": self.state.identity,
                     "parameters": candidate["parameters"],

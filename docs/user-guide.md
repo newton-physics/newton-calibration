@@ -31,6 +31,8 @@ Run these commands from the repository root. On Windows, activate `.venv\Scripts
 | gl | Pyglet playback of saved traces |
 | dev | Ruff, pre-commit and package build tools |
 | cable | SciPy for the optional real-cable simulator adapters; Newton is installed separately |
+| huggingface | The Hugging Face Hub client for `newton_calibration.sources.FileSourceHuggingFace` |
+| actuator | pandas, PyArrow, the Hugging Face Hub client and OpenUSD for the actuator example's recordings and USD export; Newton and the MuJoCo solver are installed separately |
 
 The examples under `examples/` are repository examples, not part of the installed core API. Run them from a checkout. The generic demos and archive verification run on the CPU. The real cable calibration uses Newton VBD with Warp CUDA for physics and NumPy on the CPU for scoring. Install the pinned Newton checkout (plus the SLS patch for stage C) using the [cable environment instructions](../examples/cable_calibration/README.md#5-construct-or-rerun-a-stage-with-newton). The cable extra alone does not install this solver. The recorded environment is documented there separately from the generic package requirements.
 
@@ -65,6 +67,11 @@ For example, `from newton_calibration import Episode, Rollout` supplies the
 episode record and execution member for a custom rollout. `Episode` identifies
 one trial, experiment and repeat, together with its status, trace, error and
 applied parameters. `BatchResult.episode_records` retains these records.
+
+The `newton_calibration.sources` module fetches evidence and asset files that are pinned by
+SHA-256: `FileSourceLocal` reads a directory and `FileSourceHuggingFace` downloads a
+Hugging Face repository at a full commit hash. See
+[Source files](api-reference.md#filesource-fetches-pinned-source-files).
 
 The separate `newton_calibration.examples` module provides the bundled synthetic
 demo factory and its asset/environment classes; it does not define the core
@@ -188,7 +195,7 @@ workspace/
     result.json
     comparison.usda           # when comparison data are available
     release/                  # accepted results only
-      asset.json
+      asset.json              # or the asset's own export format, e.g. asset.usda
       template.json
       manifest.json
 ```

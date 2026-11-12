@@ -1,0 +1,161 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+# SPDX-License-Identifier: Apache-2.0
+
+"""A USD articulation whose actuator quantities are calibrated in Newton.
+
+The baseline asset is the source USD with the configured baseline values applied to the
+builder. ``export`` writes a sparse identified USD layer. ``reload`` reads that layer back
+through Newton's USD importer without overrides, so the retest and validation simulate
+exactly what a downstream user of the layer would load.
+"""
+
+from __future__ import annotations
+
+import json
+import math
+from pathlib import Path
+
+from newton_calibration import Asset, BatchEnvironment, Environment
+from newton_calibration.sources import file_sha256
+
+from .config import CLAMPS, joint_values
+
+
+class _SingleWorld(Environment):
+    """Per-episode path: one single-world Newton model per episode (slow, but equivalent)."""
+
+    def __init__(self, population, parameter_values, inputs):
+        self.population, self.inputs = population, inputs
+        self.applied_parameters = population.assign([dict(parameter_values)])[0]
+
+    def run(self, times, *, seed, deadline):
+        result = self.population.run(times, deadline=deadline, inputs=self.inputs)[0]
+        if isinstance(result, Exception):
+            raise result
+        return result
+
+
+class _Worlds(BatchEnvironment):
+    """One chunk of candidates in a cached population; unused worlds repeat the last candidate."""
+
+    def __init__(self, population, parameter_values, inputs):
+        count = len(parameter_values)
+        if not 1 <= count <= population.size:
+            raise ValueError(f"a batch of {count} candidates does not fit {population.size} worlds")
+        padded = [dict(v) for v in parameter_values]
+        padded += [padded[-1]] * (population.size - count)
+        self.population, self.inputs, self.count = population, inputs, count
+        self.applied_parameters = population.assign(padded)[:count]
+
+    def run(self, times, *, seed, deadline):
+        return self.population.run(times, deadline=deadline, inputs=self.inputs)[: self.count]
+
+
+class ArticulationAsset(Asset):
+    def __init__(
+        self,
+        baseline_parameters,
+        *,
+        usd_path,
+        joints,
+        fixed_parameters,
+        fixed_base=True,
+        apply_baseline=True,
+        world_count=1,
+        device=None,
+    ):
+        usd_path = Path(usd_path).expanduser().resolve()
+        super().__init__(
+            baseline_parameters,
+            config={
+                "usd_sha256": file_sha256(usd_path),
+                "joints": list(joints),
+                "fixed_base": bool(fixed_base),
+                "apply_baseline": bool(apply_baseline),
+            },
+        )
+        self.usd_path = usd_path
+        self.joints = tuple(joints)
+        self.fixed_parameters = dict(fixed_parameters)
+        self.fixed_base = bool(fixed_base)
+        self.apply_baseline = bool(apply_baseline)
+        self.world_count = int(world_count)
+        self.device = device
+        self._populations = {}  # template_id -> NewtonActuatorPopulation, built once per template
+
+    def _builder_values(self):
+        if not self.apply_baseline:
+            return None
+        values = {**self.fixed_parameters, **dict(self.baseline_parameters)}
+        return joint_values({k: v for k, v in values.items() if "delay_steps" not in k}, self.joints)
+
+    def _population(self, template, size):
+        from .newton_population import NewtonActuatorPopulation  # noqa: PLC0415 (needs Newton or OpenUSD)
+
+        return NewtonActuatorPopulation(
+            self.usd_path,
+            self.joints,
+            template.numeric_settings,
+            template.discretization,
+            size,
+            fixed_base=self.fixed_base,
+            builder_values=self._builder_values(),
+            device=self.device,
+        )
+
+    def create_environment(self, template, parameter_values, experiment_settings, *, inputs):
+        return _SingleWorld(self._population(template, 1), parameter_values, inputs)
+
+    def create_batch_environment(self, template, parameter_values, experiment_settings, *, inputs):
+        # Building and capturing a replicated model is expensive; reuse it for every chunk.
+        population = self._populations.get(template.template_id)
+        if population is None:
+            population = self._populations[template.template_id] = self._population(template, self.world_count)
+        return _Worlds(population, parameter_values, inputs)
+
+    def export(self, parameter_values, path):
+        from .usd_layer import write_identified_layer  # noqa: PLC0415 (needs Newton or OpenUSD)
+
+        values = joint_values(parameter_values, self.joints)
+        clamps = joint_values(
+            {k: v for k, v in self.fixed_parameters.items() if k.rpartition(".")[2] in CLAMPS},
+            self.joints,
+        )
+        metadata = json.dumps(
+            {
+                "schema": "task-tuning-actuator-layer/1",
+                "parameters": dict(parameter_values),
+                "fixed_parameters": self.fixed_parameters,
+                "source_usd_sha256": self.config["usd_sha256"],
+            },
+            sort_keys=True,
+        )
+        return write_identified_layer(self.usd_path, Path(path).with_suffix(".usda"), values, clamps, metadata)
+
+    def reload(self, path, *, rtol=1e-6, atol=1e-9):
+        from .newton_population import single_world_parameters  # noqa: PLC0415 (needs Newton or OpenUSD)
+        from .usd_layer import sublayer_source  # noqa: PLC0415 (needs Newton or OpenUSD)
+
+        if file_sha256(sublayer_source(path)) != self.config["usd_sha256"]:
+            raise ValueError("identified layer does not reference the calibrated source USD")
+        read = single_world_parameters(path, self.joints, fixed_base=self.fixed_base)
+        for name, expected in self.fixed_parameters.items():
+            if name.endswith(".delay_steps"):
+                continue  # A controller setting, not a USD quantity.
+            if not math.isclose(read[name], expected, rel_tol=rtol, abs_tol=atol):
+                raise ValueError(f"reloaded {name}={read[name]} differs from fixed {expected}")
+        return ArticulationAsset(
+            {name: read[name] for name in self.baseline_parameters},
+            usd_path=path,
+            joints=self.joints,
+            fixed_parameters=self.fixed_parameters,
+            fixed_base=self.fixed_base,
+            apply_baseline=False,
+            world_count=self.world_count,
+            device=self.device,
+        )
+
+    def release(self, candidate_path, directory):
+        from .usd_layer import relocate_layer  # noqa: PLC0415 (needs Newton or OpenUSD)
+
+        return relocate_layer(candidate_path, Path(directory) / "asset.usda")

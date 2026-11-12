@@ -22,6 +22,8 @@ newton = [
 ]
 cma = ["cma>=4,<5"]
 cable = ["scipy>=1.11"]
+huggingface = ["huggingface-hub>=0.24"]
+actuator = ["pandas>=2.1,<3", "pyarrow>=14", "huggingface-hub>=0.24", "usd-core>=25.5,<26.5"]
 gl = ["pyglet>=2.1,<3"]
 dev = ["ruff==0.16.10", "pre-commit>=4,<5", "build>=1,<2"]
 
