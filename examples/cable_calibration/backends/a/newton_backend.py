@@ -52,16 +52,16 @@ class CableEnvironment(Environment):
             natural = rest(np.linspace(0, self.length, self.n + 1))
             rotation = Rotation.from_rotvec([0.0, -angle, 0.0])
             points[1:] = rotation.apply(natural)
-        quaternions = newton.utils.rod_parallel_transport_quaternions([wp.vec3(*p) for p in points])
+        quaternions = newton.Rod(points=points).quaternions
         with wp.ScopedDevice(self.device):
             builder = newton.ModelBuilder(gravity=(0.0, 0.0, -parameters["gravity"]))
             cfg = newton.ModelBuilder.ShapeConfig(
                 density=0.0, has_shape_collision=False, has_particle_collision=False
             )
             bodies, joints = builder.add_rod(
-                positions=points,
-                quaternions=quaternions,
-                radius=parameters["radius"],
+                rod=newton.Rod(
+                    points=points, quaternions=quaternions, radius=parameters["radius"]
+                ),
                 cfg=cfg,
                 body_frame_origin="com",
                 stretch_stiffness=parameters["stretch_stiffness"] * (self.length / 32) / self.h,
@@ -80,8 +80,9 @@ class CableEnvironment(Environment):
             # A fixed stub is OUTSIDE the measured free length. The clamp-to-first
             # segment-center dual span is h/2; interior dual spans are h.
             first = builder.joint_qd_start[joints[0]]
-            builder.joint_target_ke[first + 2] *= 2.0
-            builder.joint_target_kd[first + 2] *= 2.0
+            for axis in (3, 4):  # The two bending DOFs in a six-DOF rod.
+                builder.joint_target_ke[first + axis] *= 2.0
+                builder.joint_target_kd[first + axis] *= 2.0
             mass = parameters["linear_density"] * self.h
             radius = parameters["radius"]
             diagonal = np.array(
@@ -209,20 +210,20 @@ class CableEnvironment(Environment):
         factors = np.ones(self.n) * self.h
         factors[0] /= 2.0
         for name, actual in (
-            ("bending_rigidity", coefficients[slots + 2] * factors),
+            ("bending_rigidity", coefficients[slots[:, None] + [3, 4]] * factors[:, None]),
             (
                 "bend_damping",
-                dampings[slots + 2] * factors / (self.length / 32) - self.relaxation_damping,
+                dampings[slots[:, None] + [3, 4]] * factors[:, None] / (self.length / 32) - self.relaxation_damping,
             ),
         ):
             if not np.allclose(actual, self.parameters[name], rtol=2e-6, atol=1e-8):
                 raise RuntimeError(f"actual rod joint {name} binding mismatch")
             self.applied_parameters[name] = float(actual.mean())
         for name, actual in (
-            ("stretch_stiffness", coefficients[slots] * self.h / (self.length / 32)),
-            ("shear_stiffness", coefficients[slots + 1] * self.h / (self.length / 32)),
-            ("twist_stiffness", coefficients[slots + 3] * self.h / (self.length / 32)),
-            ("twist_damping", dampings[slots + 3] * self.h / (self.length / 32)),
+            ("stretch_stiffness", coefficients[slots + 2] * self.h / (self.length / 32)),
+            ("shear_stiffness", coefficients[slots[:, None] + [0, 1]] * self.h / (self.length / 32)),
+            ("twist_stiffness", coefficients[slots + 5] * self.h / (self.length / 32)),
+            ("twist_damping", dampings[slots + 5] * self.h / (self.length / 32)),
         ):
             if not np.allclose(actual, self.parameters[name], rtol=2e-6, atol=1e-8):
                 raise RuntimeError(f"actual rod joint {name} binding mismatch")
@@ -241,7 +242,7 @@ class CableEnvironment(Environment):
         s = np.asarray(self.settings["initial_arclengths"])
         spline = CubicSpline(s, curve, axis=0)
         points = spline(np.linspace(0.0, self.length, self.n + 1))
-        quats = newton.utils.rod_parallel_transport_quaternions([wp.vec3(*p) for p in points])
+        quats = newton.Rod(points=points).quaternions
         q = self.state_0.body_q.numpy()
         for i, body in enumerate(self.bodies[1:]):
             q[body, :3] = (points[i] + points[i + 1]) / 2

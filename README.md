@@ -31,7 +31,7 @@ python -m pip install -e ".[newton]"
 python -m examples.box_friction_calibration.run --workspace workspace/newton-sliding
 ```
 
-The `newton` extra selects the tested Newton 1.6.0.dev0 revision and Warp 1.17.0 from `pyproject.toml`. The first run compiles Warp kernels. See the [setup and scope](examples/box_friction_calibration/README.md) for environment details.
+The `newton` extra selects the tested Newton 1.9.0.dev0 revision and Warp 1.17.0 from `pyproject.toml`. The first run compiles Warp kernels. See the [setup and scope](examples/box_friction_calibration/README.md) for environment details.
 
 Expect `accepted` and a friction coefficient close to `0.35`. The command prints the run directory and accepted asset path. Open `result.json` for the outcome and `run_state.json` for the analysis and validation reports.
 
@@ -48,17 +48,11 @@ Continue with the **[step-by-step quickstart](docs/quickstart.md)** to inspect t
 
 [![No-plug cable release: measured vertical motion compared with viscous and SLS models, with coordinate RMSE of 1.598 mm and 0.844 mm respectively](examples/cable_calibration/reports/cable_calibration_preview.png)](examples/cable_calibration/README.md)
 
-The completed no-plug experiment compares viscous bending damping (B*) with a standard linear solid (SLS) model (C), using the same observations and objective. Coordinate RMSE decreases from **1.598 mm to 0.844 mm** over the scored x/z channels. These are errors on the fitting recording; the archived run's formal outcome remains `rejected_validation`.
+On the measured release of a **17 cm free cable without a plug**, the viscous model (B*) gives a coordinate RMSE of **1.598 mm** and the standard linear solid model (C) gives **0.844 mm**. Both models were fitted to the same recording. Re-scoring their archived predictions over the same 28 frames and 30 x/z coordinates reproduces a **76.0% reduction in the fitting objective**.
 
-The [case study](examples/cable_calibration/README.md) explains the experimental conditions, model changes, numerical checks, and limits of these results. It also includes the measured data, archived predictions, and solver setup. View the [English report](examples/cable_calibration/reports/cable_calibration_en.html) or [Chinese report](examples/cable_calibration/reports/cable_calibration_zh.html) using the [local preview instructions](docs/publishing-results.md).
+[Reproduce the scores on CPU](examples/cable_calibration/README.md#1-verify-the-reported-results-without-simulation) · [English report](examples/cable_calibration/reports/cable_calibration_en.html) · [Chinese report](examples/cable_calibration/reports/cable_calibration_zh.html) · [Full run records](examples/cable_calibration/archive/)
 
-To check the archived cable scores on CPU with the core dependencies installed:
-
-```bash
-python -m examples.cable_calibration.verify
-```
-
-This command re-scores saved traces without starting Newton. For lightweight sliding and oscillator demos using NumPy, see the [user guide](docs/user-guide.md).
+For lightweight sliding and oscillator demos using NumPy, see the [user guide](docs/user-guide.md).
 
 ## How it works
 

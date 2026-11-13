@@ -13,6 +13,41 @@ permissions:
   contents: read
 
 jobs:
+  newton:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        with:
+          python-version: "3.12"
+      - name: Install pinned Newton runtime
+        run: python -m pip install -e ".[newton,cable,cma]"
+      - name: Calibrate Newton box friction
+        run: python -m examples.box_friction_calibration.run --workspace "$RUNNER_TEMP/newton-box-friction"
+      - name: Compare four-worker XPBD trajectories with serial runs
+        run: python -m newton_calibration.tests -k test_box_friction_example
+      - name: Check cable adapters with unpatched Newton
+        run: python -m newton_calibration.tests -k test_newton_cable
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+        with:
+          repository: newton-physics/newton
+          ref: c53345412d401232beff0bc71dcb39ce554fdf96
+          path: .runtime-deps/newton
+      - name: Check base factories and apply SLS patch
+        run: |
+          for stage in A B Bstar; do
+            python -m examples.cable_calibration.run --stage "$stage" --newton-source .runtime-deps/newton
+          done
+          git -C .runtime-deps/newton apply "$GITHUB_WORKSPACE/examples/cable_calibration/solver/sls-current.patch"
+      - name: Check SLS solver and cable adapter
+        env:
+          PYTHONPATH: ${{ github.workspace }}/.runtime-deps/newton
+        run: |
+          python -m examples.cable_calibration.run --stage C --newton-source .runtime-deps/newton
+          python .runtime-deps/newton/newton/tests/test_solver_vbd.py -k viscoelastic
+          python -m newton_calibration.tests -k test_newton_cable
+
   cpu:
     runs-on: ubuntu-latest
     strategy:

@@ -41,10 +41,8 @@ python -m examples.cable_calibration.render_preview
 
 Matplotlib is a preview-generation dependency, not a core runtime dependency. The renderer
 reads processed observations, archived traces, and expected metrics. It plots the no-plug
-coordinate RMSE for A/B/B*/C and measured/predicted z at 150 mm using the scoring mask.
-
-Retain uncertainty and acceptance statements: A to B is not an angle-only ablation;
-B* and C share the dynamic objective; plugged validation remains unresolved.
+coordinate RMSE for B* and C and the measured and predicted z position at 150 mm using the scoring mask.
+Both models were fitted to the same no-plug release recording. Use the common objective for the B* to C comparison.
 Git tracks report revisions. Keep historical run and original evidence fingerprints in
 `examples/cable_calibration/archive/provenance.json` unchanged when editing reports.
 Check links and run the archive verifier before submitting the change.

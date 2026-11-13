@@ -1,0 +1,20 @@
+{
+  "base_repository": "https://github.com/newton-physics/newton",
+  "base_revision": "c53345412d401232beff0bc71dcb39ce554fdf96",
+  "patch": "sls-current.patch",
+  "patch_sha256": "bac3fce449291ad0143b838a93efc59f574a997a579c0d56bec84748bb11d6ca",
+  "base": {
+    "newton/_src/solvers/vbd/solver_vbd.py": "94d3bd68b813c4298beecb292cbae32bb2cbb89f93726d6f3aa4b8766bee41fb",
+    "newton/_src/solvers/vbd/rigid_vbd_kernels.py": "3ec158da56d5aaf0c63fd73f013e81d08e0109fc1eee675d1a5cc2d603fcadde",
+    "newton/tests/test_solver_vbd.py": "332e7822b1ea808eccb5cbd1f08a46e9a7e3a83cd16148870beb3c9388303d47",
+    "newton/_src/sim/builder.py": "e96aa19ab72d720f7ad3e292bb4a3ec432d5c4daf81ec27eb5868ff21dc14b47",
+    "newton/_src/sim/rod.py": "ebc5cca6d3b9304867ae4051c773fe792b8b5d8ed27bf1eb109e5a28e950fdc9"
+  },
+  "sls": {
+    "newton/_src/solvers/vbd/solver_vbd.py": "74c84efa0d562ec66d10ec081058eca0776ce54b43b1ac63c8d59a0259ae2e5d",
+    "newton/_src/solvers/vbd/rigid_vbd_kernels.py": "3c0421e68f8184faede25ee0e706bbd83a2536b0c6177b7a1867716f6c9b9e5d",
+    "newton/tests/test_solver_vbd.py": "427cce2039ca837c4054b9eeda984fa5f458beecf1c7b189679d1f8d24186452",
+    "newton/_src/sim/builder.py": "e96aa19ab72d720f7ad3e292bb4a3ec432d5c4daf81ec27eb5868ff21dc14b47",
+    "newton/_src/sim/rod.py": "ebc5cca6d3b9304867ae4051c773fe792b8b5d8ed27bf1eb109e5a28e950fdc9"
+  }
+}
