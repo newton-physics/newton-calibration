@@ -3,10 +3,12 @@
 
 """Replicated Newton worlds that replay recorded joint position commands.
 
-One world simulates one candidate. Per-world parameters are written to Newton
-model arrays and read back from them. Commands are uploaded once per recording, and joint
-positions and body positions are recorded on the device every control interval and
-copied to the host once per recording.
+Each world simulates one candidate on one recording. Per-world parameters are written to
+Newton model arrays and read back from them. Several recordings can be replayed in one
+pass, each in its own worlds; shorter recordings hold their last command until the
+longest one ends. Commands are uploaded once per pass, and joint positions and body
+positions are recorded on the device every control interval and copied to the host once
+per pass.
 """
 
 from __future__ import annotations
@@ -34,13 +36,14 @@ MODEL_ARRAYS = {
 
 @wp.kernel
 def _write_targets(
-    commands: wp.array2d[wp.float32],  # [time, joint]
+    commands: wp.array3d[wp.float32],  # [recording, time, joint]
+    world_recording: wp.array[wp.int32],  # [world]
     row: int,
     target_indices: wp.array2d[wp.int32],  # [world, joint]
     joint_target_q: wp.array[wp.float32],
 ):
     world, joint = wp.tid()
-    joint_target_q[target_indices[world, joint]] = commands[row, joint]
+    joint_target_q[target_indices[world, joint]] = commands[world_recording[world], row, joint]
 
 
 @wp.kernel
@@ -261,8 +264,9 @@ class NewtonActuatorPopulation:
         return applied
 
     def _reset(self, initial_q):
+        """Start every world at rest from ``initial_q`` [world, joint]."""
         joint_q, joint_qd = self._base_q.copy(), self._base_qd.copy()
-        joint_q[self._q] = initial_q[np.newaxis, :]
+        joint_q[self._q] = initial_q
         joint_qd[self._dof] = 0.0
         self.solver.reset(self.state)
         for state in (self.state, self.state_next):
@@ -271,10 +275,13 @@ class NewtonActuatorPopulation:
             newton.eval_fk(self.model, state.joint_q, state.joint_qd, state)
 
     def run(self, times, *, deadline, inputs=None):
+        """Replay one recording in every world."""
+        return self.run_recordings([(times, inputs)], np.zeros(self.size, dtype=np.int32), deadline=deadline)
+
+    def _delayed(self, times, inputs):
         if inputs is None or {"command_q", "initial_q"} - set(inputs):
             raise ValueError("actuator replay needs command_q and initial_q inputs")
         commands = np.asarray(inputs["command_q"], dtype=np.float64)
-        initial = np.asarray(inputs["initial_q"], dtype=np.float32)
         steps = len(commands) - 1
         if commands.shape[1:] != (len(self.joints),) or len(times) != steps:
             raise ValueError("commands, initial state and observation times are misaligned")
@@ -283,19 +290,37 @@ class NewtonActuatorPopulation:
             raise ValueError("observation times must follow the control interval")
         # Command i is applied during interval i, delayed per joint and held at the start.
         rows = np.maximum(0, np.arange(len(commands))[:, None] - self._delay_steps[None, :])
-        delayed = np.take_along_axis(commands, rows, axis=0).astype(np.float32)
+        return np.take_along_axis(commands, rows, axis=0)[:steps]
+
+    def run_recordings(self, recordings, world_recording, *, deadline):
+        """Replay ``recordings`` [(times, inputs)] at once; world w replays ``world_recording[w]``.
+
+        Returns one Trace or SimulationError per world, covering that world's recording.
+        """
+        world_recording = np.asarray(world_recording, dtype=np.int32)
+        if world_recording.shape != (self.size,) or not (0 <= world_recording).all():
+            raise ValueError("world_recording must assign one recording to every world")
+        if world_recording.max() >= len(recordings):
+            raise ValueError("world_recording names a missing recording")
+        delayed = [self._delayed(times, inputs) for times, inputs in recordings]
+        lengths = np.array([len(d) for d in delayed])
+        steps = int(lengths.max())
+        # Shorter recordings hold their last command; their extra rows are not returned.
+        padded = np.stack([np.concatenate([d, np.repeat(d[-1:], steps - len(d), axis=0)]) for d in delayed])
+        initial = np.stack([np.asarray(inputs["initial_q"], dtype=np.float32) for _, inputs in recordings])
         device = self.model.device
-        commands_device = wp.array(delayed, dtype=wp.float32, device=device)
+        commands_device = wp.array(padded.astype(np.float32), dtype=wp.float32, device=device)
+        recording_device = wp.array(world_recording, dtype=wp.int32, device=device)
         joint_trace = wp.zeros((steps, self.size, len(self.joints)), dtype=wp.float32, device=device)
         body_trace = wp.zeros((steps, self.size, self._bodies.shape[1]), dtype=wp.vec3, device=device)
-        self._reset(initial)
+        self._reset(initial[world_recording])
         for row in range(steps):
             if deadline is not None and row % 256 == 0 and time.monotonic() >= deadline:
                 raise TimeoutError("actuator replay deadline")
             wp.launch(
                 _write_targets,
                 dim=(self.size, len(self.joints)),
-                inputs=[commands_device, row, self._target_device],
+                inputs=[commands_device, recording_device, row, self._target_device],
                 outputs=[self.control.joint_target_q],
                 device=device,
             )
@@ -314,16 +339,19 @@ class NewtonActuatorPopulation:
                 outputs=[body_trace],
                 device=device,
             )
-        values = joint_trace.numpy().astype(np.float64)
-        positions = body_trace.numpy().astype(np.float64)
-        finite = np.isfinite(values).all(axis=(0, 2))
-        times = np.asarray(times, dtype=np.float64)
-        return [
-            Trace(times.copy(), values[:, w, :], positions[:, w, :, :])
-            if finite[w]
-            else SimulationError(f"world {w} produced nonfinite joint positions")
-            for w in range(self.size)
-        ]
+        values = joint_trace.numpy()
+        positions = body_trace.numpy()
+        results = []
+        for w in range(self.size):
+            index = int(world_recording[w])
+            count = int(lengths[index])
+            world_values = values[:count, w, :].astype(np.float64)
+            if not np.isfinite(world_values).all():
+                results.append(SimulationError(f"world {w} produced nonfinite joint positions"))
+                continue
+            times = np.asarray(recordings[index][0], dtype=np.float64)
+            results.append(Trace(times.copy(), world_values, positions[:count, w, :, :].astype(np.float64)))
+        return results
 
 
 def single_world_parameters(usd_path, joints, *, fixed_base, device=None):

@@ -69,7 +69,7 @@
     }
   },
   "search": {
-    "world_count": 64,
+    "world_count": 256,
     "sigma": 0.125,
     "seed": 42,
     "max_generations": 100,
@@ -78,7 +78,8 @@
     "max_seconds": 14400
   },
   "analysis": {
-    "allow_rank_reduction": false
+    "allow_rank_reduction": false,
+    "orthogonalize": false
   },
   "acceptance": {
     "max_objective_rad2": 0.0025,

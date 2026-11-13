@@ -327,7 +327,8 @@ Pass the ten members to `Tuning` to run preparation, analysis, search, export/re
 Tuning(*, evidence, asset, evaluator, parameters, rollout, optimizer,
        decision, validator, template, play, workspace="workspace",
        analysis_step=0.03, rank_tolerance=1e-3,
-       allow_rank_reduction=False, orthogonalize=True)
+       allow_rank_reduction=False, orthogonalize=True,
+       record_traces=True)
 ```
 
 | Additional argument | Default and behavior |
@@ -336,7 +337,8 @@ Tuning(*, evidence, asset, evaluator, parameters, rollout, optimizer,
 | `analysis_step` | `0.03`, finite-difference step in per-parameter normalized coordinates, requiring `0 < step <= 0.25` |
 | `rank_tolerance` | `1e-3`, relative rank threshold with `0 < tolerance < 1`. The singular-value cutoff is `max(s_max * tolerance, 1e-10)` |
 | `allow_rank_reduction` | `False`, allowing search in retained identifiable combinations of nonzero rank when enabled |
-| `orthogonalize` | `True`, building search coordinates from local SVD combinations. Required for rank reduction |
+| `orthogonalize` | `True`, building search coordinates from local SVD combinations. Required for rank reduction. The search box encloses the rotated parameter cube, so with many parameters most samples fall outside the physical bounds and are rejected as `invalid_parameters`; with full rank, pass `False` to search the original coordinates |
+| `record_traces` | `True`, saving every episode trace and per-sample feature in `batches/*.json` and the sensitivity Jacobians in `run_state.json`. With `False`, batch files keep trial values, scores, statuses and applied parameters, and the Jacobians go to `analysis/sensitivity.npz`, referenced with its SHA-256. Use `False` for long recordings or large batches. Scoring, selection and `comparison.usda` are unaffected |
 
 Start with `result = tuning.run()`. Calling `prepare()`, `sensitivity()`, `identifiability(report)`, and `evaluate_batch(...)` manually requires following the lifecycle, freezing, and budget protocols. Let `run()` manage those steps, using a fresh instance for each run.
 
@@ -398,7 +400,8 @@ Identifiability analysis uses finite differences at the same three anchors in no
 |---|---|
 | `resolved.json` | Observations, frozen configuration, identities, and versions needed to reconstruct the problem |
 | `run_state.json` | Budget use, decisions, and phase state |
-| `batches/*.json`, `checkpoints/*.pkl` | Candidate evaluation records and optimizer state |
+| `batches/*.json`, `checkpoints/*.pkl` | Candidate evaluation records and optimizer state. Records contain traces and features unless `record_traces=False` |
+| `analysis/sensitivity.npz` | Sensitivity Jacobians when `record_traces=False` |
 | `candidate_asset.json` | Candidate saved on reaching export, with acceptance recorded separately |
 | `result.json` | Stopping reason, acceptance, parameters, and result paths |
 | `comparison.usda` | Visualization exported from saved trajectories |

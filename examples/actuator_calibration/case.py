@@ -45,6 +45,8 @@ def make_tuning(
         fixed_parameters=case.fixed_parameters,
         fixed_base=case.config["asset"].get("fixed_base", True),
         world_count=world_count,
+        # Every chunk replays all training recordings in one pass, one world per candidate and recording.
+        recordings=[e.inputs for e in train],
         device=device,
     )
     return Tuning(
@@ -60,4 +62,7 @@ def make_tuning(
         play=Play(),
         workspace=Path(workspace),
         allow_rank_reduction=bool(case.config["analysis"]["allow_rank_reduction"]),
+        orthogonalize=bool(case.config["analysis"].get("orthogonalize", True)),
+        # Long recordings: per-candidate traces would dominate run time and disk use.
+        record_traces=bool(case.config.get("record_traces", False)),
     )

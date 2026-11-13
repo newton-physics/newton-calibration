@@ -14,6 +14,7 @@ the first ``buffer_steps`` rows are masked so the replay can settle without bein
 
 from __future__ import annotations
 
+import os
 from decimal import Decimal
 from pathlib import Path
 
@@ -140,7 +141,7 @@ def resolve_asset(config, usd_path=None, data_root=None):
         if "path" not in asset:
             raise ValueError("pass a USD path; the configuration names no dataset asset")
         return file_source(config["dataset"], data_root).fetch(asset["path"], asset["usd_sha256"])
-    path = Path(usd_path).expanduser().resolve()
+    path = Path(os.path.abspath(Path(usd_path).expanduser()))
     return FileSourceLocal(path.parent).fetch(path.name, asset["usd_sha256"])
 
 

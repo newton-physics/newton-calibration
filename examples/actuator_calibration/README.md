@@ -37,9 +37,9 @@ reads them back from the Newton model before it runs.
 | Parameters | 30 parameters for SO-101 (6 joints × 5); gains use a log transform. |
 | Template | Physics frequency, MuJoCo solver, integrator and iterations; control frequency (equal to the data rate); fixed clamps and delays; refinements to 2× physics frequency and 2× solver iterations. |
 | Asset | `ArticulationAsset`: the source USD with baseline values applied. `export` writes a sparse `.usda` layer over the source; `reload` reads that layer through Newton's USD importer without overrides; `release` relocates the layer into `release/asset.usda` with a relative sublayer path. |
-| Rollout | `Rollout(worlds=world_count)` on the batched path: `ArticulationAsset.create_batch_environment` reuses one replicated Newton model per Template, with one candidate per world; a smaller final chunk repeats its last candidate in the unused worlds. Commands are uploaded once per recording; joint and body positions are recorded on the device. |
+| Rollout | `Rollout(worlds=world_count)` on the batched path. For the training recordings, a chunk of `world_count` candidates replays all recordings in one pass of a model with one world per candidate and recording; the first request for the chunk runs the pass and the other recordings are served from it. Held-out recordings use a model with one world per candidate. Models are built and graph-captured once per Template. A smaller final chunk repeats its last candidate in the unused worlds. Joint and body positions are recorded on the device. |
 | Evaluator | Standard squared error with 1 rad scales, i.e. pooled position MSE in rad² over all scored samples and joints. |
-| Optimizer / Decision | CMA-ES with one generation per population; generation, time and stagnation budgets from the configuration. |
+| Optimizer / Decision | CMA-ES with `world_count` candidates per generation, searching the original normalized coordinates (`analysis.orthogonalize` is false); generation, time and stagnation budgets from the configuration. |
 | Validator | Per-recording MSE and maximum error thresholds on the training retest and on the held-out recordings. |
 | Play | Body positions of the baseline and calibrated replays as a USDA point animation. |
 
@@ -106,6 +106,11 @@ the Warp device. The command exits with 0 only for an accepted result. Outputs f
 With 30 free parameters the identifiability check can find a rank-deficient local
 response and stop the run as `inconclusive`. Reduce or fix parameters, or set
 `analysis.allow_rank_reduction`, as an explicit configuration decision.
+
+Batch files keep candidate values, scores and statuses but not trajectories
+(`record_traces` is false in the configuration), and the sensitivity Jacobians are
+stored in `analysis/sensitivity.npz`. Full trajectory records for these recordings
+take about 2 GB per batch.
 
 ## 6. Limitations
 

@@ -5,12 +5,27 @@ import hashlib
 import sys
 import types
 import unittest
-from unittest import mock
+from contextlib import contextmanager
 
 from newton_calibration.sources import FileSourceHuggingFace, FileSourceLocal, file_sha256
 from newton_calibration.tests.unittest_utils import TempPathTestCase
 
 COMMIT = "0123456789abcdef0123456789abcdef01234567"
+_MISSING = object()
+
+
+@contextmanager
+def _replace_module(name, module):
+    """Replace one ``sys.modules`` entry; ``None`` makes its import fail."""
+    previous = sys.modules.get(name, _MISSING)
+    sys.modules[name] = module
+    try:
+        yield
+    finally:
+        if previous is _MISSING:
+            sys.modules.pop(name, None)
+        else:
+            sys.modules[name] = previous
 
 
 class TestFileSources(TempPathTestCase):
@@ -32,6 +47,21 @@ class TestFileSources(TempPathTestCase):
             source.fetch("data/a.bin", self.digest)
         self.assertEqual(source.provenance, {"provider": "local"})
 
+    def test_fetched_paths_keep_their_names_through_symlinks(self):
+        """Return the declared path, not a symlink target, so file extensions survive.
+
+        The Hugging Face cache stores snapshot files as symlinks to extensionless blobs;
+        readers such as OpenUSD choose the file format from the extension.
+        """
+        blob = self.tmp_path / "blobs" / "0123"
+        blob.parent.mkdir()
+        blob.write_bytes(b"recorded")
+        link = self.root / "robot.usda"
+        link.symlink_to(blob)
+        path = FileSourceLocal(self.root).fetch("robot.usda", self.digest)
+        self.assertEqual(path.name, "robot.usda")
+        self.assertEqual(path, link.absolute())
+
     def test_digest_and_path_must_be_declared_and_inside_the_root(self):
         """Require a full digest and keep relative paths under the root."""
         source = FileSourceLocal(self.root)
@@ -52,7 +82,7 @@ class TestFileSources(TempPathTestCase):
         hub = types.ModuleType("huggingface_hub")
         hub.hf_hub_download = download
         source = FileSourceHuggingFace("organization/name", COMMIT)
-        with mock.patch.dict(sys.modules, {"huggingface_hub": hub}):
+        with _replace_module("huggingface_hub", hub):
             self.assertEqual(source.fetch("data/a.bin", self.digest), self.file)
         self.assertEqual(calls, [("organization/name", "data/a.bin", "dataset", COMMIT)])
         self.assertEqual(
@@ -72,7 +102,7 @@ class TestFileSources(TempPathTestCase):
 
     def test_missing_hugging_face_package_names_the_dependency(self):
         """Explain which package a Hugging Face fetch needs."""
-        with mock.patch.dict(sys.modules, {"huggingface_hub": None}):
+        with _replace_module("huggingface_hub", None):
             with self.assertRaisesRegex(ImportError, "huggingface-hub"):
                 FileSourceHuggingFace("organization/name", COMMIT).locate("data/a.bin")
 

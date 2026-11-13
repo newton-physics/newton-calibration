@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import re
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
@@ -63,10 +64,12 @@ class FileSourceLocal(FileSource):
     """Files under a local directory, for example an offline copy of a repository."""
 
     def __init__(self, root: str | Path):
-        self.root = Path(root).expanduser().resolve()
+        self.root = Path(os.path.abspath(Path(root).expanduser()))
 
     def locate(self, relative: str) -> Path:
-        path = (self.root / relative).resolve()
+        # Normalize without following symlinks: cached files are often links to
+        # extensionless blobs, and readers pick the format from the declared name.
+        path = Path(os.path.normpath(self.root / relative))
         if not path.is_relative_to(self.root):
             raise ValueError(f"{relative}: path leaves the source root")
         return path

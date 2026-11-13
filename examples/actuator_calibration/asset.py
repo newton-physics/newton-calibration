@@ -7,13 +7,22 @@ The baseline asset is the source USD with the configured baseline values applied
 builder. ``export`` writes a sparse identified USD layer. ``reload`` reads that layer back
 through Newton's USD importer without overrides, so the retest and validation simulate
 exactly what a downstream user of the layer would load.
+
+With ``recordings``, a chunk of candidates replays all of those recordings in one pass of
+a model with one world per candidate and recording. Rollout still asks for one recording
+at a time; the first request for a chunk runs the pass, and the others are served from it.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
+import os
+from collections import OrderedDict
 from pathlib import Path
+
+import numpy as np
 
 from newton_calibration import Asset, BatchEnvironment, Environment
 from newton_calibration.sources import file_sha256
@@ -51,6 +60,73 @@ class _Worlds(BatchEnvironment):
         return self.population.run(times, deadline=deadline, inputs=self.inputs)[: self.count]
 
 
+def recording_key(inputs):
+    """Identify a recording by its replay inputs: commanded positions and initial state."""
+    digest = hashlib.sha256()
+    for name in ("command_q", "initial_q"):
+        array = np.ascontiguousarray(inputs[name], dtype=np.float64)
+        digest.update(f"{name}{array.shape}".encode())
+        digest.update(array.tobytes())
+    return digest.hexdigest()
+
+
+class _RecordingGroup:
+    """Replays every recording of the group for one chunk of candidates in a single pass.
+
+    World ``r * chunk + c`` replays recording r for candidate c. The pass runs on the
+    first ``run`` for a chunk and serves the chunk's other recordings. The two most recent
+    chunks are kept, so a batch larger than one chunk replays each chunk once.
+    """
+
+    def __init__(self, population, recordings, chunk):
+        self.population, self.chunk = population, chunk
+        self.keys = list(recordings)
+        self.recordings = [recordings[k] for k in self.keys]
+        self.world_recording = np.repeat(np.arange(len(self.keys), dtype=np.int32), chunk)
+        self._passes = OrderedDict()
+
+    def _assign(self, entry):
+        padded = entry["requested"] + [entry["requested"][-1]] * (self.chunk - len(entry["requested"]))
+        return self.population.assign(padded * len(self.keys))
+
+    def prepare(self, parameter_values):
+        requested = [dict(v) for v in parameter_values]
+        key = tuple(tuple(sorted(v.items())) for v in requested)
+        entry = self._passes.get(key)
+        if entry is None:
+            entry = {"requested": requested, "results": None}
+            entry["applied"] = self._assign(entry)[: len(requested)]
+            self._passes[key] = entry
+            while len(self._passes) > 2:
+                self._passes.popitem(last=False)
+        self._passes.move_to_end(key)
+        return entry
+
+    def results(self, entry, recording, *, deadline):
+        if entry["results"] is None:
+            self._assign(entry)  # another chunk may have been assigned since
+            entry["results"] = self.population.run_recordings(self.recordings, self.world_recording, deadline=deadline)
+        start = self.keys.index(recording) * self.chunk
+        return entry["results"][start : start + len(entry["requested"])]
+
+
+class _GroupedWorlds(BatchEnvironment):
+    """One recording of a chunk whose replay is shared with the group's other recordings."""
+
+    def __init__(self, group, parameter_values, recording):
+        if not 1 <= len(parameter_values) <= group.chunk:
+            raise ValueError(f"a batch of {len(parameter_values)} candidates does not fit {group.chunk} worlds")
+        self.group, self.recording = group, recording
+        self.entry = group.prepare(parameter_values)
+        self.applied_parameters = self.entry["applied"]
+
+    def run(self, times, *, seed, deadline):
+        expected = self.group.recordings[self.group.keys.index(self.recording)][0]
+        if not np.array_equal(np.asarray(times, dtype=np.float64), expected):
+            raise ValueError("observation times differ from the grouped recording's control grid")
+        return self.group.results(self.entry, self.recording, deadline=deadline)
+
+
 class ArticulationAsset(Asset):
     def __init__(
         self,
@@ -62,9 +138,11 @@ class ArticulationAsset(Asset):
         fixed_base=True,
         apply_baseline=True,
         world_count=1,
+        recordings=None,
         device=None,
     ):
-        usd_path = Path(usd_path).expanduser().resolve()
+        """``recordings`` lists replay inputs (``command_q``, ``initial_q``) replayed together."""
+        usd_path = Path(os.path.abspath(Path(usd_path).expanduser()))
         super().__init__(
             baseline_parameters,
             config={
@@ -81,7 +159,10 @@ class ArticulationAsset(Asset):
         self.apply_baseline = bool(apply_baseline)
         self.world_count = int(world_count)
         self.device = device
+        # An execution strategy, not part of the asset's identity.
+        self.recordings = {recording_key(inputs): inputs for inputs in (recordings or ())}
         self._populations = {}  # template_id -> NewtonActuatorPopulation, built once per template
+        self._groups = {}  # template_id -> _RecordingGroup over self._recordings
 
     def _builder_values(self):
         if not self.apply_baseline:
@@ -107,11 +188,28 @@ class ArticulationAsset(Asset):
         return _SingleWorld(self._population(template, 1), parameter_values, inputs)
 
     def create_batch_environment(self, template, parameter_values, experiment_settings, *, inputs):
+        recording = recording_key(inputs)
+        if recording in self.recordings:
+            group = self._groups.get(template.template_id)
+            if group is None:
+                size = self.world_count * len(self.recordings)
+                times = {k: self._times(template, v) for k, v in self.recordings.items()}
+                group = self._groups[template.template_id] = _RecordingGroup(
+                    self._population(template, size),
+                    {k: (times[k], v) for k, v in self.recordings.items()},
+                    self.world_count,
+                )
+            return _GroupedWorlds(group, parameter_values, recording)
         # Building and capturing a replicated model is expensive; reuse it for every chunk.
         population = self._populations.get(template.template_id)
         if population is None:
             population = self._populations[template.template_id] = self._population(template, self.world_count)
         return _Worlds(population, parameter_values, inputs)
+
+    @staticmethod
+    def _times(template, inputs):
+        control_dt = 1.0 / float(template.discretization["control_freq"])
+        return control_dt * np.arange(1, len(inputs["command_q"]), dtype=np.float64)
 
     def export(self, parameter_values, path):
         from .usd_layer import write_identified_layer  # noqa: PLC0415 (needs Newton or OpenUSD)
@@ -123,7 +221,7 @@ class ArticulationAsset(Asset):
         )
         metadata = json.dumps(
             {
-                "schema": "task-tuning-actuator-layer/1",
+                "schema": "newton-calibration-actuator-layer/1",
                 "parameters": dict(parameter_values),
                 "fixed_parameters": self.fixed_parameters,
                 "source_usd_sha256": self.config["usd_sha256"],
@@ -152,6 +250,7 @@ class ArticulationAsset(Asset):
             fixed_base=self.fixed_base,
             apply_baseline=False,
             world_count=self.world_count,
+            recordings=list(self.recordings.values()),
             device=self.device,
         )
 

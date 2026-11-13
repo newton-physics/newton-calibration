@@ -34,8 +34,8 @@ def write_identified_layer(
 ) -> Path:
     """Write ``parameters[joint][quantity]`` and ``clamps[joint]`` as a sparse layer."""
 
-    source_path = Path(source_usd).expanduser().resolve()
-    destination = Path(output_path).expanduser().resolve()
+    source_path = Path(os.path.abspath(Path(source_usd).expanduser()))
+    destination = Path(os.path.abspath(Path(output_path).expanduser()))
     if not source_path.is_file():
         raise FileNotFoundError(f"source USD does not exist: {source_path}")
     if source_path == destination:
@@ -93,18 +93,18 @@ def write_identified_layer(
 
 def sublayer_source(layer_path: str | Path) -> Path:
     """The absolute source asset path referenced by an identified layer."""
-    layer_path = Path(layer_path).resolve()
+    layer_path = Path(os.path.abspath(layer_path))
     layer = Sdf.Layer.FindOrOpen(str(layer_path))
     if layer is None or len(layer.subLayerPaths) != 1:
         raise ValueError(f"{layer_path} is not an identified layer with one source sublayer")
-    return (layer_path.parent / layer.subLayerPaths[0]).resolve()
+    return Path(os.path.normpath(layer_path.parent / layer.subLayerPaths[0]))
 
 
 def relocate_layer(layer_path: str | Path, destination: str | Path) -> Path:
     """Copy an identified layer and keep its source sublayer resolvable from the new place."""
     source = sublayer_source(layer_path)
-    destination = Path(destination).resolve()
-    layer = Sdf.Layer.FindOrOpen(str(Path(layer_path).resolve()))
+    destination = Path(os.path.abspath(destination))
+    layer = Sdf.Layer.FindOrOpen(os.path.abspath(layer_path))
     if not layer.Export(str(destination)):
         raise RuntimeError(f"could not export {layer_path} to {destination}")
     copied = Sdf.Layer.FindOrOpen(str(destination))

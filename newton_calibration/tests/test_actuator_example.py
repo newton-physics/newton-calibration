@@ -15,7 +15,7 @@ from pathlib import Path
 import numpy as np
 
 from examples.actuator_calibration import config as actuator_config
-from examples.actuator_calibration.asset import _Worlds
+from examples.actuator_calibration.asset import _GroupedWorlds, _RecordingGroup, _Worlds, recording_key
 from examples.actuator_calibration.config import (
     build_case,
     joint_values,
@@ -49,6 +49,23 @@ class _EchoPopulation:
 
     def run(self, times, *, deadline, inputs=None):
         return [Trace(np.asarray(times), np.full((len(times), 1), v["j.stiffness"])) for v in self.assigned[-1]]
+
+
+class _RecordingPopulation(_EchoPopulation):
+    """World w returns 10 * stiffness + its recording's command over that recording's times."""
+
+    def __init__(self, size):
+        super().__init__()
+        self.size, self.passes = size, 0
+
+    def run_recordings(self, recordings, world_recording, *, deadline):
+        self.passes += 1
+        traces = []
+        for values, index in zip(self.assigned[-1], world_recording, strict=True):
+            times, inputs = recordings[index]
+            level = 10 * values["j.stiffness"] + float(inputs["command_q"][0, 0])
+            traces.append(Trace(np.asarray(times), np.full((len(times), 1), level)))
+        return traces
 
 
 class TestActuatorConfiguration(unittest.TestCase):
@@ -116,12 +133,12 @@ class TestActuatorConfiguration(unittest.TestCase):
     def test_search_budget_covers_every_phase(self):
         """Budget rollouts for every lifecycle phase of the search."""
         case = build_case(self.so101)
-        optimizer, decision = make_search(case, train_count=3, validation_count=8)
-        self.assertEqual((optimizer.batch_size, optimizer.sigma), (64, 0.125))
-        self.assertEqual((decision.max_generations, decision.max_trials), (100, 6400))
+        optimizer, decision = make_search(case, train_count=6, validation_count=8)
+        self.assertEqual((optimizer.batch_size, optimizer.sigma), (256, 0.125))
+        self.assertEqual((decision.max_generations, decision.max_trials), (100, 25600))
         templates = 3
-        per_replay = 1 + 3 * templates + 6 * 30 + 6400 + templates
-        self.assertEqual(decision.max_rollouts, 3 * per_replay + 8)
+        per_replay = 1 + 3 * templates + 6 * 30 + 25600 + templates
+        self.assertEqual(decision.max_rollouts, 6 * per_replay + 8)
         self.assertEqual(decision.relative_improvement_tolerance, 0.001)
 
 
@@ -227,8 +244,8 @@ class TestActuatorData(TempPathTestCase):
             "asset": {"path": "robot_assets/robot.usda", "usd_sha256": file_sha256(source)},
             "dataset": {"provider": "huggingface"},
         }
-        self.assertEqual(resolve_asset(config, data_root=self.tmp_path), source.resolve())
-        self.assertEqual(resolve_asset(config, source), source.resolve())
+        self.assertEqual(resolve_asset(config, data_root=self.tmp_path), source.absolute())
+        self.assertEqual(resolve_asset(config, source), source.absolute())
         other = self.tmp_path / "other.usda"
         other.write_text("#usda 1.0\n# changed\n")
         with self.assertRaisesRegex(ValueError, "differs"):
@@ -249,6 +266,37 @@ class TestActuatorBatching(unittest.TestCase):
         self.assertEqual([float(t.values[0, 0]) for t in traces], [1.0, 2.0])
         with self.assertRaisesRegex(ValueError, "does not fit"):
             _Worlds(population, values * 3, inputs=None)
+
+    def test_recordings_of_a_chunk_replay_together_once(self):
+        """Replay every grouped recording in one pass and serve each recording from it."""
+        population = _RecordingPopulation(size=2 * 3)
+        recordings = {
+            f"r{r}": (
+                0.1 * np.arange(1, steps + 1),
+                {"command_q": np.full((steps + 1, 1), r), "initial_q": np.zeros(1)},
+            )
+            for r, steps in enumerate((2, 4))
+        }
+        group = _RecordingGroup(population, recordings, chunk=3)
+        values = [{"j.stiffness": 1.0}, {"j.stiffness": 2.0}]
+        environments = {name: _GroupedWorlds(group, values, name) for name in recordings}
+        self.assertEqual(
+            [v["j.stiffness"] for v in population.assigned[-1]],
+            [1.0, 2.0, 2.0, 1.0, 2.0, 2.0],
+        )
+        for name, (times, _) in recordings.items():
+            traces = environments[name].run(times, seed=0, deadline=None)
+            self.assertEqual(len(traces), 2)
+            for trace, expected in zip(traces, values, strict=True):
+                np.testing.assert_array_equal(trace.times, times)
+                self.assertEqual(float(trace.values[0, 0]), 10 * expected["j.stiffness"] + int(name[1]))
+        self.assertEqual(population.passes, 1)
+        with self.assertRaisesRegex(ValueError, "control grid"):
+            environments["r0"].run(np.array([0.2, 0.4]), seed=0, deadline=None)
+        with self.assertRaisesRegex(ValueError, "does not fit"):
+            _GroupedWorlds(group, values * 2, "r0")
+        self.assertEqual(recording_key(recordings["r0"][1]), recording_key(dict(recordings["r0"][1])))
+        self.assertNotEqual(recording_key(recordings["r0"][1]), recording_key(recordings["r1"][1]))
 
 
 @unittest.skipUnless(HAS_PXR, "usd-core is not installed")
@@ -283,7 +331,7 @@ class TestIdentifiedLayer(TempPathTestCase):
         }
         clamps = {"elbow": {"effort_limit": 3.0, "velocity_limit": 2.0}}
         layer = write_identified_layer(source, self.tmp_path / "run" / "candidate.usda", parameters, clamps, "{}")
-        self.assertEqual(sublayer_source(layer), source.resolve())
+        self.assertEqual(sublayer_source(layer), source.absolute())
         written = Sdf.Layer.FindOrOpen(str(layer))
         self.assertFalse(Path(written.subLayerPaths[0]).is_absolute())
 
@@ -298,7 +346,7 @@ class TestIdentifiedLayer(TempPathTestCase):
         self.assertAlmostEqual(joint.GetAttribute("newton:damping").Get(), 0.3 * per_degree, places=6)
 
         released = relocate_layer(layer, self.tmp_path / "run" / "release" / "asset.usda")
-        self.assertEqual(sublayer_source(released), source.resolve())
+        self.assertEqual(sublayer_source(released), source.absolute())
         relocated = Usd.Stage.Open(str(released))
         reopened = relocated.GetPrimAtPath("/robot/elbow")
         self.assertEqual(
