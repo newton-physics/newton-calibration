@@ -47,7 +47,8 @@ class _EchoPopulation:
         self.assigned.append([dict(v) for v in parameter_values])
         return [dict(v) for v in parameter_values]
 
-    def run(self, times, *, deadline, inputs=None):
+    def run(self, times, *, deadline, inputs=None, record_positions=True):
+        self.record_positions = record_positions
         return [Trace(np.asarray(times), np.full((len(times), 1), v["j.stiffness"])) for v in self.assigned[-1]]
 
 
@@ -58,8 +59,9 @@ class _RecordingPopulation(_EchoPopulation):
         super().__init__()
         self.size, self.passes = size, 0
 
-    def run_recordings(self, recordings, world_recording, *, deadline):
+    def run_recordings(self, recordings, world_recording, *, deadline, record_positions=True):
         self.passes += 1
+        self.record_positions = record_positions
         traces = []
         for values, index in zip(self.assigned[-1], world_recording, strict=True):
             times, inputs = recordings[index]
@@ -264,6 +266,9 @@ class TestActuatorBatching(unittest.TestCase):
         self.assertEqual(list(worlds.applied_parameters), values)
         traces = worlds.run(np.array([0.1, 0.2]), seed=0, deadline=None)
         self.assertEqual([float(t.values[0, 0]) for t in traces], [1.0, 2.0])
+        self.assertFalse(population.record_positions)
+        _Worlds(population, values[:1], inputs=None).run(np.array([0.1]), seed=0, deadline=None)
+        self.assertTrue(population.record_positions)
         with self.assertRaisesRegex(ValueError, "does not fit"):
             _Worlds(population, values * 3, inputs=None)
 
@@ -291,6 +296,10 @@ class TestActuatorBatching(unittest.TestCase):
                 np.testing.assert_array_equal(trace.times, times)
                 self.assertEqual(float(trace.values[0, 0]), 10 * expected["j.stiffness"] + int(name[1]))
         self.assertEqual(population.passes, 1)
+        self.assertFalse(population.record_positions)
+        single = _GroupedWorlds(group, values[:1], "r1")
+        single.run(recordings["r1"][0], seed=0, deadline=None)
+        self.assertTrue(population.record_positions)
         with self.assertRaisesRegex(ValueError, "control grid"):
             environments["r0"].run(np.array([0.2, 0.4]), seed=0, deadline=None)
         with self.assertRaisesRegex(ValueError, "does not fit"):

@@ -8,6 +8,9 @@ builder. ``export`` writes a sparse identified USD layer. ``reload`` reads that 
 through Newton's USD importer without overrides, so the retest and validation simulate
 exactly what a downstream user of the layer would load.
 
+Body positions serve only the before/after animation, which uses single-candidate batches
+(the baseline and the retest of the reloaded asset). Multi-candidate chunks record none.
+
 With ``recordings``, a chunk of candidates replays all of those recordings in one pass of
 a model with one world per candidate and recording. Rollout still asks for one recording
 at a time; the first request for a chunk runs the pass, and the others are served from it.
@@ -57,7 +60,8 @@ class _Worlds(BatchEnvironment):
         self.applied_parameters = population.assign(padded)[:count]
 
     def run(self, times, *, seed, deadline):
-        return self.population.run(times, deadline=deadline, inputs=self.inputs)[: self.count]
+        results = self.population.run(times, deadline=deadline, inputs=self.inputs, record_positions=self.count == 1)
+        return results[: self.count]
 
 
 def recording_key(inputs):
@@ -105,7 +109,12 @@ class _RecordingGroup:
     def results(self, entry, recording, *, deadline):
         if entry["results"] is None:
             self._assign(entry)  # another chunk may have been assigned since
-            entry["results"] = self.population.run_recordings(self.recordings, self.world_recording, deadline=deadline)
+            entry["results"] = self.population.run_recordings(
+                self.recordings,
+                self.world_recording,
+                deadline=deadline,
+                record_positions=len(entry["requested"]) == 1,
+            )
         start = self.keys.index(recording) * self.chunk
         return entry["results"][start : start + len(entry["requested"])]
 

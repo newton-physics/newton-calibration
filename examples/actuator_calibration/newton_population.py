@@ -208,6 +208,10 @@ class NewtonActuatorPopulation:
             iterations=int(numeric_settings["iterations"]),
             ls_iterations=int(numeric_settings["ls_iterations"]),
         )
+        # MuJoCo Warp otherwise prints from the device whenever a world reaches its solver or
+        # line-search iteration limit, which with fixed iteration counts is nearly every step
+        # in every world. Numerical qualification checks the iteration counts instead.
+        self.solver.mjw_model.opt.warn_overflow = False
         q, dof, target, bodies = model_indices(model, self.joints, size)
         self._q, self._dof, self._bodies = q, dof, bodies
         self._q_device = wp.array(q, dtype=wp.int32, device=model.device)
@@ -274,9 +278,14 @@ class NewtonActuatorPopulation:
             state.joint_qd.assign(joint_qd)
             newton.eval_fk(self.model, state.joint_q, state.joint_qd, state)
 
-    def run(self, times, *, deadline, inputs=None):
+    def run(self, times, *, deadline, inputs=None, record_positions=True):
         """Replay one recording in every world."""
-        return self.run_recordings([(times, inputs)], np.zeros(self.size, dtype=np.int32), deadline=deadline)
+        return self.run_recordings(
+            [(times, inputs)],
+            np.zeros(self.size, dtype=np.int32),
+            deadline=deadline,
+            record_positions=record_positions,
+        )
 
     def _delayed(self, times, inputs):
         if inputs is None or {"command_q", "initial_q"} - set(inputs):
@@ -292,10 +301,12 @@ class NewtonActuatorPopulation:
         rows = np.maximum(0, np.arange(len(commands))[:, None] - self._delay_steps[None, :])
         return np.take_along_axis(commands, rows, axis=0)[:steps]
 
-    def run_recordings(self, recordings, world_recording, *, deadline):
+    def run_recordings(self, recordings, world_recording, *, deadline, record_positions=True):
         """Replay ``recordings`` [(times, inputs)] at once; world w replays ``world_recording[w]``.
 
         Returns one Trace or SimulationError per world, covering that world's recording.
+        Body positions are only for visualization; without ``record_positions`` the traces
+        carry none, which saves a launch per step and most of the device-to-host copy.
         """
         world_recording = np.asarray(world_recording, dtype=np.int32)
         if world_recording.shape != (self.size,) or not (0 <= world_recording).all():
@@ -312,7 +323,11 @@ class NewtonActuatorPopulation:
         commands_device = wp.array(padded.astype(np.float32), dtype=wp.float32, device=device)
         recording_device = wp.array(world_recording, dtype=wp.int32, device=device)
         joint_trace = wp.zeros((steps, self.size, len(self.joints)), dtype=wp.float32, device=device)
-        body_trace = wp.zeros((steps, self.size, self._bodies.shape[1]), dtype=wp.vec3, device=device)
+        body_trace = (
+            wp.zeros((steps, self.size, self._bodies.shape[1]), dtype=wp.vec3, device=device)
+            if record_positions
+            else None
+        )
         self._reset(initial[world_recording])
         for row in range(steps):
             if deadline is not None and row % 256 == 0 and time.monotonic() >= deadline:
@@ -332,15 +347,16 @@ class NewtonActuatorPopulation:
                 outputs=[joint_trace],
                 device=device,
             )
-            wp.launch(
-                _record_body_positions,
-                dim=(self.size, self._bodies.shape[1]),
-                inputs=[self.state.body_q, self._bodies_device, row],
-                outputs=[body_trace],
-                device=device,
-            )
+            if body_trace is not None:
+                wp.launch(
+                    _record_body_positions,
+                    dim=(self.size, self._bodies.shape[1]),
+                    inputs=[self.state.body_q, self._bodies_device, row],
+                    outputs=[body_trace],
+                    device=device,
+                )
         values = joint_trace.numpy()
-        positions = body_trace.numpy()
+        positions = body_trace.numpy() if body_trace is not None else None
         results = []
         for w in range(self.size):
             index = int(world_recording[w])
@@ -350,7 +366,8 @@ class NewtonActuatorPopulation:
                 results.append(SimulationError(f"world {w} produced nonfinite joint positions"))
                 continue
             times = np.asarray(recordings[index][0], dtype=np.float64)
-            results.append(Trace(times.copy(), world_values, positions[:count, w, :, :].astype(np.float64)))
+            world_positions = None if positions is None else positions[:count, w, :, :].astype(np.float64)
+            results.append(Trace(times.copy(), world_values, world_positions))
         return results
 
 
