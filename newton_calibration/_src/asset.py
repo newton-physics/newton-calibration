@@ -5,6 +5,7 @@
 
 import copy
 import json
+import shutil
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from pathlib import Path
@@ -106,3 +107,14 @@ class Asset(ABC):
         loaded = copy.copy(self)
         loaded.baseline_parameters = immutable(data["parameters"])
         return loaded
+
+    def stage_release(self, candidate_path, release_path) -> None:
+        """Copy a validated candidate to its release path, preserving its contents.
+
+        File-backed adapters may override this to also copy and verify dependent
+        resources. Raise on failure; the lifecycle must not accept an incomplete
+        release. This method stages local files, not a remote publication.
+        """
+        release_path = Path(release_path)
+        release_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(candidate_path, release_path)

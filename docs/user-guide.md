@@ -108,6 +108,15 @@ The Newton XPBD example shows the full construction of an asset, environment, ev
 
 Asset's default JSON export contains parameters, adapter type and constructor configuration. It still needs the same adapter and template to create a simulator. Override export/reload for a different physical asset format.
 
+File-backed assets can override `Asset.stage_release(candidate_path, release_path)`
+to copy and verify dependent resources alongside the validated candidate. The
+default implementation copies the candidate file byte-for-byte. The lifecycle
+calls this method on the reloaded asset after all acceptance checks; an exception
+prevents acceptance. Preserve candidate contents and raise if any required
+resource cannot be delivered. This stages a local release and does not publish
+to a remote service. The [robot import example](../examples/actuator/robot/README.md)
+demonstrates a relocatable JSON asset with hashed model and mesh resources.
+
 ### Numerical qualification policy
 
 `Template` defaults to `qualification_mode="refinement"`. At least one actual change to numerical settings or discretization is required; an empty refinement list never silently disables qualification.

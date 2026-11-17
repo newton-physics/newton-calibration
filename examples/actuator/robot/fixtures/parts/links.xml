@@ -1,0 +1,22 @@
+<!-- SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<mujocoinclude>
+  <compiler meshdir="../meshes"/>
+  <asset><mesh name="marker" file="marker.obj"/></asset>
+  <worldbody>
+    <body name="base">
+      <inertial pos="0 0 0" mass="1" diaginertia="0.05 0.05 0.05"/>
+      <geom name="base_marker" type="mesh" mesh="marker" contype="0" conaffinity="0"/>
+      <body name="upper">
+        <inertial pos="0.5 0 0" mass="2" diaginertia="0.02 0.18 0.18"/>
+        <joint name="shoulder" type="hinge" axis="0 1 0" limited="true" range="-2 2" damping="0.02"/>
+        <geom name="upper_shape" type="capsule" fromto="0 0 0 1 0 0" size="0.03" contype="0" conaffinity="0"/>
+        <body name="forearm" pos="1 0 0">
+          <inertial pos="0.3 0 0" mass="1" diaginertia="0.01 0.04 0.04"/>
+          <joint name="elbow" type="hinge" axis="0 1 0" limited="true" range="-2 2" damping="0.015"/>
+          <geom name="forearm_shape" type="capsule" fromto="0 0 0 0.6 0 0" size="0.025" contype="0" conaffinity="0"/>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+</mujocoinclude>

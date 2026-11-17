@@ -12,7 +12,27 @@ Source revisions and hashes are recorded alongside the patch.
 Archived cable observations, outputs and reports retain their provenance.
 Historical experimental results are not new validation results for this seed.
 
+The optional SolverMuJoCo integration uses MuJoCo and MuJoCo Warp,
+both licensed under Apache-2.0. These separately installed dependencies
+retain their own license files and third-party notices.
+
+The optional robot import example uses trimesh (MIT), Pillow (MIT-CMU),
+and SciPy (BSD-3-Clause).
+These separately installed dependencies retain their own license files and
+third-party notices. The bundled two-link model and mesh are project fixtures.
+
+The optional UR5e integration check downloads a pinned model from MuJoCo Menagerie
+(google-deepmind/mujoco_menagerie), licensed under BSD-3-Clause. Its original
+license is retained in the downloaded source and exported resource bundle.
+
 Project documentation is licensed under Creative Commons Attribution 4.0
 International; see LICENSE-DOCS. Bundled software example fixtures, including
 archived observations, outputs, reports, and solver adaptations, retain their
 Apache-2.0 terms.
+
+The optional Go2 sysid downloader retrieves the Unitree Go2 model from
+google-deepmind/mujoco_menagerie and measurements from
+iit-DLSLab/sim2real-robot-identification at the revisions in
+examples/actuator/robot/go2/sources.json. Both sources provide BSD-3-Clause
+licenses, retained with the downloads. The model, meshes and measurements
+are not distributed with this repository.

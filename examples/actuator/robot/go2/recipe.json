@@ -1,0 +1,26 @@
+{
+  "source_revision": "370c43965323c0944b433b202aac5058b5f907a9",
+  "source_model": "unitree_go2/go2.xml",
+  "changes": [
+    "remove free joint to represent published suspended fixed-base collection",
+    "remove free-base keyframes; use recorded full joint initial states",
+    "set nominal passive damping 2.0 to zero; fitted Kd represents total effective viscous response",
+    "replace torque motors with stateless position PD; move nominal torque limits to actuator force limits",
+    "set unused contact margins to zero explicitly because this suspended-robot protocol disables all contacts; avoids SolverMuJoCo CCD conversion warnings"
+  ],
+  "unchanged": [
+    "mass and inertia",
+    "rotor armature",
+    "Coulomb friction",
+    "joint limits",
+    "meshes"
+  ],
+  "gravity": [
+    0,
+    0,
+    -9.81
+  ],
+  "assumed_mount": "level base, original MJCF orientation",
+  "control": "hold position targets at nominal 200 Hz; ideal continuous native PD feedback",
+  "result_scope": "equivalent gains under these model assumptions, not manufacturer controller identification"
+}

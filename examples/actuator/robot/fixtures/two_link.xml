@@ -1,0 +1,11 @@
+<!-- SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<mujoco model="two_link">
+  <compiler angle="radian"/>
+  <option gravity="0 0 -9.81"/>
+  <include file="parts/links.xml"/>
+  <actuator>
+    <motor name="shoulder_drive" joint="shoulder" gear="1"/>
+    <motor name="elbow_drive" joint="elbow" gear="1"/>
+  </actuator>
+</mujoco>
