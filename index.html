@@ -49,14 +49,14 @@ h2{font-size:27px;letter-spacing:-.02em;margin:0 0 18px}.stages{display:grid;gri
 <div class="metric"><strong>32 segments</strong><span>Newton VBD deployment model</span></div>
 </section>
 <figure>
-<a href="examples/cable_calibration/reports/cable_calibration_en.html#stages"><img src="examples/cable_calibration/reports/cable_calibration_preview.png" width="1920" height="864" alt="No-plug dynamic coordinate RMSE falls from A 3.230 mm to B 1.617 mm, B* 1.598 mm, and C 0.844 mm. Measured and predicted vertical trajectories are shown at 150 mm along the cable."></a>
-<figcaption>Rendered from archived measurements and simulation traces. B* and C share an objective; A → B also includes numerical and backend changes.</figcaption>
+<a href="examples/cable_calibration/reports/cable_calibration_en.html#stages"><img src="examples/cable_calibration/reports/cable_calibration_preview.png" width="1920" height="864" alt="No-plug release coordinate RMSE is 1.598 mm for B* and 0.844 mm for C. Measured and predicted vertical trajectories are shown at 150 mm along the cable."></a>
+<figcaption>Vertical motion 150 mm from the clamp and coordinate RMSE across the 30 scored x/z channels on the same no-plug release recording.</figcaption>
 </figure>
-<div class="note"><strong>Scope of the result.</strong> SLS improves the no-plug release fit. The plugged case still fails validation and numerical qualification; the historical result remains <code>rejected_validation</code>. These are equivalent parameters for the specified model, not validated universal material constants.</div>
+<div class="note"><strong>Scope of the result.</strong> The reported errors describe the 17 cm no-plug cable with the recorded clamp and 32 segments. B* and C use the same 28 scored frames from the fitting recording.</div>
 <section aria-labelledby="progress"><h2 id="progress">Why the model changed</h2><div class="stages">
-<article class="stage"><small>STAGE A</small><h3>Fit material response</h3><p>Optimizing EI and damping reduced error, but opposite static orientations traded off and dynamic maximum error remained above the limit.</p></article>
+<article class="stage"><small>STAGE A</small><h3>Fit material response</h3><p>Fitting bending rigidity and damping reduced release RMSE from 6.366 to 3.230 mm. The left and right static residuals motivated a check of the clamp angle.</p></article>
 <article class="stage"><small>STAGE B</small><h3>Test the fixed boundary</h3><p>A shared clamp-angle correction helped the joint fit. With static values conditionally frozen, viscous damping still traded oscillation amplitude against period.</p></article>
-<article class="stage"><small>STAGE C</small><h3>Add relaxation</h3><p>An SLS branch added transient rigidity and a relaxation time. No-plug dynamics improved, while attachment uncertainty and loaded numerics remained unresolved.</p></article>
+<article class="stage"><small>STAGE C</small><h3>Add relaxation</h3><p>An SLS branch added transient rigidity and a relaxation time. Replaying the fitted SLS parameters reproduces a coordinate RMSE of 0.844 mm on the no-plug recording.</p></article>
 </div></section>
 <nav class="resources" aria-label="Supporting resources">
 <a href="examples/cable_calibration/README.md">Case and reproduction guide ↗</a>

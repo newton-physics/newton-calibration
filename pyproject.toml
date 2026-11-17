@@ -17,7 +17,7 @@ dependencies = ["numpy>=1.26"]
 
 [project.optional-dependencies]
 newton = [
-    "newton @ git+https://github.com/newton-physics/newton.git@d37f4d3d341ccce1e06a1dff21e9a054759b4855",
+    "newton @ git+https://github.com/newton-physics/newton.git@c53345412d401232beff0bc71dcb39ce554fdf96",
     "warp-lang==1.17.0",
 ]
 cma = ["cma>=4,<5"]

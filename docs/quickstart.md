@@ -65,6 +65,7 @@ The adapter consists of `SlidingAsset` and `SlidingEnvironment`. Each candidate 
 
 ```python
 import time
+from threading import Lock
 
 import newton
 import numpy as np
@@ -89,31 +90,35 @@ from newton_calibration import (
     Validator,
 )
 
+# Pipeline construction and collision detection both specialize kernels in a shared Warp module.
+_collision_lock = Lock()
+
 
 class SlidingEnvironment(Environment):
     """Simulate a box on a horizontal plane and observe its center position [m]."""
 
     def __init__(self, parameters, numeric_settings, initial_speed, config):
-        self.dt = float(numeric_settings["dt"])
-        half_x, half_y, half_z = config["half_extents"]
-        builder = newton.ModelBuilder(gravity=(0.0, 0.0, -parameters["gravity"]))
-        material = newton.ModelBuilder.ShapeConfig(
-            density=config["density"],
-            mu=parameters["friction"],
-            mu_torsional=0.0,
-            mu_rolling=0.0,
-        )
-        self.body = builder.add_body(xform=wp.transform((0.0, 0.0, half_z), wp.quat_identity()))
-        self.box_shape = builder.add_shape_box(self.body, hx=half_x, hy=half_y, hz=half_z, cfg=material)
-        self.ground_shape = builder.add_ground_plane(cfg=material)
-        self.model = builder.finalize(device=numeric_settings["device"])
-        self.solver = SolverXPBD(self.model, iterations=numeric_settings["iterations"])
-        self.state_in, self.state_out = self.model.state(), self.model.state()
-        velocities = self.state_in.body_qd.numpy().copy()
-        velocities[self.body, 0] = initial_speed
-        self.state_in.body_qd.assign(velocities)
-        self.collision = newton.CollisionPipeline(self.model)
-        self.contacts = self.collision.contacts()
+        with _collision_lock:
+            self.dt = float(numeric_settings["dt"])
+            half_x, half_y, half_z = config["half_extents"]
+            builder = newton.ModelBuilder(gravity=(0.0, 0.0, -parameters["gravity"]))
+            material = newton.ModelBuilder.ShapeConfig(
+                density=config["density"],
+                mu=parameters["friction"],
+                mu_torsional=0.0,
+                mu_rolling=0.0,
+            )
+            self.body = builder.add_body(xform=wp.transform((0.0, 0.0, half_z), wp.quat_identity()))
+            self.box_shape = builder.add_shape_box(self.body, hx=half_x, hy=half_y, hz=half_z, cfg=material)
+            self.ground_shape = builder.add_ground_plane(cfg=material)
+            self.model = builder.finalize(device=numeric_settings["device"])
+            self.solver = SolverXPBD(self.model, iterations=numeric_settings["iterations"])
+            self.state_in, self.state_out = self.model.state(), self.model.state()
+            velocities = self.state_in.body_qd.numpy().copy()
+            velocities[self.body, 0] = initial_speed
+            self.state_in.body_qd.assign(velocities)
+            self.collision = newton.CollisionPipeline(self.model)
+            self.contacts = self.collision.contacts()
 
     @property
     def applied_parameters(self):
@@ -134,7 +139,8 @@ class SlidingEnvironment(Environment):
                     raise TimeoutError("sliding simulation deadline")
                 step = min(self.dt, target - current_time)
                 self.state_in.clear_forces()
-                self.collision.collide(self.state_in, self.contacts)
+                with _collision_lock:
+                    self.collision.collide(self.state_in, self.contacts)
                 self.solver.step(self.state_in, self.state_out, None, self.contacts, step)
                 self.state_in, self.state_out = self.state_out, self.state_in
                 current_time += step
@@ -235,6 +241,8 @@ print(result.termination_reason)
 print(result.parameters)
 print(result.run_directory)
 print(result.asset_path)
+if result.acceptance != "accepted":
+    raise SystemExit(1)
 ```
 
 The reference assumes constant Coulomb deceleration until stopping. Newton computes the box motion through rigid-body contact and friction. The timestep is 1/480 s with eight XPBD iterations. Numerical checks independently halve the timestep and double the iteration count, before fitting and at the final candidate.
@@ -257,7 +265,7 @@ Create the rollout below and pass it as `rollout=rollout` when constructing a fr
 rollout = Rollout(capacity=4, parameter_rtol=1e-6)
 ```
 
-With the example's CPU template and `SlidingAsset`, this schedules up to four independent episodes on worker threads. Each episode constructs its own Newton model, solver, collision pipeline, and state. The actual throughput depends on model construction, Python scheduling, and simulation cost. Compare the resulting traces and scores with the one-worker run.
+Run the bundled example with `python -m examples.box_friction_calibration.run --capacity 4` to use the same configuration. Each worker builds its own model, solver, collision pipeline, and state. The adapter serializes scene construction and collision detection because Warp 1.17.0 specializes contact kernels in a shared module. The XPBD solver steps run independently across workers.
 
 ### Implement a Newton batch environment
 
@@ -272,7 +280,7 @@ A batch environment receives several complete parameter dictionaries for one exp
 5. Read each box's position at the requested times and return one `Trace` per candidate in input order. For this example, each trace has `values` shaped `[T,1]` and `positions` shaped `[T,1,3]`. Copy retained samples and convert GPU observations to NumPy arrays for the existing evaluator.
 6. Check the deadline during simulation. Return a `SimulationError` in a failed candidate's slot when the failure can be isolated. An exception from the whole call affects the chunk. Release adapter-owned resources in `close()` when needed.
 
-Newton's world identifiers control collision isolation. The adapter must also preserve the correspondence between parameter readback, simulated bodies, and returned traces. [Pinned Newton world construction](https://github.com/newton-physics/newton/blob/d37f4d3d341ccce1e06a1dff21e9a054759b4855/newton/_src/sim/builder.py#L4382) · [Batch interface](api-reference.md#batchenvironment-rollout-and-episode-execute-candidates)
+Newton's world identifiers control collision isolation. The adapter must also preserve the correspondence between parameter readback, simulated bodies, and returned traces. [Pinned Newton world construction](https://github.com/newton-physics/newton/blob/c53345412d401232beff0bc71dcb39ce554fdf96/newton/_src/sim/builder.py#L5689) · [Batch interface](api-reference.md#batchenvironment-rollout-and-episode-execute-candidates)
 
 Once `SlidingBatchEnvironment` implements these operations with the constructor arguments shown below, add this asset subclass alongside the adapter. It inherits the single-environment construction method and the asset export/reload behavior from `SlidingAsset`.
 
@@ -409,7 +417,7 @@ python -m pip install -e ".[cable]"
 python -m examples.cable_calibration.verify
 ```
 
-The check covers all 14 retained traces and reports the historical run outcomes. The completed fitting example in the guide uses the no-plug observations. The archived runs retain `rejected_training` for A and `rejected_validation` for B, B*, and C under their original acceptance protocols. Keep those outcomes with the scores when interpreting or reproducing the study. [Archive scope and reproduction](../examples/cable_calibration/README.md#1-verify-the-reported-results-without-simulation)
+The verifier checks all 14 archived traces. On the no-plug fitting recording, B* gives 1.598 mm coordinate RMSE and C gives 0.844 mm. [Reproduce the no-plug scores](../examples/cable_calibration/README.md#1-verify-the-reported-results-without-simulation) · [Original run records](../examples/cable_calibration/archive/)
 
 ## Work with the skills
 

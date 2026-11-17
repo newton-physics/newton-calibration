@@ -4,6 +4,7 @@
 """Connect Newton's rigid-body contact simulation to the calibration members."""
 
 import time
+from threading import Lock
 
 import newton
 import numpy as np
@@ -12,31 +13,35 @@ from newton.solvers import SolverXPBD
 
 from newton_calibration import Asset, Environment, Trace
 
+# Pipeline construction and collision detection both specialize kernels in a shared Warp module.
+_collision_lock = Lock()
+
 
 class SlidingEnvironment(Environment):
     """Simulate a box on a horizontal plane and observe its center position [m]."""
 
     def __init__(self, parameters, numeric_settings, initial_speed, config):
-        self.dt = float(numeric_settings["dt"])
-        half_x, half_y, half_z = config["half_extents"]
-        builder = newton.ModelBuilder(gravity=(0.0, 0.0, -parameters["gravity"]))
-        material = newton.ModelBuilder.ShapeConfig(
-            density=config["density"],
-            mu=parameters["friction"],
-            mu_torsional=0.0,
-            mu_rolling=0.0,
-        )
-        self.body = builder.add_body(xform=wp.transform((0.0, 0.0, half_z), wp.quat_identity()))
-        self.box_shape = builder.add_shape_box(self.body, hx=half_x, hy=half_y, hz=half_z, cfg=material)
-        self.ground_shape = builder.add_ground_plane(cfg=material)
-        self.model = builder.finalize(device=numeric_settings["device"])
-        self.solver = SolverXPBD(self.model, iterations=numeric_settings["iterations"])
-        self.state_in, self.state_out = self.model.state(), self.model.state()
-        velocities = self.state_in.body_qd.numpy().copy()
-        velocities[self.body, 0] = initial_speed
-        self.state_in.body_qd.assign(velocities)
-        self.collision = newton.CollisionPipeline(self.model)
-        self.contacts = self.collision.contacts()
+        with _collision_lock:
+            self.dt = float(numeric_settings["dt"])
+            half_x, half_y, half_z = config["half_extents"]
+            builder = newton.ModelBuilder(gravity=(0.0, 0.0, -parameters["gravity"]))
+            material = newton.ModelBuilder.ShapeConfig(
+                density=config["density"],
+                mu=parameters["friction"],
+                mu_torsional=0.0,
+                mu_rolling=0.0,
+            )
+            self.body = builder.add_body(xform=wp.transform((0.0, 0.0, half_z), wp.quat_identity()))
+            self.box_shape = builder.add_shape_box(self.body, hx=half_x, hy=half_y, hz=half_z, cfg=material)
+            self.ground_shape = builder.add_ground_plane(cfg=material)
+            self.model = builder.finalize(device=numeric_settings["device"])
+            self.solver = SolverXPBD(self.model, iterations=numeric_settings["iterations"])
+            self.state_in, self.state_out = self.model.state(), self.model.state()
+            velocities = self.state_in.body_qd.numpy().copy()
+            velocities[self.body, 0] = initial_speed
+            self.state_in.body_qd.assign(velocities)
+            self.collision = newton.CollisionPipeline(self.model)
+            self.contacts = self.collision.contacts()
 
     @property
     def applied_parameters(self):
@@ -57,7 +62,8 @@ class SlidingEnvironment(Environment):
                     raise TimeoutError("sliding simulation deadline")
                 step = min(self.dt, target - current_time)
                 self.state_in.clear_forces()
-                self.collision.collide(self.state_in, self.contacts)
+                with _collision_lock:
+                    self.collision.collide(self.state_in, self.contacts)
                 self.solver.step(self.state_in, self.state_out, None, self.contacts, step)
                 self.state_in, self.state_out = self.state_out, self.state_in
                 current_time += step

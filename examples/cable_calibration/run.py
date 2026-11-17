@@ -29,11 +29,12 @@ from .backends.staged_evaluator import DistalDynamicEvaluator
 from .backends.validation import CableEvaluator, HistoricalValidator
 from .verify import CASE, load_experiments
 
+SOLVER = json.loads((CASE / "solver/current-solver.json").read_text())
+
 
 def check_solver(source, stage):
     source = Path(source).expanduser().resolve()
-    expected = json.loads((CASE / "solver/expected-hashes.json").read_text())
-    hashes = expected["sls" if stage == "C" else "base"]
+    hashes = SOLVER["sls" if stage == "C" else "base"]
     for name, digest in hashes.items():
         path = source / name
         if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != digest:
@@ -73,6 +74,8 @@ def build_tuning(stage, *, newton_source, workspace="workspace/cable", device=No
         "processed_data_sha256": hashlib.sha256((CASE / "data/experiments.json").read_bytes()).hexdigest(),
         "adapter_hashes": {str(p.relative_to(CASE)): hashlib.sha256(p.read_bytes()).hexdigest() for p in adapter_paths},
         "solver_vbd_hashes": solver_hashes,
+        "solver_base_revision": SOLVER["base_revision"],
+        "solver_patch_sha256": SOLVER["patch_sha256"] if stage == "C" else None,
         "interpretation": "New run; historical precision and acceptance are not reused.",
         "validation": "With-plug data are historical diagnostics, not an independent holdout.",
     }
@@ -84,7 +87,12 @@ def build_tuning(stage, *, newton_source, workspace="workspace/cable", device=No
         ),
         asset=asset_type(
             parameters.as_dict(parameters.baseline),
-            config={**config["asset_config"], "newton_source": str(source / "newton/__init__.py")},
+            config={
+                **config["asset_config"],
+                "newton_revision": SOLVER["base_revision"],
+                "solver_patch_sha256": SOLVER["patch_sha256"] if stage == "C" else None,
+                "newton_source": str(source / "newton/__init__.py"),
+            },
         ),
         evaluator=evaluator_type(),
         parameters=parameters,
