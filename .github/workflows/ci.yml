@@ -25,7 +25,7 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - name: Install CPU dependencies
-        run: python -m pip install -e ".[cma,cable,dev]"
+        run: python -m pip install -e ".[cma,cable,actuator,dev]"
       - name: Repository checks
         run: pre-commit run --all-files
       - name: Core behavior and archived evidence

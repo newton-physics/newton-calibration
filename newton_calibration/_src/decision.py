@@ -18,6 +18,9 @@ class Decision:
     target: float = 1e-5
     patience: int | None = None
     improvement_tolerance: float = 1e-10
+    # Optional: also stagnate when the improvement over the patience window is at most
+    # this fraction of the earlier best objective.
+    relative_improvement_tolerance: float | None = None
 
     def __post_init__(self):
         if (
@@ -27,6 +30,10 @@ class Decision:
             or not math.isfinite(self.target)
             or self.target < 0
             or (self.patience is not None and self.patience < 1)
+            or (
+                self.relative_improvement_tolerance is not None
+                and (not math.isfinite(self.relative_improvement_tolerance) or self.relative_improvement_tolerance < 0)
+            )
         ):
             raise ValueError("invalid decision policy")
 
@@ -62,8 +69,12 @@ class Decision:
             if self.patience and len(history) >= self.patience + 1:
                 old = history[-self.patience - 1]["best_objective"]
                 new = history[-1]["best_objective"]
-                if old is not None and new is not None and old - new <= self.improvement_tolerance:
-                    return DecisionResult("stop", "stagnation")
+                if old is not None and new is not None:
+                    tolerance = self.improvement_tolerance
+                    if self.relative_improvement_tolerance is not None:
+                        tolerance = max(tolerance, self.relative_improvement_tolerance * abs(old))
+                    if old - new <= tolerance:
+                        return DecisionResult("stop", "stagnation")
         count = min(count, max(0, remaining // per_trial))
         if count < request.get("minimum_batch", 1):
             return DecisionResult("stop", "budget_exhausted")

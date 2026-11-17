@@ -13,7 +13,7 @@ These interfaces apply to Newton Calibration 0.2.0. Import core classes from `ne
 
 | Responsibility | Interfaces |
 |---|---|
-| Observations | [Evidence and Experiment](#evidence-and-experiment-store-observations) |
+| Observations | [Evidence and Experiment](#evidence-and-experiment-store-observations), [FileSource](#filesource-fetches-pinned-source-files) |
 | Search values and fixed conditions | [Parameters](#parameter-and-parameters-define-the-search-space), [Template](#template-fixes-a-runs-configuration) |
 | Simulation | [Asset, Environment, Trace](#asset-environment-and-trace-connect-the-simulator), [Rollout](#batchenvironment-rollout-and-episode-execute-candidates) |
 | Scoring, search, and stopping | [Evaluator](#evaluator-converts-trajectories-into-objectives-and-constraints), [Optimizer](#optimizer-gridsearch-and-cmaes-propose-candidates), [Decision](#decision-controls-budgets-and-stopping) |
@@ -22,11 +22,11 @@ These interfaces apply to Newton Calibration 0.2.0. Import core classes from `ne
 
 ## Evidence and Experiment store observations
 
-`Experiment` holds one experiment's reference outputs and scoring conditions. `Evidence` groups experiments into training and validation data and records their sources. Put control commands, loads, and initial states in `Template.experiment_settings` under the same experiment ID. The environment uses those settings to run the forward problem.
+`Experiment` holds one experiment's reference outputs and scoring conditions. `Evidence` groups experiments into training and validation data and records their sources. Put control commands, loads, and initial states in `Template.experiment_settings` under the same experiment ID; put measured ones, such as recorded commands, in `Experiment.inputs` so they are part of the evidence. The environment uses both to run the forward problem.
 
 ```text
 Experiment(id, group, reference, times=None, scale=1.0,
-           mask=None, weight=1.0, repeats=1)
+           mask=None, weight=1.0, repeats=1, inputs=None)
 Evidence(train_data, validation_data=(), *, sources=None)
 ```
 
@@ -40,6 +40,7 @@ Evidence(train_data, validation_data=(), *, sources=None)
 | `mask` | `None` | Boolean `[T,D]`, with `True` selecting observations for scoring. Defaults to all valid, and must retain at least one element |
 | `weight` | `1.0` | Positive finite relative experiment weight in the combined objective |
 | `repeats` | `1` | Simulation repeats against the same reference, executed with experiment `seed + repeat` |
+| `inputs` | `None` | Measured per-experiment inputs, such as recorded commands or an initial state, as a nonempty mapping of named finite arrays. They are converted to `float64`, included in the fingerprint and split with the reference. `Template` passes them to `create_environment()` and `create_batch_environment()` as an additional `inputs=` keyword |
 | `train_data` | Experiment sequence | At least one experiment for analysis and search |
 | `validation_data` | `()` | Held-out experiments for individual evaluation after freezing the candidate |
 | `sources` | `None` | Provenance dictionary for data versions, processing protocols, and measurement sources, included in the fingerprint |
@@ -47,6 +48,28 @@ Evidence(train_data, validation_data=(), *, sources=None)
 `Evidence.prepare()` normalizes inputs, checks shapes, finiteness, IDs, and groups, then creates `evidence_id`. `Tuning` calls it during a complete run. For a standalone data check, construct `Evidence`, call `prepare()`, and inspect `train_data`, `validation_data`, and `fingerprint()`.
 
 Robot channels might be `[q_1, …, q_n, qd_1, …, qd_n]` with separate position and velocity scales. Cable centerlines can be flattened into channels at fixed arc-length samples, with masks for occlusion and initialization windows. Register independent real recordings as separate `Experiment`s and preserve acquisition relationships with `group`. Document channel order, frames, and units.
+
+## FileSource fetches pinned source files
+
+`newton_calibration.sources` locates evidence and asset files by relative path and checks each against a declared SHA-256 before use, so a run reads exactly the recorded bytes. Import it from that module; it is not part of the root namespace.
+
+```text
+FileSourceLocal(root)
+FileSourceHuggingFace(repo_id, revision, *, repo_type="dataset")
+FileSource.fetch(relative, sha256) -> Path
+FileSource.fetch_all({relative: sha256, ...}) -> {relative: Path}
+FileSource.provenance -> dict
+file_sha256(path) -> str
+```
+
+| Member | Usage |
+|---|---|
+| `FileSourceLocal` | Files under `root`, for example an offline copy of a repository. Paths that leave `root` are rejected |
+| `FileSourceHuggingFace` | Downloads into the Hugging Face cache through `huggingface_hub`, imported on the first fetch (`huggingface` extra). `revision` must be a full 40-digit commit hash; branch and tag names are rejected because they can move. `repo_type` is `"dataset"`, `"model"` or `"space"` |
+| `fetch` | Returns the local path after checking the lowercase 64-digit digest; a missing or different digest raises `ValueError` |
+| `provenance` | Provider, repository, type and revision, for `Evidence(sources=...)` |
+
+Subclass `FileSource` and implement `locate()` and `provenance` for another provider. The [actuator example](../examples/actuator_calibration/data.py) reads its recordings and robot USD this way.
 
 ## Parameter and Parameters define the search space
 
@@ -131,7 +154,7 @@ The returned `Trace` uses the following layout.
 
 Raise `SimulationError` for expected physical or numerical candidate failures and `TimeoutError` for deadlines. The lifecycle records other exceptions as execution errors and handles the failure. Include enough context to locate the model, input, or numerical issue.
 
-Assets also provide `load_or_create()`, `snapshot()`, `asset_id`, `export(parameter_values, path)`, and `reload(path)`. Default export writes `newton-calibration-asset/1` JSON with the asset type, candidate parameters, and construction configuration. Calling `reload(path)` on the original asset returns an instance of the same type with the candidate baseline. Its `create_environment()` must still construct fresh mutable state. Subclasses that cache mutable models must handle rebuilding and isolation.
+Assets also provide `load_or_create()`, `snapshot()`, `asset_id`, `export(parameter_values, path)`, and `reload(path)`. Default export writes `newton-calibration-asset/1` JSON with the asset type, candidate parameters, and construction configuration. Calling `reload(path)` on the original asset returns an instance of the same type with the candidate baseline. `Tuning` compares the reloaded baseline with the selected candidate within the Rollout readback tolerances and records the comparison as `analysis_reports["export_roundtrip"]`. `release(candidate_path, directory)` publishes an accepted export; the default copies it to `asset<suffix>`, keeping the export's file type. Its `create_environment()` must still construct fresh mutable state. Subclasses that cache mutable models must handle rebuilding and isolation.
 
 The quickstart's `SlidingAsset` constructs a Newton model and `SolverXPBD` through their public APIs. The package's `newton_calibration.examples` module also exports NumPy-based `SlidingAsset` and `OscillatorAsset` demo adapters. The cable factory connects the measured cable study to its pinned solver. [Newton sliding adapter](../examples/box_friction_calibration/backend.py) · [NumPy demo exports](../newton_calibration/examples.py) · [Cable factory](../examples/cable_calibration/run.py)
 
@@ -232,7 +255,7 @@ Before baseline, analysis, training, and validation work, `Decision` checks stat
 ```text
 Decision(max_trials=512, max_rollouts=10000, max_generations=100,
          max_seconds=300.0, target=1e-5, patience=None,
-         improvement_tolerance=1e-10)
+         improvement_tolerance=1e-10, relative_improvement_tolerance=None)
 ```
 
 | Argument | Scope and meaning |
@@ -244,6 +267,7 @@ Decision(max_trials=512, max_rollouts=10000, max_generations=100,
 | `target` | Stop search when the best feasible training objective reaches this value |
 | `patience` | Default `None`. When enabled, detect stagnation from improvement across the specified number of recent batches |
 | `improvement_tolerance` | Threshold for old best objective minus new best objective when patience is enabled |
+| `relative_improvement_tolerance` | Default `None`. When set, the stagnation threshold is the larger of `improvement_tolerance` and this fraction of the old best objective |
 
 Budget limits are positive, `target` is finite and nonnegative, and enabled `patience` is a positive batch count. `next_action(state, request)` receives a read-only state snapshot and work request, then returns `action="continue"` or `"stop"`. Its `reason` enters decision history.
 
@@ -303,7 +327,8 @@ Pass the ten members to `Tuning` to run preparation, analysis, search, export/re
 Tuning(*, evidence, asset, evaluator, parameters, rollout, optimizer,
        decision, validator, template, play, workspace="workspace",
        analysis_step=0.03, rank_tolerance=1e-3,
-       allow_rank_reduction=False, orthogonalize=True)
+       allow_rank_reduction=False, orthogonalize=True,
+       record_traces=True)
 ```
 
 | Additional argument | Default and behavior |
@@ -312,7 +337,8 @@ Tuning(*, evidence, asset, evaluator, parameters, rollout, optimizer,
 | `analysis_step` | `0.03`, finite-difference step in per-parameter normalized coordinates, requiring `0 < step <= 0.25` |
 | `rank_tolerance` | `1e-3`, relative rank threshold with `0 < tolerance < 1`. The singular-value cutoff is `max(s_max * tolerance, 1e-10)` |
 | `allow_rank_reduction` | `False`, allowing search in retained identifiable combinations of nonzero rank when enabled |
-| `orthogonalize` | `True`, building search coordinates from local SVD combinations. Required for rank reduction |
+| `orthogonalize` | `True`, building search coordinates from local SVD combinations. Required for rank reduction. The search box encloses the rotated parameter cube, so with many parameters most samples fall outside the physical bounds and are rejected as `invalid_parameters`; with full rank, pass `False` to search the original coordinates |
+| `record_traces` | `True`, saving every episode trace and per-sample feature in `batches/*.json` and the sensitivity Jacobians in `run_state.json`. With `False`, batch files keep trial values, scores, statuses and applied parameters, and the Jacobians go to `analysis/sensitivity.npz`, referenced with its SHA-256. Use `False` for long recordings or large batches. Scoring, selection and `comparison.usda` are unaffected |
 
 Start with `result = tuning.run()`. Calling `prepare()`, `sensitivity()`, `identifiability(report)`, and `evaluate_batch(...)` manually requires following the lifecycle, freezing, and budget protocols. Let `run()` manage those steps, using a fresh instance for each run.
 
@@ -374,7 +400,8 @@ Identifiability analysis uses finite differences at the same three anchors in no
 |---|---|
 | `resolved.json` | Observations, frozen configuration, identities, and versions needed to reconstruct the problem |
 | `run_state.json` | Budget use, decisions, and phase state |
-| `batches/*.json`, `checkpoints/*.pkl` | Candidate evaluation records and optimizer state |
+| `batches/*.json`, `checkpoints/*.pkl` | Candidate evaluation records and optimizer state. Records contain traces and features unless `record_traces=False` |
+| `analysis/sensitivity.npz` | Sensitivity Jacobians when `record_traces=False` |
 | `candidate_asset.json` | Candidate saved on reaching export, with acceptance recorded separately |
 | `result.json` | Stopping reason, acceptance, parameters, and result paths |
 | `comparison.usda` | Visualization exported from saved trajectories |

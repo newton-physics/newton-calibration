@@ -4,6 +4,7 @@
 """Prepared observations; acquisition groups enforce independent holdout data."""
 
 import math
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 import numpy as np
@@ -21,6 +22,9 @@ class Experiment:
     mask: np.ndarray | None = None
     weight: float = 1.0
     repeats: int = 1
+    # Measured per-experiment inputs, e.g. recorded commands or initial states. They are
+    # evidence, so they are fingerprinted and split with the reference observations.
+    inputs: Mapping[str, np.ndarray] | None = None
 
     def normalized(self):
         reference = np.array(self.reference, dtype=np.float64)
@@ -48,7 +52,19 @@ class Experiment:
             or (times[1:] <= times[:-1]).any()
         ):
             raise ValueError("invalid observation time axis")
-        return Experiment(self.id, self.group, reference, times, scale.copy(), mask, self.weight, self.repeats)
+        inputs = None
+        if self.inputs is not None:
+            if not isinstance(self.inputs, Mapping) or not self.inputs:
+                raise ValueError("experiment inputs must be a nonempty mapping of named arrays")
+            inputs = {}
+            for name, value in self.inputs.items():
+                array = np.array(value, dtype=np.float64)
+                if not isinstance(name, str) or not name or not array.size:
+                    raise ValueError("experiment inputs need nonempty names and arrays")
+                if not np.isfinite(array).all():
+                    raise ValueError(f"nonfinite experiment input {name!r}")
+                inputs[name] = array
+        return Experiment(self.id, self.group, reference, times, scale.copy(), mask, self.weight, self.repeats, inputs)
 
 
 class Evidence:

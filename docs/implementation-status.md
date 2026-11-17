@@ -19,9 +19,9 @@ The core provides two synthetic systems and the [real cable example](../examples
 | Batch execution/scoring | Threaded per-episode environments or asset-provided multi-candidate environments, NumPy CPU scoring |
 | Binding checks | Readback of tuned/fixed quantities; missing or inconsistent bindings fail |
 | Optimizers | GridSearch and CMAES initialize/ask/tell/state/diagnostics; no stop authority |
-| Decision | Work authorization and shared rollout/time budgets with purpose-specific accounting |
+| Decision | Work authorization and shared rollout/time budgets with purpose-specific accounting; absolute or relative stagnation |
 | Records | JSON batch records, configuration/code fingerprints, decision history, CMAES checkpoint |
-| Validation | Export/reload, training retest, holdout evaluation, final precision checks |
+| Validation | Export/reload (compared within readback tolerances; format chosen by the Asset), training retest, holdout evaluation, final precision checks |
 | Play | Saved-trace GL and USDA point animation with identities and parameters |
 
 ## Verification scope
