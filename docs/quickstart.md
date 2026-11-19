@@ -5,7 +5,7 @@ SPDX-License-Identifier: CC-BY-4.0
 
 # Run your first calibration
 
-[Calibration guide](calibration-guide.md) · [API reference](api-reference.md) · [Cable study](../examples/cable_calibration/README.md)
+[Calibration guide](calibration-guide.md) · [Integration guide](integration-guide.md) · [Cable study](../examples/cable_calibration/README.md)
 
 Fit contact friction for a box simulated by Newton’s `SolverXPBD`, read the result, then use the same interfaces with your own observations and model. The reference trajectories are analytical synthetic data with known initial speeds and friction.
 
@@ -55,7 +55,7 @@ Use the run directory printed by the command. Replace `<run-id>` with that direc
 newton-calibration inspect workspace/newton-sliding/<run-id>
 ```
 
-Open `result.json` for the result, `run_state.json` for analysis and validation reports, and `resolved.json` for the frozen problem definition. Accepted runs include `release/asset.json`, `release/template.json`, and `release/manifest.json`. Keep them together when reusing a fitted model. [Result file reference](api-reference.md#result-files)
+Open `result.json` for the result, `run_state.json` for analysis and validation reports, and `resolved.json` for the frozen problem definition. Accepted runs include `release/asset.json`, `release/template.json`, and `release/manifest.json`. Keep them together when reusing a fitted model. [Result file reference](integration-guide.md#result-files)
 
 ## Assemble the calibration yourself
 
@@ -243,7 +243,7 @@ The reference assumes constant Coulomb deceleration until stopping. Newton compu
 
 `Rollout` uses one worker and a readback relative tolerance of `1e-6` for Newton’s float32 parameter arrays. `Template` fixes gravity, initial speeds, and solver settings during parameter search. All numerical refinements retain the candidate’s physical parameters.
 
-Each `Tuning` instance runs once. Construct fresh members and a fresh `Tuning` when changing the evidence, model, numerical settings, or search definition. Its `run()` method performs preparation and the subsequent stages. [Lifecycle reference](api-reference.md#lifecycle-and-analysis-scope)
+Each `Tuning` instance runs once. Construct fresh members and a fresh `Tuning` when changing the evidence, model, numerical settings, or search definition. Its `run()` method performs preparation and the subsequent stages. [Lifecycle reference](integration-guide.md#lifecycle-and-analysis-scope)
 
 ## Replace single env rollout with multi env rollout
 
@@ -272,7 +272,7 @@ A batch environment receives several complete parameter dictionaries for one exp
 5. Read each box's position at the requested times and return one `Trace` per candidate in input order. For this example, each trace has `values` shaped `[T,1]` and `positions` shaped `[T,1,3]`. Copy retained samples and convert GPU observations to NumPy arrays for the existing evaluator.
 6. Check the deadline during simulation. Return a `SimulationError` in a failed candidate's slot when the failure can be isolated. An exception from the whole call affects the chunk. Release adapter-owned resources in `close()` when needed.
 
-Newton's world identifiers control collision isolation. The adapter must also preserve the correspondence between parameter readback, simulated bodies, and returned traces. [Pinned Newton world construction](https://github.com/newton-physics/newton/blob/d37f4d3d341ccce1e06a1dff21e9a054759b4855/newton/_src/sim/builder.py#L4382) · [Batch interface](api-reference.md#batchenvironment-rollout-and-episode-execute-candidates)
+Newton's world identifiers control collision isolation. The adapter must also preserve the correspondence between parameter readback, simulated bodies, and returned traces. [Pinned Newton world construction](https://github.com/newton-physics/newton/blob/d37f4d3d341ccce1e06a1dff21e9a054759b4855/newton/_src/sim/builder.py#L4382) · [Batch interface](integration-guide.md#batchenvironment-rollout-and-episode-execute-candidates)
 
 Once `SlidingBatchEnvironment` implements these operations with the constructor arguments shown below, add this asset subclass alongside the adapter. It inherits the single-environment construction method and the asset export/reload behavior from `SlidingAsset`.
 
@@ -311,7 +311,7 @@ Overriding `create_batch_environment()` selects the batch execution path automat
 
 The batch implementation must also handle smaller chunks, including one candidate during validation. Episode budgets count every candidate, experiment, and repeat. In this example, a search batch of eight candidates fits within the existing search and rollout budgets.
 
-Before a full calibration, compare the same candidate parameters under single-environment and batch execution. Check parameter readback, trace order, observation times, residuals, and state isolation. Compare different chunk sizes and candidate orders, and repeat the numerical refinements on the selected device. Then run a fresh `Tuning` through export/reload and final validation. The CPU sliding result above establishes the single-environment reference for these checks. [Execution contracts](api-reference.md#running-candidates-together)
+Before a full calibration, compare the same candidate parameters under single-environment and batch execution. Check parameter readback, trace order, observation times, residuals, and state isolation. Compare different chunk sizes and candidate orders, and repeat the numerical refinements on the selected device. Then run a fresh `Tuning` through export/reload and final validation. The CPU sliding result above establishes the single-environment reference for these checks. [Execution contracts](integration-guide.md#running-candidates-together)
 
 ## Replace synthetic observations with measurements
 
@@ -362,7 +362,7 @@ values = positions[:, :, 0].copy()
 return Trace(times.copy(), values, positions)
 ```
 
-The evaluator receives the X-position channel as `[T,1]`, and playback receives XYZ positions as `[T,1,3]`. The simulator-specific state stays inside the environment. [Environment and trace contract](api-reference.md#asset-environment-and-trace-connect-the-simulator)
+The evaluator receives the X-position channel as `[T,1]`, and playback receives XYZ positions as `[T,1,3]`. The simulator-specific state stays inside the environment. [Environment and trace contract](integration-guide.md#asset-environment-and-trace-connect-the-simulator)
 
 ### Connect the replacement asset to Tuning
 
@@ -394,7 +394,7 @@ For the same sliding task, use the reference X-position trajectories and physica
 
 ### Check the integration and adapt the physical task
 
-Run the baseline experiment first. Check parameter readback, observation times, channel order, units, and coordinate frames. Perturb friction and confirm that the intended material fields and trajectory change. Repeat runs with fresh environments to check state isolation, then export and reload a candidate and compare its response under the same conditions. Complete numerical qualification and held-out validation with the new backend. [Adapter checks](api-reference.md#contracts-to-check-during-integration)
+Run the baseline experiment first. Check parameter readback, observation times, channel order, units, and coordinate frames. Perturb friction and confirm that the intended material fields and trajectory change. Repeat runs with fresh environments to check state isolation, then export and reload a candidate and compare its response under the same conditions. Complete numerical qualification and held-out validation with the new backend. [Adapter checks](integration-guide.md#contracts-to-check-during-integration)
 
 For a cable, robot, or another object, also replace the scene, experiment inputs, and observation channels. Supply the corresponding `Evidence` and `Experiment` data, define its `Parameters` and `Template`, and choose scales, scoring rules, and validation thresholds for that task. The cable adapter demonstrates the mapping from continuum bending rigidity to discrete joint coefficients, together with measured static and dynamic observations. [Cable parameter registration](calibration-guide.md#cable-example-registering-measured-quantities-and-initial-assumptions)
 
@@ -426,4 +426,4 @@ You choose the physical task, provide evidence, and resolve experimental assumpt
 | Held-out prediction fails | Evidence coverage, boundary conditions, and model applicability |
 | Final checks are incomplete | Budget use and the saved termination reason |
 
-Use the method guide to decide whether the next step is a new measurement, a model change, a numerical change, or more search. Use the API reference for the corresponding member contract. [Residual diagnosis](calibration-guide.md#using-residuals-to-plan-the-next-iteration) · [Outcome reference](api-reference.md#stopping-reasons-acceptance-and-budgets)
+Use the method guide to decide whether the next step is a new measurement, a model change, a numerical change, or more search. Use the integration guide for the corresponding member contract. [Residual diagnosis](calibration-guide.md#using-residuals-to-plan-the-next-iteration) · [Outcome reference](integration-guide.md#stopping-reasons-acceptance-and-budgets)

@@ -11,7 +11,18 @@ import numpy as np
 
 
 class Play:
+    """``Play()`` uses saved ``Trace.positions`` from episodes, matching before/after
+    trajectories by ``(experiment_id, repeat)``. The default comparison contains
+    ``baseline`` and ``calibrated`` tracks and an acceptance flag."""
+
     def compare(self, baseline, calibrated, references=None, *, accepted=False):
+        """Accept two episode sequences and return ``accepted`` and ``tracks``. Matched traces
+        require positions on both sides and exactly equal time axes.
+
+        ``references`` is currently a reserved argument. Default tracks come from the two
+        simulated position sequences. Extend comparison or presentation to overlay
+        measurements or plot joints and torques.
+        """
         before = {
             (e.experiment_id, e.repeat): e.trace for e in baseline if e.status == "completed" and e.trace is not None
         }
@@ -44,6 +55,8 @@ class Play:
         return {"accepted": accepted, "tracks": tracks}
 
     def export_usd(self, comparison, output_path):
+        """Write USDA point animation and return its path, with second-based time codes,
+        meters, and Z-up."""
         tracks = comparison["tracks"]
         if not tracks:
             raise ValueError("no comparable position traces for USD export")
@@ -92,7 +105,11 @@ class Play:
         return path
 
     def show_gl(self, comparison, *, max_frames=None, screenshot=None, headless=False):
-        """Project xyz onto xy. Rendering never advances the simulation."""
+        """Project xyz onto xy. Rendering never advances the simulation.
+
+        Use Pyglet from the ``gl`` extra to project xyz onto xy, optionally limit frames and
+        save a screenshot.
+        """
         import pyglet
 
         pyglet.options["headless"] = headless

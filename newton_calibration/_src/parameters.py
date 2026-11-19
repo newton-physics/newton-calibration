@@ -13,11 +13,18 @@ from .data import identity
 
 @dataclass(frozen=True)
 class Parameter:
+    """``Parameter`` defines one scalar to estimate."""
+
     name: str
+    """Nonempty and unique, matching the asset's parameter key."""
     bounds: tuple[float, float]
+    """Finite ``(lower, upper)`` with ``lower < upper``."""
     baseline: float
+    """Finite and within the closed bounds, representing the pre-calibration value."""
     unit: str = "1"
+    """Unit description, default ``"1"``. Data processing and adapters perform the agreed conversions."""
     transform: str = "linear"
+    """``"linear"`` or ``"log"``. Logarithmic normalization requires a positive lower bound."""
 
     def __post_init__(self):
         lo, hi = self.bounds
@@ -33,9 +40,26 @@ class Parameter:
 
 
 class Parameters:
+    """``Parameters`` keeps the vector in the supplied order and converts between physical
+    values, normalized values, and search coordinates for parameter combinations.
+    ``Asset`` applies the values to the solver.
+
+    The initial mapping normalizes each parameter independently. After identifiability
+    analysis, ``Tuning`` can call ``set_mapping(origin, basis)`` to establish combination
+    coordinates, then ``freeze()`` to lock the space. Decoded candidates still undergo
+    physical-bound checks. Construct new ``Parameters`` when changing bounds or baseline
+    for another run.
+    """
+
     def __init__(self, definitions):
+        """Initialize the parameters.
+
+        Args:
+            definitions: Nonempty ``Parameter`` sequence whose order defines physical-vector columns.
+        """
         self.definitions = tuple(definitions)
         self.names = tuple(x.name for x in self.definitions)
+        """Names."""
         if not self.names or len(set(self.names)) != len(self.names):
             raise ValueError("parameter names must be nonempty and unique")
         self._bounds = np.array([x.bounds for x in self.definitions], dtype=np.float64)
@@ -53,13 +77,16 @@ class Parameters:
 
     @property
     def bounds(self):
+        """``[P,2]`` bounds."""
         return self._bounds.copy()
 
     @property
     def baseline(self):
+        """``[P]`` baseline."""
         return self._baseline.copy()
 
     def to_normalized(self, values):
+        """Convert physical values to per-parameter ``[0,1]`` coordinates."""
         values = np.array(values, dtype=np.float64)
         if values.shape[-1] != len(self.names):
             raise ValueError("physical parameter width mismatch")
@@ -67,6 +94,7 @@ class Parameters:
         return (values - self._limits[:, 0]) / (self._limits[:, 1] - self._limits[:, 0])
 
     def from_normalized(self, values):
+        """Convert per-parameter ``[0,1]`` coordinates to physical values."""
         values = np.asarray(values, dtype=np.float64)
         physical = values * (self._limits[:, 1] - self._limits[:, 0]) + self._limits[:, 0]
         physical[..., self._log] = np.exp(physical[..., self._log])
@@ -98,6 +126,7 @@ class Parameters:
         return self._basis.shape[1]
 
     def snapshot(self):
+        """Record definitions and combination mapping."""
         return {
             "definitions": self.definitions,
             "origin": self._origin.copy(),
@@ -108,12 +137,15 @@ class Parameters:
 
     @property
     def parameter_space_id(self):
+        """Identity of the definitions and combination mapping."""
         return identity(self.snapshot())
 
     def freeze(self):
         self._frozen = True
 
     def encode(self, values):
+        """Convert physical values to the current combination search space, whose size is
+        ``dimension``."""
         x = self.to_normalized(values) - self._origin
         z = x @ self._basis
         if not np.allclose(z @ self._basis.T, x, atol=1e-7, rtol=1e-7):
@@ -121,6 +153,8 @@ class Parameters:
         return (z - self._low) / (self._high - self._low)
 
     def decode(self, values):
+        """Convert values in the current combination search space, whose size is
+        ``dimension``, to physical values."""
         values = np.asarray(values, dtype=np.float64)
         if values.shape[-1] != self.dimension:
             raise ValueError("search dimension mismatch")
@@ -128,6 +162,7 @@ class Parameters:
         return self.from_normalized(self._origin + z @ self._basis.T)
 
     def check_bounds(self, values):
+        """Boolean validity of each physical row against finiteness and bounds."""
         values = np.asarray(values, dtype=np.float64)
         return (
             np.isfinite(values).all(axis=-1)
@@ -136,4 +171,5 @@ class Parameters:
         )
 
     def as_dict(self, row):
+        """Map one physical row to names, commonly for constructing the asset baseline."""
         return dict(zip(self.names, map(float, row), strict=True))

@@ -9,7 +9,7 @@ SPDX-License-Identifier: CC-BY-4.0
 
 Start with the Newton XPBD example to run a calibration, inspect its outputs, and assemble all ten members. [Quick start](quickstart.md)
 
-Use the calibration workflow to plan experiments and interpret residuals, and the API reference to look up member arguments and contracts. [Calibration workflow](calibration-guide.md) · [API reference](api-reference.md)
+Use the calibration workflow to plan experiments and interpret residuals, and the integration guide to connect members and check contracts. [Calibration workflow](calibration-guide.md) · [Integration guide](integration-guide.md)
 
 ## 1. Install
 

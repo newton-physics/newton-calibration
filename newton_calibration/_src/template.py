@@ -9,6 +9,12 @@ from .data import identity, immutable, plain
 
 
 class Template:
+    """``Template`` stores the physical conditions, numerical settings, and experiment
+    inputs shared by all candidates. When constructing an environment, it merges fixed
+    and candidate parameters and passes the experiment's settings to the asset adapter.
+    The adapter defines and interprets the dictionary keys.
+    """
+
     def __init__(
         self,
         *,
@@ -20,6 +26,25 @@ class Template:
         precision_tolerance=0.05,
         qualification_mode="refinement",
     ):
+        """Initialize the template.
+
+        Args:
+            numeric_settings: Required nonempty dictionary for integrator, timestep, substeps,
+                iterations, and related settings, using keys understood by the environment.
+            discretization: Required dictionary for rod segments, mesh resolution, or degrees
+                of freedom. May be empty when appropriate.
+            fixed_parameters: Required dictionary of fixed physical scalars, with keys disjoint
+                from search parameters.
+            experiment_settings: Required nonempty dictionary keyed by every experiment ``id``.
+                Each entry explicitly includes ``seed`` and adapter-specific inputs.
+            refinements: Each configuration override may contain only ``numeric_settings`` and
+                ``discretization``. Defaults to ``()``.
+            precision_tolerance: Positive and finite, limiting maximum feature changes in
+                numerical checks. Defaults to ``0.05``.
+            qualification_mode: ``"refinement"`` requires valid refinement settings during a
+                run. ``"repeatability"`` with empty ``refinements`` checks a fixed configuration.
+                Defaults to ``"refinement"``.
+        """
         self.numeric_settings = dict(numeric_settings)
         self.discretization = dict(discretization)
         self.fixed_parameters = dict(fixed_parameters)
@@ -35,6 +60,7 @@ class Template:
         object.__setattr__(self, name, value)
 
     def resolve(self):
+        """``resolve()`` checks configuration."""
         if self.qualification_mode not in {"refinement", "repeatability"}:
             raise ValueError("unknown qualification mode")
         if self.qualification_mode == "repeatability" and self.refinements:
@@ -58,6 +84,7 @@ class Template:
         return self
 
     def snapshot(self):
+        """``snapshot()`` returns serializable configuration data."""
         return {
             k: plain(getattr(self, k))
             for k in (
@@ -73,9 +100,11 @@ class Template:
 
     @property
     def template_id(self):
+        """``template_id`` identifies the configuration."""
         return identity(self.snapshot())
 
     def freeze(self):
+        """``freeze()`` locks the configuration."""
         self.resolve()
         for key in (
             "numeric_settings",
@@ -89,6 +118,8 @@ class Template:
         return self
 
     def refined(self, change):
+        """``refined(change)`` creates a frozen refined template, with each refinement applied
+        independently to the original."""
         data = self.snapshot()
         for key, values in change.items():
             if key not in {"numeric_settings", "discretization"}:
@@ -98,6 +129,7 @@ class Template:
         return Template(**data).freeze()
 
     def instantiate(self, asset, parameter_values, experiment):
+        """``instantiate(asset, parameter_values, experiment)`` constructs one environment."""
         if not self._frozen:
             raise RuntimeError("freeze Template before executing")
         if set(parameter_values) & set(self.fixed_parameters):
@@ -109,7 +141,10 @@ class Template:
         return asset.create_environment(self, complete, settings)
 
     def instantiate_batch(self, asset, parameter_values, experiment):
-        """Create one BatchEnvironment for several candidates, with the checks of instantiate."""
+        """Create one BatchEnvironment for several candidates, with the checks of instantiate.
+
+        ``instantiate_batch(...)`` constructs a batch. ``Rollout`` normally calls these methods.
+        """
         if not self._frozen:
             raise RuntimeError("freeze Template before executing")
         settings = self.experiment_settings[experiment.id]

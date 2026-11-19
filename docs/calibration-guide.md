@@ -5,7 +5,7 @@ SPDX-License-Identifier: CC-BY-4.0
 
 # Task-oriented parameter identification and simulation calibration
 
-[Quick start](quickstart.md) · [API reference](api-reference.md) · [Cable study](../examples/cable_calibration/README.md)
+[Quick start](quickstart.md) · [Integration guide](integration-guide.md) · [Cable study](../examples/cable_calibration/README.md)
 
 Use this guide to decide what a calibration should establish, design the evidence it needs, fit parameters, and judge the result. It applies to rigid bodies, deformable bodies, contact, and combined robotic systems. The completed 17 cm cable study illustrates the decisions with static shapes and release motion.
 
@@ -393,7 +393,7 @@ L(\theta)=\sum_e\frac{w_e}{\sum_jw_j}\frac{1}{R_e}
 
 Here, $s$ is `Experiment.scale`, $N_e$ counts valid observations, $w_e$ is experiment weight, and $R_e$ is `Experiment.repeats`, the number of simulation repetitions against the same reference. Register independently acquired real repetitions as separate experiments. The default metrics, `normalized_rmse` and `normalized_max_error`, are dimensionless.
 
-The built-in `cross_entropy` mode requires complete normalized probability rows. Event times, impulses, and work can be constructed as additional observation features under a declared protocol. MAE, Huber, Chamfer, or EMD require a suitable `Evaluator` implementation. Event extraction and probability calibration remain separate steps. Custom scoring must preserve the objective, metric, constraint, validity-mask, and feature contracts. Keep feature scales and dimensions consistent throughout a run for sensitivity and numerical checks. See the [integration contracts](api-reference.md#contracts-to-check-during-integration) for metric-column requirements.
+The built-in `cross_entropy` mode requires complete normalized probability rows. Event times, impulses, and work can be constructed as additional observation features under a declared protocol. MAE, Huber, Chamfer, or EMD require a suitable `Evaluator` implementation. Event extraction and probability calibration remain separate steps. Custom scoring must preserve the objective, metric, constraint, validity-mask, and feature contracts. Keep feature scales and dimensions consistent throughout a run for sensitivity and numerical checks. See the [integration contracts](integration-guide.md#contracts-to-check-during-integration) for metric-column requirements.
 
 #### Choose estimators for the problem structure
 
@@ -532,6 +532,6 @@ Increase the search budget if candidates are still improving and the current bud
 ## Related documents
 
 - [Run and assemble a calibration](quickstart.md).
-- [Member interfaces, lifecycle, and result contracts](api-reference.md).
+- [Member interfaces, lifecycle, and result contracts](integration-guide.md).
 - [Cable experiments, numerical scope, and reproduction](../examples/cable_calibration/README.md).
 - [Cable experimental specification](../examples/cable_calibration/TUNING-SPEC.md).

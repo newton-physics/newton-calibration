@@ -34,7 +34,7 @@ The friction baseline is `0.15`, and a 41-level grid covers `[0.05, 0.65]`. Each
 
 The evidence scale is 0.03 m. The validator requires per-experiment RMSE at most 3 mm and maximum error at most 5 mm. The numerical tolerance corresponds to a maximum position change of 1.5 mm across each refinement. Its feature-space expression accounts for the two equally weighted training experiments and 41 samples in each. The search target is normalized mean squared error `0.005`.
 
-The expected result is `accepted`, `target_reached`, and friction `0.35`. Inspect `run_state.json` for the actual qualification, identifiability, training retest, validation, and numerical retest reports. The run also saves observations, predictions, the assembled configuration, and the exported asset. [Result files](../../docs/api-reference.md#result-files)
+The expected result is `accepted`, `target_reached`, and friction `0.35`. Inspect `run_state.json` for the actual qualification, identifiability, training retest, validation, and numerical retest reports. The run also saves observations, predictions, the assembled configuration, and the exported asset. [Result files](../../docs/integration-guide.md#result-files)
 
 The quickstart also explains how to schedule independent CPU environments with `Rollout.capacity` and how to implement a Newton `BatchEnvironment` for multiple candidate worlds on a GPU. It covers parameter binding, per-world ground friction, output ordering, chunk sizes, and verification of the switch. [Replace single env rollout with multi env rollout](../../docs/quickstart.md#replace-single-env-rollout-with-multi-env-rollout)
 

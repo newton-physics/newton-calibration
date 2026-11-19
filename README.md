@@ -17,7 +17,7 @@ Start with a Newton XPBD box friction example, then connect your own measurement
 |---|---|
 | [Quick start](docs/quickstart.md) | Run a Newton calibration example, inspect the outputs, and connect your own observations and model |
 | [Calibration workflow](docs/calibration-guide.md) | Define the problem, design experiments, and investigate calibration failures |
-| [API reference](docs/api-reference.md) | Look up member arguments, interfaces, and contracts |
+| [Integration guide](docs/integration-guide.md) | Connect the members, check the integration contracts, and read result files |
 | [Cable case study](examples/cable_calibration/README.md) | Follow the measured cable case, inspect its results, and reproduce the workflow |
 
 ## Quickstart
@@ -75,7 +75,7 @@ The adapter owns model construction, parameter application, simulation, and obse
 
 - **[Calibration workflow](docs/calibration-guide.md):** choose the goal, design experiments, and decide what the evidence supports.
 - **[Quickstart](docs/quickstart.md):** connect observations and a simulator, then run the workflow.
-- **[API reference](docs/api-reference.md):** configure members, implement adapters, and read result files.
+- **[Integration guide](docs/integration-guide.md):** configure members, implement adapters, and read result files.
 - **[Capabilities and limits](docs/implementation-status.md):** check supported execution modes and the scope of diagnostics.
 
 ## Development

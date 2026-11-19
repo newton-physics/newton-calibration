@@ -11,7 +11,7 @@
    Quick start <quickstart>
    Calibration workflow <calibration-guide>
    User guide <user-guide>
-   API usage <api-reference>
+   Integration guide <integration-guide>
    Capabilities and limits <implementation-status>
    Publishing results <publishing-results>
    Codex skills <codex-skills>

@@ -12,6 +12,17 @@ from .data import TrialBatch
 
 
 class Optimizer(ABC):
+    """``Optimizer`` uses an ask/tell protocol. After parameter analysis, ``Tuning`` calls
+    ``initialize(parameters)``. Once the budget allows a batch, it calls ``ask(batch_size)``
+    and returns scores through ``tell(result)``. The optimizer must receive feedback for the
+    pending batch before proposing another.
+
+    To implement another algorithm, subclass ``Optimizer`` and implement ``ask()``. Extend
+    ``initialize()``, ``tell()``, ``diagnostics()``, and ``state_dict()`` as needed, and
+    optionally provide ``checkpoint()`` as CMA-ES does. Shared stopping and budget decisions
+    remain in ``Decision.next_action()``.
+    """
+
     full_batch = False
 
     def __init__(self, batch_size=8, seed=42):
@@ -23,6 +34,7 @@ class Optimizer(ABC):
         self._pending = None
 
     def initialize(self, parameters):
+        """Store the search dimension and the encoded baseline of ``parameters``."""
         self.dimension = parameters.dimension
         self.initial = parameters.encode(parameters.baseline)
         self._generation = 0
@@ -52,15 +64,21 @@ class Optimizer(ABC):
         self._generation += 1
 
     @abstractmethod
-    def ask(self, batch_size): ...
+    def ask(self, batch_size):
+        """``ask()`` returns ``TrialBatch(trial_ids, search_values)`` with ``[B,Q]`` values in
+        ``[0,1]``, where ``Q`` is search dimension."""
 
     def tell(self, result):
+        """``tell()`` receives the corresponding ``BatchResult``, whose candidate IDs, search
+        values, and ``purpose="train"`` must match."""
         self._accept(result)
 
     def diagnostics(self):
+        """``diagnostics()["exhausted"]`` informs ``Decision`` about search-space exhaustion."""
         return {"generation": self._generation, "exhausted": False}
 
     def state_dict(self):
+        """Return the search state for the run records."""
         return {
             "kind": type(self).__name__,
             "generation": self._generation,
@@ -70,23 +88,38 @@ class Optimizer(ABC):
 
 
 class GridSearch(Optimizer):
+    """Use ``GridSearch`` to explore a few parameters and inspect responses across their
+    ranges. It generates a grid in the current search coordinates and maps it to physical
+    values with ``Parameters.decode()``."""
+
     def __init__(self, levels=11, batch_size=16):
+        """Initialize the grid search.
+
+        Args:
+            levels: Equally spaced points per search dimension, at least 2, with
+                ``levels ** parameters.dimension`` total points. Defaults to ``11``.
+            batch_size: Requested candidates per batch. Remaining budget and grid points can
+                reduce the last batch. Defaults to ``16``.
+        """
         super().__init__(batch_size)
         if levels < 2:
             raise ValueError("grid needs at least two levels")
         self.levels = levels
 
     def initialize(self, parameters):
+        """Prepare the grid for the search dimension of ``parameters``."""
         super().initialize(parameters)
         self._iterator = itertools.product(np.linspace(0, 1, self.levels), repeat=self.dimension)
         self._remaining = self.levels**self.dimension
 
     def ask(self, batch_size):
+        """Return the next grid points, at most ``batch_size``."""
         rows = list(itertools.islice(self._iterator, min(batch_size, self._remaining)))
         self._remaining -= len(rows)
         return self._batch(rows)
 
     def diagnostics(self):
+        """Add the number of ``remaining`` grid points. ``exhausted`` is true after the last point."""
         return {
             **super().diagnostics(),
             "exhausted": self._remaining == 0,
@@ -94,19 +127,34 @@ class GridSearch(Optimizer):
         }
 
     def state_dict(self):
+        """Add the ``remaining`` grid points and ``levels`` to the search state."""
         return {**super().state_dict(), "remaining": self._remaining, "levels": self.levels}
 
 
 class CMAES(Optimizer):
+    """``CMAES`` requires the ``cma`` extra and at least two search dimensions. If rank
+    reduction is enabled, choose the optimizer for the reduced ``parameters.dimension``."""
+
     full_batch = True
 
     def __init__(self, batch_size=8, sigma=0.2, seed=42):
+        """Initialize the CMA-ES search.
+
+        Args:
+            batch_size: Population per generation, at least 4. ``full_batch=True`` requires
+                complete-generation evaluation. Defaults to ``8``.
+            sigma: Initial step size in the current normalized search coordinates, with
+                ``0 < sigma < 1``. Defaults to ``0.2``.
+            seed: Sampling seed, default 42, configured separately from experimental
+                simulation seeds.
+        """
         super().__init__(batch_size, seed)
         if batch_size < 4 or not 0 < sigma < 1:
             raise ValueError("CMA-ES needs population >= 4 and 0 < sigma < 1")
         self.sigma = sigma
 
     def initialize(self, parameters):
+        """Create the ``cma`` strategy, started at the encoded baseline."""
         super().initialize(parameters)
         if self.dimension < 2:
             raise ValueError("CMA-ES needs at least two parameters; use GridSearch")
@@ -130,16 +178,19 @@ class CMAES(Optimizer):
         self._last_rows = None
 
     def ask(self, batch_size):
+        """Return one complete generation. ``batch_size`` must equal the population size."""
         if batch_size != self.batch_size:
             raise ValueError("CMA-ES requires a complete generation")
         self._last_rows = self._strategy.ask()
         return self._batch(self._last_rows)
 
     def tell(self, result):
+        """Pass ``result.feedback`` of the pending generation to the ``cma`` strategy."""
         self._accept(result)
         self._strategy.tell(self._last_rows, result.feedback.tolist())
 
     def diagnostics(self):
+        """Add the step size ``sigma`` and the ``condition_number`` of the covariance."""
         return {
             **super().diagnostics(),
             "sigma": float(self._strategy.sigma),
@@ -147,6 +198,7 @@ class CMAES(Optimizer):
         }
 
     def state_dict(self):
+        """Add the mean, step size, covariance, and random state to the search state."""
         return {
             **super().state_dict(),
             "mean": self._strategy.mean.tolist(),
@@ -156,4 +208,5 @@ class CMAES(Optimizer):
         }
 
     def checkpoint(self):
+        """Return the pickled ``cma`` strategy. ``Tuning`` saves it after each batch."""
         return self._strategy.pickle_dumps()

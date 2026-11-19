@@ -11,7 +11,34 @@ from .data import identity
 
 
 class Evaluator:
+    """``Evaluator`` matches the complete set of episodes to reference data by experiment,
+    candidate, and repeat. It returns an objective, metrics, constraints, and residual
+    features for each candidate. The objective ranks candidates, constraints determine
+    feasibility, and features support sensitivity and numerical qualification.
+
+    Custom evaluators can override ``score_batch()`` and ``metric_spec``, including
+    objectives, units, constraints, and every adjustable scoring setting in the protocol.
+    Preserve array shapes, order, and feature count. Current ``Tuning`` and ``Validator``
+    read maximum error from ``metrics[:,1]``, so retain that column's contract or adapt
+    the affected members together.
+    """
+
     def __init__(self, *, loss="squared_error", max_normalized_error=None):
+        """Initialize the evaluator.
+
+        Args:
+            loss: ``"squared_error"``: Aggregate normalized squared residuals using experiment
+                weights, repeats, and valid observation counts. See
+                :doc:`loss construction </calibration-guide>`.
+                ``"cross_entropy"``: Score probability rows. References and predictions must be
+                nonnegative normalized rows, with whole rows selected or excluded by the mask.
+                Defaults to ``"squared_error"``.
+            max_normalized_error: Default constraint matrix has zero columns. A positive finite
+                threshold adds ``max_error / threshold - 1 <= 0``. For positions in meters,
+                ``scale=0.03`` and ``max_normalized_error=2.0`` impose an absolute-error limit
+                of 0.06 m on valid position channels. With different channel scales, convert
+                the threshold separately for each channel. Defaults to ``None``.
+        """
         if loss not in {"squared_error", "cross_entropy"}:
             raise ValueError("unsupported scoring loss")
         if max_normalized_error is not None and (not math.isfinite(max_normalized_error) or max_normalized_error <= 0):
@@ -21,6 +48,7 @@ class Evaluator:
 
     @property
     def metric_spec(self):
+        """``metric_spec`` records the scoring protocol."""
         return {
             "loss": self.loss,
             "max_normalized_error": self.max_normalized_error,
@@ -29,9 +57,30 @@ class Evaluator:
 
     @property
     def evaluation_id(self):
+        """``evaluation_id`` identifies the scoring protocol in ``metric_spec``."""
         return identity(self.metric_spec)
 
     def score_batch(self, episodes, trial_ids, experiments):
+        """For batch size ``B``, constraint count ``K``, and concatenated feature count ``F``,
+        ``score_batch()`` returns five arrays in this order.
+
+        - ``objectives``, ``[B]``: Per-candidate objective, positive infinity for invalid
+          candidates.
+        - ``metrics``, ``[B,2]``: Default columns ``normalized_rmse`` and
+          ``normalized_max_error``, with maximum error at column 1.
+        - ``constraints``, ``[B,K]``: Each entry must be ``<= 0`` for satisfaction.
+          Built-in ``K`` is 0 or 1.
+        - ``valid_mask``, ``[B]``: True when traces, times, finite valid observations, and
+          loss-specific inputs meet the contract.
+        - ``features``, ``[B,F]``: Normalized residuals concatenated in fixed
+          experiment/repeat order, scaled by square-root factors for experiment weights,
+          repeats, and valid sample counts.
+
+        With squared error, ``objectives[i]`` equals the sum of squares of ``features[i]``,
+        and ``metrics[i,0]`` is its square root. With cross-entropy, the objective uses
+        probabilities while features and both default error metrics still use scaled
+        prediction-minus-reference residuals. Interpret ``scale`` accordingly.
+        """
         expected = {(t, e.id, r) for t in trial_ids for e in experiments for r in range(e.repeats)}
         received = [item.key for item in episodes]
         if len(received) != len(set(received)) or set(received) != expected:
