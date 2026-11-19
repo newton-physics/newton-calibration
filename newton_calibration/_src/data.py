@@ -60,19 +60,36 @@ def write_json(path: Path, value: Any) -> None:
 @dataclass
 class Trace:
     times: np.ndarray
+    """``[T]``. Matches reference times, checked by the built-in evaluator with absolute
+    tolerance ``1e-9``."""
     values: np.ndarray
+    """``[T,D]``. Same channel order, units, and frame semantics as reference observations,
+    finite wherever the mask selects data."""
     positions: np.ndarray | None = None  # [time, point, xyz], optional visualization
+    """``None`` or ``[T,N,3]``. Optional display points. Default USDA output uses meters and Z-up."""
 
 
 @dataclass
 class Episode:
+    """Each candidate, experiment, and repeat produces an ``Episode``, identified by
+    ``(trial_id, experiment_id, repeat)``.
+    """
+
     trial_id: str
+    """Candidate identity."""
     experiment_id: str
+    """Experiment identity."""
     repeat: int
+    """Repetition identity."""
     status: str
+    """``completed``, or a failure such as ``invalid_parameters``, ``numerical_failure``,
+    ``timeout``, or ``execution_error``."""
     trace: Trace | None = None
+    """Successful simulation ``Trace``, default ``None``."""
     error: str | None = None
+    """Error description, default ``None``."""
     applied_parameters: dict[str, float] = field(default_factory=dict)
+    """Full readback mapping, default empty dictionary."""
 
     @property
     def key(self):
@@ -87,6 +104,9 @@ class TrialBatch:
 
 @dataclass
 class BatchResult:
+    """``BatchResult`` stores search and physical values, all five scoring outputs,
+    ``episode_records``, problem ``identity``, and ``purpose``."""
+
     trial_ids: tuple[str, ...]
     search_values: np.ndarray
     parameter_values: np.ndarray
@@ -101,10 +121,14 @@ class BatchResult:
 
     @property
     def feasible(self):
+        """``feasible`` combines validity and constraints."""
         return self.valid_mask & (self.constraints <= 0).all(axis=1)
 
     @property
     def feedback(self):
+        """``feedback`` maps feasible candidates below 1, constraint violations to ``[1,2)``,
+        and invalid candidates to 3. Built-in CMA-ES updates from ``feedback``, while run
+        records retain the raw objective."""
         # Feasible < 1, constraint violation in [1, 2), failed == 3.
         # Invalid rows have infinite objectives; zero them so inf / inf is never formed.
         loss = np.where(self.valid_mask, np.maximum(self.objectives, 0), 0.0)
@@ -124,6 +148,13 @@ class DecisionResult:
 
 @dataclass
 class RunState:
+    """``tuning.state`` is a ``RunState`` containing ``phase``, ``identity``,
+    ``budget_usage``, ``batch_history``, ``best_candidate``, ``analysis_reports``,
+    ``optimizer_snapshot``, ``decision_history``, ``validation_report``,
+    ``artifact_refs``, and errors. Inspect ``run_state.json`` after execution to trace
+    these records.
+    """
+
     run_id: str = ""
     phase: str = "created"
     identity: dict[str, str] = field(default_factory=dict)
@@ -143,13 +174,22 @@ class RunState:
     elapsed_s: float = 0.0
 
     def view(self):
+        """``state.view()`` supplies a read-only decision snapshot."""
         return immutable(plain(self))
 
 
 @dataclass(frozen=True)
 class TuningResult:
+    """``run()`` returns a ``TuningResult`` with five fields."""
+
     acceptance: str
+    """Acceptance status, such as ``accepted``, ``rejected_training``, or ``rejected_validation``."""
     termination_reason: str
+    """Search or run stopping reason, such as ``target_reached`` or ``budget_exhausted``."""
     parameters: dict[str, float] | None
+    """Best candidate's physical parameter dictionary, or ``None`` before a candidate exists.
+    Interpret it within the acceptance scope."""
     asset_path: Path | None
+    """Accepted ``release/asset.json`` path, otherwise ``None``."""
     run_directory: Path
+    """Directory containing this run's records and results."""

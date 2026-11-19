@@ -26,6 +26,10 @@ class WorkStopped(Exception):
 
 
 class Tuning:
+    """Pass the ten members to ``Tuning`` to run preparation, analysis, search,
+    export/reload, retesting, and validation. Compose members and implement case adapters
+    for your application."""
+
     def __init__(
         self,
         *,
@@ -45,6 +49,20 @@ class Tuning:
         allow_rank_reduction=False,
         orthogonalize=True,
     ):
+        """Initialize the run.
+
+        Args:
+            workspace: The parent directory for distinct run directories with timestamp and
+                random suffix. Defaults to ``"workspace"``.
+            analysis_step: Finite-difference step in per-parameter normalized coordinates,
+                requiring ``0 < step <= 0.25``. Defaults to ``0.03``.
+            rank_tolerance: Relative rank threshold with ``0 < tolerance < 1``. The
+                singular-value cutoff is ``max(s_max * tolerance, 1e-10)``. Defaults to ``1e-3``.
+            allow_rank_reduction: If enabled, allow search in retained identifiable
+                combinations of nonzero rank. Defaults to ``False``.
+            orthogonalize: If enabled, build search coordinates from local SVD combinations.
+                Required for rank reduction. Defaults to ``True``.
+        """
         self.evidence, self.asset, self.evaluator = evidence, asset, evaluator
         self.parameters, self.rollout, self.optimizer = parameters, rollout, optimizer
         self.decision, self.validator, self.template, self.play = (
@@ -525,6 +543,10 @@ class Tuning:
         return acceptance, published
 
     def run(self):
+        """Start with ``result = tuning.run()``. Calling ``prepare()``, ``sensitivity()``,
+        ``identifiability(report)``, and ``evaluate_batch(...)`` manually requires following
+        the lifecycle, freezing, and budget protocols. Let ``run()`` manage those steps, using
+        a fresh instance for each run."""
         if self._started:
             raise RuntimeError("Tuning objects cannot be run twice")
         acceptance, published = "run_failed", None

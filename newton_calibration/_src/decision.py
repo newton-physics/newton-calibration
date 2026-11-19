@@ -11,13 +11,29 @@ from .data import DecisionResult
 
 @dataclass(frozen=True)
 class Decision:
+    """Before baseline, analysis, training, and validation work, ``Decision`` checks state
+    and budgets and returns ``DecisionResult(action, reason, batch_size=0)``. ``Tuning``
+    uses that decision to start the work or finish the run.
+
+    Budget limits are positive, ``target`` is finite and nonnegative, and enabled
+    ``patience`` is a positive batch count.
+    """
+
     max_trials: int = 512
+    """Training-candidate limit. Baseline and analysis probes are recorded in their own phases."""
     max_rollouts: int = 10000
+    """Episode limit across all phases, including scheduled failed or invalid candidates."""
     max_generations: int = 100
+    """Training-batch limit, corresponding to generations for CMA-ES and chunks for GridSearch."""
     max_seconds: float = 300.0
+    """Total wall-clock limit from preparation, handled through cooperative backend deadlines."""
     target: float = 1e-5
+    """Stop search when the best feasible training objective reaches this value."""
     patience: int | None = None
+    """Default ``None``. When enabled, detect stagnation from improvement across the specified
+    number of recent batches."""
     improvement_tolerance: float = 1e-10
+    """Threshold for old best objective minus new best objective when patience is enabled."""
 
     def __post_init__(self):
         if (
@@ -31,6 +47,9 @@ class Decision:
             raise ValueError("invalid decision policy")
 
     def next_action(self, state, request):
+        """``next_action(state, request)`` receives a read-only state snapshot and work
+        request, then returns ``action="continue"`` or ``"stop"``. Its ``reason`` enters
+        decision history."""
         if state["analysis_reports"].get("numerical", {}).get("passed") is False:
             return DecisionResult("stop", "numerical_config_unavailable")
         if state["fatal_error"]:

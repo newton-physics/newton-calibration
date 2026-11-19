@@ -17,9 +17,31 @@ class Rollout:
     An asset that overrides ``create_batch_environment`` gets one BatchEnvironment per
     experiment, repeat and chunk of at most ``worlds`` trials. Any other asset gets one
     Environment per episode on ``capacity`` threads.
+
+    ``Rollout`` runs the candidate/experiment combinations, checks parameter readback, and
+    collects results.
+
+    Each experiment and repeat gets a fresh batch environment. ``worlds`` controls chunking.
+    NumPy, Warp, or another backend implements parallelism within each chunk. The ordinary
+    path uses ``capacity`` threads.
+
+    For example, 8 candidates, 2 training experiments, and ``repeats=3`` produce 48
+    episodes. The rollout budget counts all 48 even when the backend simulates candidates
+    together.
     """
 
     def __init__(self, capacity=1, *, worlds=None, parameter_rtol=1e-10, parameter_atol=1e-12):
+        """Initialize the rollout.
+
+        Args:
+            capacity: Positive capacity, limiting worker threads for ordinary independent
+                environments. Defaults to ``1``.
+            worlds: ``None`` or a positive integer limiting candidates per batch environment.
+                ``None`` puts the current batch's valid candidates in one environment.
+                Defaults to ``None``.
+            parameter_rtol: Readback relative tolerance, default ``1e-10``.
+            parameter_atol: Readback absolute tolerance, default ``1e-12``.
+        """
         if capacity < 1:
             raise ValueError("capacity must be positive")
         if worlds is not None and (isinstance(worlds, bool) or not isinstance(worlds, int) or worlds < 1):
@@ -32,6 +54,10 @@ class Rollout:
         self._pool = None
 
     def execute_batch(self, template, asset, trials, experiments, *, deadline=None):
+        """For direct ``execute_batch()`` calls, supply ``trials`` as
+        ``(trial_id, physical_parameter_dict)`` pairs, prepared ``experiments``, and a frozen
+        ``template``. In a complete run, ``Tuning`` decodes candidates and calls the method.
+        It returns an ``Episode`` tuple in candidate, experiment, and repeat order."""
         experiments = tuple(experiments)
         if asset.supports_batch:
             return self._execute_batched(template, asset, tuple(trials), experiments, deadline)
