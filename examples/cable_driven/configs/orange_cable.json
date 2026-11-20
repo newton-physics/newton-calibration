@@ -1,0 +1,58 @@
+{
+  "_notes": [
+    "Fit of a real cable clamped to a gripper that follows a recorded TCP trajectory, against camera masks.",
+    "The recordings are not in this repository; pass their directory with --recordings. Each holds the TCP drive, the camera, and one cable mask per observation.",
+    "Cable: 0.5 m in total, 0.174 kg (0.348 kg/m), about 16 mm diameter. The gripper holds the first 0.02 m; the grasp point is at the TCP.",
+    "discretization: 10 capsules model the free 0.48 m; one more capsule inside the gripper ends at the grasp point and is the kinematic clamp (clamp 'stub').",
+    "rest_shape: one (x, y) bend pair per joint, as arc displacement [m] at the cable end, bounded by max_angle_rad times the joint's lever.",
+    "The observation is the chamfer score of the projected free cable against the mask, in cable lengths on screen. Its reference is 0.",
+    "scale: expected chamfer score of a good fit [cable lengths on screen]. An estimate; the score of a perfect fit is not zero, because distances are to the cable axis.",
+    "Units: rigidities are per length (EI, EA, GA, GJ), dampings per length; the backend divides by the segment length.",
+    "Bend damping, stretch, shear and twist are not fitted and stay fixed.",
+    "rank_tolerance: alternating rest bends near the free end change the silhouette little; their singular values are about 6e-4 of the largest. 1e-4 keeps them in the search.",
+    "The ratio of stretch to bending rigidity stays below 1e4 over the EI bounds: VBD rods are not reliable above it.",
+    "fps: the simulation frame rate. Each observation is taken at the solver step nearest to its camera time stamp.",
+    "settle_frames: the cable is within 1 mm of rest after at most about 40 frames over the EI bounds; 120 frames (2 s) leave a margin."
+  ],
+  "rest_shape": {"fit": true, "max_angle_rad": 0.4},
+  "asset": {"cable_length_m": 0.5},
+  "parameters": [
+    {"name": "bending_rigidity", "bounds": [0.05, 5.0], "baseline": 0.5, "unit": "N m^2", "transform": "log"}
+  ],
+  "fixed_parameters": {
+    "bend_damping": 0.02,
+    "stretch_rigidity": 400.0,
+    "shear_rigidity": 400.0,
+    "twist_rigidity": 0.04,
+    "twist_damping": 0.002,
+    "linear_density": 0.348,
+    "radius": 0.008
+  },
+  "discretization": {"num_elements": 10, "clamp": "stub"},
+  "numeric_settings": {
+    "device": "cuda:0",
+    "substeps": 16,
+    "iterations": 50,
+    "settle_frames": 120,
+    "settle_tolerance_m": 0.001
+  },
+  "refinements": [{"numeric_settings": {"substeps": 32}}],
+  "rank_tolerance": 1e-4,
+  "precision_tolerance": 0.5,
+  "scale": 0.01,
+  "train": ["tilt", "yaw"],
+  "validation": ["validation", "validation2"],
+  "evaluator": {"loss": "squared_error"},
+  "worlds": 24,
+  "optimizer": {"kind": "cmaes", "batch_size": 24, "sigma": 0.1, "seed": 42},
+  "decision": {
+    "max_trials": 7200,
+    "max_rollouts": 16000,
+    "max_generations": 150,
+    "max_seconds": 43200.0,
+    "target": 1e-9,
+    "patience": 75,
+    "improvement_tolerance": 0.001
+  },
+  "validator": {"max_objective": 4.0, "max_error": 5.0}
+}

@@ -137,9 +137,16 @@ _relative_link = re.compile(r"\]\((?!https?:|mailto:|#)([^)\s]+)\)")
 _html_anchor = re.compile(r'<a id="([^"]+)"></a>')
 
 
+_image_suffixes = {".gif", ".jpeg", ".jpg", ".png", ".svg"}
+
+
 def _is_site_page(path: Path) -> bool:
-    """Return whether a file is a page of this site."""
-    if path.suffix not in source_suffix or not path.is_relative_to(docs_root):
+    """Return whether a file is a page or an image of this site."""
+    if not path.is_relative_to(docs_root):
+        return False
+    if path.suffix in _image_suffixes:
+        return True
+    if path.suffix not in source_suffix:
         return False
     name = path.relative_to(docs_root).as_posix()
     return not any(fnmatch(name, pattern) for pattern in exclude_patterns)
@@ -148,8 +155,8 @@ def _is_site_page(path: Path) -> bool:
 def _rewrite_markdown(app, docname: str, source: list[str]) -> None:
     """Make links and anchors written for GitHub work on the site.
 
-    A link to a repository file that is not a page of the site becomes a link
-    to the file on GitHub. An HTML anchor becomes a MyST anchor.
+    A link to a repository file that is not a page or an image of the site
+    becomes a link to the file on GitHub. An HTML anchor becomes a MyST anchor.
     """
     if not str(app.env.doc2path(docname)).endswith(".md"):
         return

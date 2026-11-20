@@ -16,3 +16,9 @@
    Publishing results <publishing-results>
    Codex skills <codex-skills>
    API Reference <calibration/api>
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Recipes
+
+   Driven cable <calibration/recipes/driven-cable>
