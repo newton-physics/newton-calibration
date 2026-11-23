@@ -1,0 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
+# SPDX-License-Identifier: Apache-2.0
+# Additional versions observed in the historical Go2 study; backend pins are in pyproject.toml.
+numpy==2.5.4
+scipy==1.18.1
+cma==4.5.0

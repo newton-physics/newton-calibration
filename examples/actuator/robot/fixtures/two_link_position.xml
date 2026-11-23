@@ -1,0 +1,13 @@
+<!-- SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<mujoco model="two_link_position">
+  <compiler angle="radian"/>
+  <option gravity="0 0 0" integrator="implicitfast" timestep="0.00025"/>
+  <include file="parts/links.xml"/>
+  <actuator>
+    <position name="shoulder_drive" joint="shoulder" gear="-2" kp="4.5" kv="0.5"
+              ctrllimited="true" ctrlrange="-1 1" forcelimited="true" forcerange="-3 3"/>
+    <position name="elbow_drive" joint="elbow" gear="3" kp="0.6666666666666666" kv="0.0555555555555556"
+              ctrllimited="true" ctrlrange="-1 1" forcelimited="true" forcerange="-0.5 0.5"/>
+  </actuator>
+</mujoco>

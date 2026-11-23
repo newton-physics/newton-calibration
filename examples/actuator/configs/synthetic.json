@@ -1,0 +1,47 @@
+{
+  "solver": "SolverFeatherstone",
+  "fixed": {
+    "inertia": 0.01,
+    "damping": 0.02,
+    "torque_limit": 2.0,
+    "control_dt": 0.002
+  },
+  "parameters": {
+    "kp": {
+      "bounds": [
+        0.5,
+        5.0
+      ],
+      "baseline": 1.0
+    },
+    "kd": {
+      "bounds": [
+        0.03,
+        0.4
+      ],
+      "baseline": 0.08
+    }
+  },
+  "dt": 0.00025,
+  "refinement_dt": 0.000125,
+  "scales": {
+    "position": 0.01,
+    "velocity": 0.05
+  },
+  "thresholds": {
+    "position_rmse": 0.01,
+    "position_max": 0.03,
+    "velocity_rmse": 0.05,
+    "velocity_max": 0.15
+  },
+  "precision_tolerance": 0.05,
+  "decision": {
+    "max_trials": 512,
+    "max_rollouts": 2000,
+    "max_generations": 64,
+    "max_seconds": 1800,
+    "target": 0.0001,
+    "patience": 12,
+    "improvement_tolerance": 1e-07
+  }
+}

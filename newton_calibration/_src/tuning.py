@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import importlib.metadata
 import platform
-import shutil
 import time
 from dataclasses import asdict
 from datetime import UTC, datetime
@@ -508,7 +507,7 @@ class Tuning:
         if acceptance == "accepted":
             published = self.run_directory / "release" / "asset.json"
             published.parent.mkdir(exist_ok=True)
-            shutil.copyfile(candidate_path, published)
+            loaded.stage_release(candidate_path, published)
             write_json(published.parent / "template.json", self.template.snapshot())
             write_json(
                 published.parent / "manifest.json",

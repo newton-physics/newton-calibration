@@ -133,6 +133,12 @@ Raise `SimulationError` for expected physical or numerical candidate failures an
 
 Assets also provide `load_or_create()`, `snapshot()`, `asset_id`, `export(parameter_values, path)`, and `reload(path)`. Default export writes `newton-calibration-asset/1` JSON with the asset type, candidate parameters, and construction configuration. Calling `reload(path)` on the original asset returns an instance of the same type with the candidate baseline. Its `create_environment()` must still construct fresh mutable state. Subclasses that cache mutable models must handle rebuilding and isolation.
 
+`Asset.stage_release(candidate_path, release_path)` stages the validated candidate locally.
+Its default implementation copies the candidate file byte-for-byte. File-backed
+adapters can override it to copy and verify required model resources; an exception
+prevents acceptance. The common lifecycle calls it on the reloaded candidate
+after validation. It does not publish to a remote service.
+
 The quickstart's `SlidingAsset` constructs a Newton model and `SolverXPBD` through their public APIs. The package's `newton_calibration.examples` module also exports NumPy-based `SlidingAsset` and `OscillatorAsset` demo adapters. The cable factory connects the measured cable study to its pinned solver. [Newton sliding adapter](../examples/box_friction_calibration/backend.py) · [NumPy demo exports](../newton_calibration/examples.py) · [Cable factory](../examples/cable_calibration/run.py)
 
 ## BatchEnvironment, Rollout, and Episode execute candidates
