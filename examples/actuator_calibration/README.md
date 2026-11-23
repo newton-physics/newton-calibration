@@ -9,8 +9,7 @@ SPDX-License-Identifier: CC-BY-4.0
 
 This example identifies actuator and drive parameters of a fixed-base robot arm by replaying
 recorded joint position commands in Newton and comparing simulated with measured joint
-positions. It uses the same members and the same `Tuning.run()` lifecycle as the synthetic
-demos and the cable example.
+positions.
 
 ## 1. What is calibrated
 
@@ -84,11 +83,11 @@ python -m pip install -e ".[cma,actuator,dev]"
 ```
 
 Simulation additionally needs the repository's pinned Newton revision with OpenUSD
-import support and the MuJoCo solver. The unversioned `newton[sim]` resolves to the
+import support and the MuJoCo solver. The unversioned `newton[sim,importers]` resolves to the
 pinned revision and adds the MuJoCo and MuJoCo Warp versions that revision requires:
 
 ```bash
-python -m pip install -e ".[cma,newton,actuator]" "newton[sim]"
+python -m pip install -e ".[cma,newton,actuator]" "newton[sim,importers]"
 ```
 
 ## 5. Run
