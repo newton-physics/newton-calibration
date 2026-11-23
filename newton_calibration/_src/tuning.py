@@ -5,9 +5,10 @@
 
 from __future__ import annotations
 
+import hashlib
 import importlib.metadata
+import math
 import platform
-import shutil
 import time
 from dataclasses import asdict
 from datetime import UTC, datetime
@@ -44,6 +45,7 @@ class Tuning:
         rank_tolerance=1e-3,
         allow_rank_reduction=False,
         orthogonalize=True,
+        record_traces=True,
     ):
         self.evidence, self.asset, self.evaluator = evidence, asset, evaluator
         self.parameters, self.rollout, self.optimizer = parameters, rollout, optimizer
@@ -62,6 +64,7 @@ class Tuning:
         self.rank_tolerance = rank_tolerance
         self.allow_rank_reduction = allow_rank_reduction
         self.orthogonalize = orthogonalize
+        self.record_traces = bool(record_traces)
         self.state = RunState()
         self._started = False
         self._clock = None
@@ -161,7 +164,7 @@ class Tuning:
         batch_id = f"batch-{self._counter:05d}"
         self._counter += 1
         artifact = self.run_directory / "batches" / f"{batch_id}.json"
-        write_json(artifact, asdict(result))
+        write_json(artifact, asdict(result) if self.record_traces else _batch_summary(result))
         if purpose in {"train", "baseline"}:
             for i in range(len(result.trial_ids)):
                 if result.feasible[i] and (
@@ -275,6 +278,7 @@ class Tuning:
                 "versions": versions,
                 "source_hashes": package_sources,
                 "decision": self.decision,
+                "batch_records": "full" if self.record_traces else "summary",
             },
         )
         baseline = self._physical_trials(self.parameters.baseline, "baseline")
@@ -368,9 +372,33 @@ class Tuning:
             "step": self.analysis_step,
             "scope": "local finite differences on training data",
         }
-        self.state.analysis_reports["sensitivity"] = plain(report)
+        self.state.analysis_reports["sensitivity"] = plain(
+            report
+            if self.record_traces
+            else self._store_arrays(report, "sensitivity", ("jacobian", "per_anchor_jacobians"))
+        )
         self._save()
         return report
+
+    def _store_arrays(self, report, name, keys):
+        """Move large arrays of an analysis report into ``analysis/<name>.npz`` with its hash."""
+        path = self.run_directory / "analysis" / f"{name}.npz"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        arrays = {}
+        for key in keys:
+            value = report[key]
+            if isinstance(value, (list, tuple)):
+                arrays.update({f"{key}_{i}": np.asarray(v) for i, v in enumerate(value)})
+            else:
+                arrays[key] = np.asarray(value)
+        np.savez(path, **arrays)
+        stored = {k: v for k, v in report.items() if k not in keys}
+        stored["arrays"] = {
+            "path": str(path.relative_to(self.run_directory)),
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            "shapes": {k: list(v.shape) for k, v in arrays.items()},
+        }
+        return stored
 
     def identifiability(self, sensitivity_report):
         j = sensitivity_report["jacobian"]
@@ -440,8 +468,21 @@ class Tuning:
         candidate_path = self.asset.export(candidate["parameters"], self.run_directory / "candidate_asset.json")
         self.state.artifact_refs["candidate_asset"] = str(candidate_path)
         loaded = self.asset.reload(candidate_path)
-        if dict(loaded.baseline_parameters) != candidate["parameters"]:
+        reloaded = dict(loaded.baseline_parameters)
+        # Assets that store parameters at reduced precision reload within the Rollout readback tolerance.
+        rtol = getattr(self.rollout, "parameter_rtol", 0.0)
+        atol = getattr(self.rollout, "parameter_atol", 0.0)
+        if reloaded.keys() != candidate["parameters"].keys() or any(
+            not math.isclose(float(reloaded[k]), float(v), rel_tol=rtol, abs_tol=atol)
+            for k, v in candidate["parameters"].items()
+        ):
             raise ValueError("exported/reloaded asset parameters differ from selected candidate")
+        self.state.analysis_reports["export_roundtrip"] = {
+            "selected": candidate["parameters"],
+            "reloaded": reloaded,
+            "readback_rtol": rtol,
+            "readback_atol": atol,
+        }
         trials = self._physical_trials(
             np.array([loaded.baseline_parameters[k] for k in self.parameters.names]),
             "validation",
@@ -506,14 +547,14 @@ class Tuning:
             acceptance = "unvalidated"
         published = None
         if acceptance == "accepted":
-            published = self.run_directory / "release" / "asset.json"
-            published.parent.mkdir(exist_ok=True)
-            shutil.copyfile(candidate_path, published)
-            write_json(published.parent / "template.json", self.template.snapshot())
+            release = self.run_directory / "release"
+            release.mkdir(exist_ok=True)
+            published = loaded.release(candidate_path, release)
+            write_json(release / "template.json", self.template.snapshot())
             write_json(
-                published.parent / "manifest.json",
+                release / "manifest.json",
                 {
-                    "asset": "asset.json",
+                    "asset": published.name,
                     "template": "template.json",
                     "identity": self.state.identity,
                     "parameters": candidate["parameters"],
@@ -605,3 +646,30 @@ class Tuning:
             return result
         finally:
             self.rollout.close()
+
+
+def _batch_summary(result):
+    """A batch record without traces or per-sample features: scores, statuses and bindings."""
+    return {
+        "trial_ids": result.trial_ids,
+        "search_values": result.search_values,
+        "parameter_values": result.parameter_values,
+        "objectives": result.objectives,
+        "metrics": result.metrics,
+        "constraints": result.constraints,
+        "valid_mask": result.valid_mask,
+        "episode_records": [
+            {
+                "trial_id": e.trial_id,
+                "experiment_id": e.experiment_id,
+                "repeat": e.repeat,
+                "status": e.status,
+                "error": e.error,
+                "applied_parameters": e.applied_parameters,
+            }
+            for e in result.episode_records
+        ],
+        "identity": result.identity,
+        "purpose": result.purpose,
+        "records": "summary",
+    }

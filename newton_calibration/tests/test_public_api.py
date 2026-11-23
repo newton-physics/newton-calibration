@@ -52,13 +52,14 @@ import sys
 
 class BlockOptional(importlib.abc.MetaPathFinder):
     def find_spec(self, fullname, path=None, target=None):
-        if fullname.split('.')[0] in {'cma', 'scipy', 'warp', 'pxr', 'pyglet'}:
+        if fullname.split('.')[0] in {'cma', 'scipy', 'warp', 'pxr', 'pyglet', 'huggingface_hub'}:
             raise AssertionError(f'Unexpected optional import: {fullname}')
 
 sys.meta_path.insert(0, BlockOptional())
 import newton_calibration
 from newton_calibration.examples import make_tuning
 from newton_calibration.migrate_asset import migrate_asset
+import newton_calibration.sources
 for name in newton_calibration.__all__:
     assert getattr(newton_calibration, name) is not None
 """

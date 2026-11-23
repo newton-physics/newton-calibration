@@ -5,6 +5,7 @@
 
 import copy
 import json
+import shutil
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from pathlib import Path
@@ -68,7 +69,10 @@ class Asset(ABC):
 
     @abstractmethod
     def create_environment(self, template, parameter_values, experiment_settings):
-        """One fresh environment, with the applied parameter values available for readback."""
+        """One fresh environment, with the applied parameter values available for readback.
+
+        Template passes ``inputs=experiment.inputs`` only for experiments that declare inputs.
+        """
 
     def create_batch_environment(self, template, parameter_values, experiment_settings):
         """One fresh BatchEnvironment for a sequence of parameter mappings.
@@ -106,3 +110,10 @@ class Asset(ABC):
         loaded = copy.copy(self)
         loaded.baseline_parameters = immutable(data["parameters"])
         return loaded
+
+    def release(self, candidate_path, directory):
+        """Publish an accepted export into directory; return the released asset path."""
+        candidate_path = Path(candidate_path)
+        published = Path(directory) / f"asset{candidate_path.suffix}"
+        shutil.copyfile(candidate_path, published)
+        return published

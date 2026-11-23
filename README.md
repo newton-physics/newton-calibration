@@ -43,6 +43,7 @@ Continue with the **[step-by-step quickstart](docs/quickstart.md)** to inspect t
 |---|---|---|
 | Sliding box · Newton XPBD | Fit one physical parameter against analytical evidence, check numerical accuracy, and validate at a held-out initial speed | [Run and inspect](docs/quickstart.md) · [Source](examples/box_friction_calibration/) |
 | Measured cable · Newton VBD | Use static shapes and release motion to fit parameters, interpret residuals, and refine the model | [Calibration workflow](docs/calibration-guide.md) · [Case study](examples/cable_calibration/README.md) |
+| Robot arm actuators · Newton MuJoCo | Fit PD gains, armature and joint friction by replaying recorded joint commands in batched worlds, validate on held-out recordings, and export a USD layer. No calibration result has been recorded yet | [Example](examples/actuator_calibration/README.md) |
 
 ### Cable release experiment
 
