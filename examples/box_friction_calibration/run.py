@@ -30,6 +30,7 @@ def main():
     """Run the example and print its acceptance, stopping reason, and output paths."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--workspace", type=Path, default=Path("workspace/newton-sliding"))
+    parser.add_argument("--capacity", type=int, default=1, help="maximum number of concurrent CPU episodes")
     args = parser.parse_args()
 
     parameters = Parameters([Parameter("friction", bounds=(0.05, 0.65), baseline=0.15)])
@@ -89,7 +90,7 @@ def main():
         asset=asset,
         evaluator=Evaluator(loss="squared_error", max_normalized_error=2.0),
         parameters=parameters,
-        rollout=Rollout(capacity=1, parameter_rtol=1e-6),
+        rollout=Rollout(capacity=args.capacity, parameter_rtol=1e-6),
         optimizer=GridSearch(levels=41, batch_size=8),
         decision=Decision(
             max_trials=41,
