@@ -22,8 +22,9 @@ import warp as wp
 
 from newton_calibration import SimulationError, Trace
 
-# Calibrated quantity or fixed clamp -> Newton model array (SI units, per DOF).
-MODEL_ARRAYS = {
+# Calibrated quantity or fixed clamp -> name of the newton.Model array it is written to
+# (SI units, one entry per DOF). USD attribute names do not appear here.
+QUANTITY_TO_MODEL_ARRAY = {
     "stiffness": "joint_target_ke",
     "damping": "joint_target_kd",
     "armature": "joint_armature",
@@ -101,8 +102,8 @@ def create_builder(usd_path, joints, *, fixed_base, values=None):
         dof = builder_dof(builder, joint)
         builder.joint_target_mode[dof] = position
         for quantity, value in (values or {}).get(joint, {}).items():
-            if quantity in MODEL_ARRAYS:
-                getattr(builder, MODEL_ARRAYS[quantity])[dof] = float(value)
+            if quantity in QUANTITY_TO_MODEL_ARRAY:
+                getattr(builder, QUANTITY_TO_MODEL_ARRAY[quantity])[dof] = float(value)
     return builder
 
 
@@ -219,7 +220,7 @@ class NewtonActuatorPopulation:
         self._bodies_device = wp.array(bodies, dtype=wp.int32, device=model.device)
         self._base_q = model.joint_q.numpy().copy()
         self._base_qd = model.joint_qd.numpy().copy()
-        self._base_arrays = {name: getattr(model, name).numpy().copy() for name in MODEL_ARRAYS.values()}
+        self._base_arrays = {name: getattr(model, name).numpy().copy() for name in QUANTITY_TO_MODEL_ARRAY.values()}
         self._delay_steps = np.zeros(len(self.joints), dtype=np.int64)
         self._executor = StepExecutor(
             model,
@@ -233,12 +234,12 @@ class NewtonActuatorPopulation:
 
     def readback(self):
         """Per-world ``<joint>.<quantity>`` values read from the Newton model arrays."""
-        arrays = {k: getattr(self.model, v).numpy() for k, v in MODEL_ARRAYS.items()}
+        arrays = {k: getattr(self.model, v).numpy() for k, v in QUANTITY_TO_MODEL_ARRAY.items()}
         return [
             {
                 f"{joint}.{quantity}": float(arrays[quantity][self._dof[w, j]])
                 for j, joint in enumerate(self.joints)
-                for quantity in MODEL_ARRAYS
+                for quantity in QUANTITY_TO_MODEL_ARRAY
             }
             for w in range(self.size)
         ]
@@ -250,7 +251,7 @@ class NewtonActuatorPopulation:
         if any(len(v) != 1 for v in delays.values()):
             raise ValueError("command delays must be identical in every world")
         self._delay_steps = np.array([int(next(iter(delays[j]))) for j in self.joints])
-        for quantity, array_name in MODEL_ARRAYS.items():
+        for quantity, array_name in QUANTITY_TO_MODEL_ARRAY.items():
             values = self._base_arrays[array_name].copy()
             for w, parameters in enumerate(parameter_values):
                 for j, joint in enumerate(self.joints):
@@ -377,7 +378,7 @@ def single_world_parameters(usd_path, joints, *, fixed_base, device=None):
     values = {}
     for joint in joints:
         dof = builder_dof(builder, joint)
-        for quantity, array_name in MODEL_ARRAYS.items():
+        for quantity, array_name in QUANTITY_TO_MODEL_ARRAY.items():
             values[f"{joint}.{quantity}"] = float(getattr(builder, array_name)[dof])
             if not math.isfinite(values[f"{joint}.{quantity}"]):
                 raise ValueError(f"{joint}.{quantity} is not finite in {usd_path}")
