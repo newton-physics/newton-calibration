@@ -65,11 +65,26 @@ class TestFileSources(TempPathTestCase):
     def test_digest_and_path_must_be_declared_and_inside_the_root(self):
         """Require a full digest and keep relative paths under the root."""
         source = FileSourceLocal(self.root)
-        for digest in ("", self.digest[:20], self.digest.upper(), None):
+        for digest in ("", self.digest[:20], self.digest.upper(), 0):
             with self.subTest(digest=digest), self.assertRaisesRegex(ValueError, "sha256"):
                 source.fetch("data/a.bin", digest)
         with self.assertRaisesRegex(ValueError, "leaves the source root"):
             source.locate("../outside.bin")
+        with self.assertRaisesRegex(ValueError, "leaves the source root"):
+            source.fetch("../outside.bin")
+
+    def test_files_without_a_declared_digest_are_used_as_located(self):
+        """Skip the check when no digest is declared, for single files and lists of paths."""
+        source = FileSourceLocal(self.root)
+        self.file.write_bytes(b"user recording")
+        self.assertEqual(source.fetch("data/a.bin"), self.file.resolve())
+        self.assertEqual(source.fetch("data/a.bin", None), self.file.resolve())
+        self.assertEqual(source.fetch_all(["data/a.bin"]), {"data/a.bin": self.file.resolve()})
+        self.assertEqual(source.fetch_all({"data/a.bin": None}), {"data/a.bin": self.file.resolve()})
+        with self.assertRaisesRegex(ValueError, "differs from the declared"):
+            source.fetch_all({"data/a.bin": self.digest})
+        with self.assertRaisesRegex(TypeError, "single path"):
+            source.fetch_all("data/a.bin")
 
     def test_hugging_face_source_downloads_the_pinned_commit(self):
         """Download through huggingface_hub at the pinned commit and record provenance."""

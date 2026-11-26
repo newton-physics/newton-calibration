@@ -51,6 +51,9 @@ Numerical qualification uses a pointwise tolerance in radians,
 [configs/so101.json](configs/so101.json) uses the `nvidia/Anchor-Lab` Hugging Face dataset
 at a pinned revision: six of the dataset's `train` recordings for search and the eight
 `heldout` recordings for validation. Every file is checked against its declared sha256.
+For your own recordings, list the files under `dataset.train` and `dataset.validation`
+as plain paths, or map a path to `null`, to skip the check; the run records the sha256 of
+every file it reads in the evidence sources either way.
 Recordings are long-form Parquet (`time_ns`, `experiment`, `field`, `value`) and are
 resampled by linear interpolation onto a uniform 0.02 s grid spanning the overlap of all
 recorded fields. The example uses each joint's `command_q` and `actual_q`, in radians.
@@ -72,7 +75,9 @@ parameters cannot be identified.
 
 The robot is the dataset's `robot_assets/so101_camera_mass_23g_at_camera.usd`, an SO-101
 with a 23 g camera payload. It is downloaded from the same revision and checked against
-`asset.usd_sha256`; `--usd` substitutes a local file with the same hash.
+`asset.usd_sha256`; `--usd` substitutes a local file, which must have the same hash while
+`asset.usd_sha256` is declared. Without it, the file is used as is and its hash is recorded
+with the asset.
 
 ## 4. Install
 

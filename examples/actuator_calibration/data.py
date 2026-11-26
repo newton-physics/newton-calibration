@@ -21,7 +21,7 @@ from pathlib import Path
 import numpy as np
 
 from newton_calibration import Evidence, Experiment
-from newton_calibration.sources import FileSourceHuggingFace, FileSourceLocal
+from newton_calibration.sources import FileSourceHuggingFace, FileSourceLocal, file_sha256
 
 REQUIRED_COLUMNS = ("time_ns", "experiment", "field", "value")
 
@@ -135,23 +135,39 @@ def file_source(dataset, data_root=None):
 
 
 def resolve_asset(config, usd_path=None, data_root=None):
-    """The robot USD: ``usd_path`` if given, else the configured dataset file; sha256-checked."""
+    """The robot USD: ``usd_path`` if given, else the configured dataset file.
+
+    The file is checked against ``asset.usd_sha256`` when the configuration declares one.
+    """
     asset = config["asset"]
     if usd_path is None:
         if "path" not in asset:
             raise ValueError("pass a USD path; the configuration names no dataset asset")
-        return file_source(config["dataset"], data_root).fetch(asset["path"], asset["usd_sha256"])
+        return file_source(config["dataset"], data_root).fetch(asset["path"], asset.get("usd_sha256"))
     path = Path(os.path.abspath(Path(usd_path).expanduser()))
-    return FileSourceLocal(path.parent).fetch(path.name, asset["usd_sha256"])
+    return FileSourceLocal(path.parent).fetch(path.name, asset.get("usd_sha256"))
+
+
+def declared_files(files):
+    """``{relative path: sha256 or None}`` from a mapping or a list of paths."""
+    if isinstance(files, dict):
+        return dict(files)
+    if isinstance(files, list) and all(isinstance(f, str) for f in files):
+        return dict.fromkeys(files)
+    raise ValueError("dataset files must be a {path: sha256} mapping or a list of paths")
 
 
 def load_evidence(case, data_root=None):
+    """Read the training and validation recordings; sources record the sha256 of every file read."""
     dataset = case.config["dataset"]
     source = file_source(dataset, data_root)
-    splits = {}
+    splits, digests = {}, {}
     for split in ("train", "validation"):
         experiments = []
-        for relative, path in source.fetch_all(dataset[split]).items():
+        files = declared_files(dataset[split])
+        for relative, path in source.fetch_all(files).items():
+            # A declared digest was checked by the fetch; hash the others once here.
+            digests[relative] = files[relative] or file_sha256(path)
             for experiment_id, command, measured in trajectories(
                 path, case.joints, dataset["dt"], dataset.get("joint_name_mapping")
             ):
@@ -172,6 +188,6 @@ def load_evidence(case, data_root=None):
         for key in ("provider", "repo_id", "revision", "dt", "buffer_time", "joint_name_mapping")
         if key in dataset
     }
-    sources["files"] = {**dataset["train"], **dataset["validation"]}
+    sources["files"] = digests
     sources["resampling"] = "linear interpolation over the overlap of all recorded fields"
     return Evidence(splits["train"], splits["validation"], sources=sources)

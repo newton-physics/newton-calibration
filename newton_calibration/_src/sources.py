@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 The Newton Developers
 # SPDX-License-Identifier: Apache-2.0
 
-"""Pinned, sha256-checked source files from a local directory or a Hugging Face repository."""
+"""Source files from a local directory or a pinned Hugging Face repository, optionally sha256-checked."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import hashlib
 import os
 import re
 from abc import ABC, abstractmethod
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from pathlib import Path
 
 _COMMIT = re.compile(r"[0-9a-f]{40}")
@@ -26,10 +26,11 @@ def file_sha256(path: str | Path) -> str:
 
 
 class FileSource(ABC):
-    """Locates source files by relative path and checks each against a declared SHA-256.
+    """Locates source files by relative path and checks each against a SHA-256 when declared.
 
-    Subclasses locate files; :meth:`fetch` verifies them. Every file must be declared
-    with its digest, so a run reads exactly the recorded bytes.
+    Subclasses locate files; :meth:`fetch` verifies them. A declared digest makes a run
+    read exactly the recorded bytes; without one, the file is used as located. Record
+    :func:`file_sha256` of undeclared files in the evidence sources to keep provenance.
     """
 
     @abstractmethod
@@ -41,13 +42,15 @@ class FileSource(ABC):
     def provenance(self) -> dict:
         """Where the files come from, suitable for :class:`~newton_calibration.Evidence` ``sources``."""
 
-    def fetch(self, relative: str, sha256: str) -> Path:
-        """Return the local path of ``relative`` after checking its SHA-256.
+    def fetch(self, relative: str, sha256: str | None = None) -> Path:
+        """Return the local path of ``relative``, after checking its SHA-256 if declared.
 
         Raises:
-            ValueError: If ``sha256`` is not a lowercase 64-digit hexadecimal digest or
-                the file's digest differs from it.
+            ValueError: If ``sha256`` is given but is not a lowercase 64-digit hexadecimal
+                digest, or the file's digest differs from it.
         """
+        if sha256 is None:
+            return self.locate(relative)
         if not isinstance(sha256, str) or not _SHA256.fullmatch(sha256):
             raise ValueError(f"{relative}: declare a lowercase hexadecimal sha256, got {sha256!r}")
         path = self.locate(relative)
@@ -55,8 +58,12 @@ class FileSource(ABC):
             raise ValueError(f"{relative}: sha256 {actual} differs from the declared {sha256}")
         return path
 
-    def fetch_all(self, files: Mapping[str, str]) -> dict[str, Path]:
-        """Fetch every ``{relative path: sha256}`` entry, preserving order."""
+    def fetch_all(self, files: Mapping[str, str | None] | Iterable[str]) -> dict[str, Path]:
+        """Fetch every ``{relative path: sha256 or None}`` entry or listed path, preserving order."""
+        if isinstance(files, str):
+            raise TypeError("files must be a mapping or a collection of paths, not a single path")
+        if not isinstance(files, Mapping):
+            files = dict.fromkeys(files)
         return {relative: self.fetch(relative, sha256) for relative, sha256 in files.items()}
 
 

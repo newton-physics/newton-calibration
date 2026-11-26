@@ -51,13 +51,13 @@ Robot channels might be `[q_1, …, q_n, qd_1, …, qd_n]` with separate positio
 
 ## FileSource fetches pinned source files
 
-`newton_calibration.sources` locates evidence and asset files by relative path and checks each against a declared SHA-256 before use, so a run reads exactly the recorded bytes. Import it from that module; it is not part of the root namespace.
+`newton_calibration.sources` locates evidence and asset files by relative path and, when a SHA-256 is declared, checks it before use, so a run reads exactly the recorded bytes. Record `file_sha256` of files read without a declared digest in `Evidence(sources=...)`. Import it from that module; it is not part of the root namespace.
 
 ```text
 FileSourceLocal(root)
 FileSourceHuggingFace(repo_id, revision, *, repo_type="dataset")
-FileSource.fetch(relative, sha256) -> Path
-FileSource.fetch_all({relative: sha256, ...}) -> {relative: Path}
+FileSource.fetch(relative, sha256=None) -> Path
+FileSource.fetch_all({relative: sha256 or None, ...} | [relative, ...]) -> {relative: Path}
 FileSource.provenance -> dict
 file_sha256(path) -> str
 ```
@@ -66,7 +66,8 @@ file_sha256(path) -> str
 |---|---|
 | `FileSourceLocal` | Files under `root`, for example an offline copy of a repository. Paths that leave `root` are rejected |
 | `FileSourceHuggingFace` | Downloads into the Hugging Face cache through `huggingface_hub`, imported on the first fetch (`huggingface` extra). `revision` must be a full 40-digit commit hash; branch and tag names are rejected because they can move. `repo_type` is `"dataset"`, `"model"` or `"space"` |
-| `fetch` | Returns the local path after checking the lowercase 64-digit digest; a missing or different digest raises `ValueError` |
+| `fetch` | Returns the local path; with a digest, checks it first, and a malformed or different digest raises `ValueError`. Without one, returns the located file unchecked |
+| `fetch_all` | Fetches a `{path: digest or None}` mapping or a list of paths, preserving order |
 | `provenance` | Provider, repository, type and revision, for `Evidence(sources=...)` |
 
 Subclass `FileSource` and implement `locate()` and `provenance` for another provider. The [actuator example](../examples/actuator_calibration/data.py) reads its recordings and robot USD this way.

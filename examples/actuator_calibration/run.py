@@ -19,7 +19,7 @@ def main(argv=None):
     parser.add_argument(
         "--usd",
         type=Path,
-        help="local robot USD (sha256-checked); default uses the configured dataset file",
+        help="local robot USD, checked against asset.usd_sha256 if declared; default uses the configured dataset file",
     )
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
     parser.add_argument("--workspace", type=Path, default=Path("workspace/actuator"))

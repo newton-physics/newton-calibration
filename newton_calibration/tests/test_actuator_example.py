@@ -9,6 +9,7 @@ These tests do not import Newton or Warp and do not simulate.
 import copy
 import importlib.util
 import math
+import types
 import unittest
 from pathlib import Path
 
@@ -234,7 +235,7 @@ class TestActuatorData(TempPathTestCase):
             trajectories(path, ["b"], 1e-8)
 
     def test_robot_usd_comes_from_the_dataset_or_a_local_file_with_the_same_hash(self):
-        """Fetch the robot USD from the dataset or accept a local file with its hash."""
+        """Fetch the robot USD from the dataset or a local file, checking a declared hash."""
 
         from examples.actuator_calibration.data import resolve_asset  # noqa: PLC0415
         from newton_calibration.sources import file_sha256  # noqa: PLC0415
@@ -254,6 +255,50 @@ class TestActuatorData(TempPathTestCase):
             resolve_asset(config, other)
         with self.assertRaisesRegex(ValueError, "names no dataset asset"):
             resolve_asset({"asset": {"usd_sha256": "0"}, "dataset": {}})
+        # Without a declared hash, the configured or substituted file is used as is.
+        unpinned = {"asset": {"path": "robot_assets/robot.usda"}, "dataset": {"provider": "huggingface"}}
+        self.assertEqual(resolve_asset(unpinned, data_root=self.tmp_path), source.absolute())
+        self.assertEqual(resolve_asset(unpinned, other), other.absolute())
+
+    @unittest.skipUnless(HAS_PANDAS and HAS_PYARROW, "pandas and pyarrow are not installed")
+    def test_recordings_without_declared_hashes_record_the_hash_of_each_file_read(self):
+        """Accept listed or unhashed recordings and record the sha256 of every file read."""
+
+        import pandas as pd  # noqa: PLC0415 (optional actuator extra)
+
+        from examples.actuator_calibration.data import load_evidence  # noqa: PLC0415
+        from newton_calibration.sources import file_sha256  # noqa: PLC0415
+
+        paths = {}
+        for name, offset in (("train.parquet", 0.0), ("heldout.parquet", 1.0)):
+            frame = pd.DataFrame(
+                [(t, name, "a/command_q", offset) for t in (0, 10, 20)]
+                + [(t, name, "a/actual_q", offset + 0.5) for t in (0, 10, 20)],
+                columns=["time_ns", "experiment", "field", "value"],
+            )
+            paths[name] = self.tmp_path / "data" / name
+            paths[name].parent.mkdir(exist_ok=True)
+            frame.to_parquet(paths[name])
+        digests = {f"data/{name}": file_sha256(path) for name, path in paths.items()}
+        dataset = {"provider": "huggingface", "dt": 1e-8}
+        layouts = {
+            "listed": {"train": ["data/train.parquet"], "validation": ["data/heldout.parquet"]},
+            "unhashed": {"train": {"data/train.parquet": None}, "validation": {"data/heldout.parquet": None}},
+            "mixed": {
+                "train": ["data/train.parquet"],
+                "validation": {"data/heldout.parquet": digests["data/heldout.parquet"]},
+            },
+        }
+        for layout, files in layouts.items():
+            with self.subTest(layout=layout):
+                case = types.SimpleNamespace(config={"dataset": {**dataset, **files}}, joints=("a",), buffer_steps=0)
+                evidence = load_evidence(case, data_root=self.tmp_path)
+                self.assertEqual([e.id for e in evidence.train_data], ["train.parquet"])
+                self.assertEqual([e.id for e in evidence.validation_data], ["heldout.parquet"])
+                self.assertEqual(evidence.sources["files"], digests)
+        case = types.SimpleNamespace(config={"dataset": {**dataset, "train": "data/train.parquet"}}, joints=("a",))
+        with self.assertRaisesRegex(ValueError, "mapping or a list"):
+            load_evidence(case, data_root=self.tmp_path)
 
 
 class TestActuatorBatching(unittest.TestCase):
