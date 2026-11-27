@@ -34,28 +34,33 @@ jobs:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
         with:
           persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e  # v10.3.2
+        with:
+          version: "0.13.5"
+          prune-cache: true
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
           python-version: ${{ matrix.python }}
       - name: Install CPU dependencies
-        run: python -m pip install -e ".[cma,cable,dev]"
+        run: uv sync --locked --python "${{ matrix.python }}" --extra cma --extra cable --extra dev
       - name: Repository checks
-        run: pre-commit run --all-files
+        run: uv run --no-sync pre-commit run --all-files
       - name: Core behavior
         if: matrix.python != '3.12'
-        run: python -m newton_calibration.tests
+        run: uv run --no-sync -m newton_calibration.tests
       - name: Core behavior with coverage
         if: matrix.python == '3.12'
         env:
           # sys.monitoring coverage core: avoids settrace overhead in unmeasured code
           COVERAGE_CORE: "sysmon"
         run: |
-          python -m coverage run -m newton_calibration.tests
-          python -m coverage report
-          python -m coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
+          uv run --no-sync -m coverage run -m newton_calibration.tests
+          uv run --no-sync -m coverage report
+          uv run --no-sync -m coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
       - name: Write coverage XML
         if: ${{ matrix.python == '3.12' && env.UPLOAD_TO_CODECOV == 'true' }}
-        run: python -m coverage xml -o coverage.xml
+        run: uv run --no-sync -m coverage xml -o coverage.xml
       - name: Upload coverage artifact
         if: ${{ matrix.python == '3.12' && env.UPLOAD_TO_CODECOV == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
@@ -65,21 +70,22 @@ jobs:
           retention-days: 1
           overwrite: true
       - name: Archived evidence
-        run: python -m examples.cable_calibration.verify
+        run: uv run --no-sync -m examples.cable_calibration.verify
       - name: Synthetic calibration demos
         run: |
-          newton-calibration demo --case sliding --optimizer grid --workspace "$RUNNER_TEMP/sliding"
-          newton-calibration demo --case oscillator --optimizer cma_es --workspace "$RUNNER_TEMP/oscillator"
+          uv run --no-sync newton-calibration demo --case sliding --optimizer grid --workspace "$RUNNER_TEMP/sliding"
+          uv run --no-sync newton-calibration demo --case oscillator --optimizer cma_es --workspace "$RUNNER_TEMP/oscillator"
       - name: Build package and check installed wheel
         run: |
-          python -m build
-          python -m pip uninstall -y newton-calibration
-          python -m pip install --no-deps dist/*.whl
+          uv run --no-sync -m build
+          uv pip uninstall newton-calibration
+          uv pip install --no-deps dist/*.whl
           cd "$RUNNER_TEMP"
-          python -c "from newton_calibration import Template, Tuning"
-          newton-calibration demo --case sliding --optimizer grid --workspace "$RUNNER_TEMP/wheel-sliding"
-          python -m newton_calibration.migrate_asset "$GITHUB_WORKSPACE/newton_calibration/tests/fixtures/legacy-sliding-asset.json" migrated.json
-          python -c "from newton_calibration.examples import SlidingAsset; assert SlidingAsset({}).reload('migrated.json').baseline_parameters['friction'] == 0.35"
+          run="uv run --no-sync --project $GITHUB_WORKSPACE"
+          $run python -c "from newton_calibration import Template, Tuning"
+          $run newton-calibration demo --case sliding --optimizer grid --workspace "$RUNNER_TEMP/wheel-sliding"
+          $run python -m newton_calibration.migrate_asset "$GITHUB_WORKSPACE/newton_calibration/tests/fixtures/legacy-sliding-asset.json" migrated.json
+          $run python -c "from newton_calibration.examples import SlidingAsset; assert SlidingAsset({}).reload('migrated.json').baseline_parameters['friction'] == 0.35"
 
   codecov-upload:
     name: Upload coverage to Codecov
