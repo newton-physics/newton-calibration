@@ -3,6 +3,8 @@
 
 """Small example CLI; custom cases use the public object API."""
 
+from __future__ import annotations
+
 import argparse
 import json
 from pathlib import Path
@@ -10,7 +12,7 @@ from pathlib import Path
 from .data import plain
 
 
-def main():
+def main() -> int:
     parser = argparse.ArgumentParser(prog="newton-calibration")
     commands = parser.add_subparsers(dest="command", required=True)
     demo = commands.add_parser("demo", help="run a non-cable synthetic qualification case")

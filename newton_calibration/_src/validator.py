@@ -3,7 +3,15 @@
 
 """Independent per-experiment validation through a restricted evaluation callback."""
 
+from __future__ import annotations
+
 import math
+from collections.abc import Callable, Sequence
+from typing import Any
+
+from .asset import Asset
+from .data import BatchResult
+from .evidence import Experiment
 
 
 class Validator:
@@ -18,7 +26,7 @@ class Validator:
     historical-evidence restrictions while preserving report fields and candidate identity.
     """
 
-    def __init__(self, max_objective=0.01, max_error=1.0):
+    def __init__(self, max_objective: float = 0.01, max_error: float = 1.0) -> None:
         """Initialize the validator.
 
         Args:
@@ -32,7 +40,7 @@ class Validator:
         self.max_objective = max_objective
         self.max_error = max_error
 
-    def accepts(self, result):
+    def accepts(self, result: BatchResult) -> bool:
         """True when every candidate is feasible and within objective and maximum-error limits."""
         return bool(
             result.feasible.all()
@@ -40,7 +48,12 @@ class Validator:
             and (result.metrics[:, 1] <= self.max_error).all()
         )
 
-    def validate(self, candidate_asset, validation_data, evaluate):
+    def validate(
+        self,
+        candidate_asset: Asset,
+        validation_data: Sequence[Experiment],
+        evaluate: Callable[[Asset, tuple[Experiment, ...]], BatchResult],
+    ) -> dict[str, Any]:
         """Call ``evaluate(candidate_asset, (experiment,))`` for each experiment and return a
         dictionary with ``passed``, ``status``, and ``experiments``.
 

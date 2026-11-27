@@ -3,9 +3,15 @@
 
 """Immutable, explicit single-environment construction conditions."""
 
-import math
+from __future__ import annotations
 
+import math
+from collections.abc import Iterable, Mapping
+from typing import Any, Self
+
+from .asset import Asset, BatchEnvironment, Environment
 from .data import identity, immutable, plain
+from .evidence import Experiment
 
 
 class Template:
@@ -18,24 +24,24 @@ class Template:
     def __init__(
         self,
         *,
-        numeric_settings,
-        discretization,
-        fixed_parameters,
-        experiment_settings,
-        refinements=(),
-        precision_tolerance=0.05,
-        qualification_mode="refinement",
-    ):
+        numeric_settings: Mapping[str, Any],
+        discretization: Mapping[str, Any],
+        fixed_parameters: Mapping[str, float],
+        experiment_settings: Mapping[str, Mapping[str, Any]],
+        refinements: Iterable[Mapping[str, Mapping[str, Any]]] = (),
+        precision_tolerance: float = 0.05,
+        qualification_mode: str = "refinement",
+    ) -> None:
         """Initialize the template.
 
         Args:
-            numeric_settings: Required nonempty dictionary for integrator, timestep, substeps,
+            numeric_settings: Required and nonempty. Integrator, timestep, substeps,
                 iterations, and related settings, using keys understood by the environment.
-            discretization: Required dictionary for rod segments, mesh resolution, or degrees
+            discretization: Required. Rod segments, mesh resolution, or degrees
                 of freedom. May be empty when appropriate.
-            fixed_parameters: Required dictionary of fixed physical scalars, with keys disjoint
+            fixed_parameters: Required. Fixed physical scalars, with keys disjoint
                 from search parameters.
-            experiment_settings: Required nonempty dictionary keyed by every experiment ``id``.
+            experiment_settings: Required and nonempty, keyed by every experiment ``id``.
                 Each entry explicitly includes ``seed`` and adapter-specific inputs.
             refinements: Each configuration override may contain only ``numeric_settings`` and
                 ``discretization``. Defaults to ``()``.
@@ -54,12 +60,12 @@ class Template:
         self.qualification_mode = qualification_mode
         self._frozen = False
 
-    def __setattr__(self, name, value):
+    def __setattr__(self, name: str, value: Any) -> None:
         if getattr(self, "_frozen", False):
             raise AttributeError("Template is frozen; create a new version")
         object.__setattr__(self, name, value)
 
-    def resolve(self):
+    def resolve(self) -> Self:
         """``resolve()`` checks configuration."""
         if self.qualification_mode not in {"refinement", "repeatability"}:
             raise ValueError("unknown qualification mode")
@@ -70,7 +76,7 @@ class Template:
         if not math.isfinite(self.precision_tolerance) or self.precision_tolerance <= 0:
             raise ValueError("invalid numerical precision tolerance")
 
-        def check(value):
+        def check(value: Any) -> None:
             if isinstance(value, dict):
                 for item in value.values():
                     check(item)
@@ -83,7 +89,7 @@ class Template:
         check(self.snapshot())
         return self
 
-    def snapshot(self):
+    def snapshot(self) -> dict[str, Any]:
         """``snapshot()`` returns serializable configuration data."""
         return {
             k: plain(getattr(self, k))
@@ -99,11 +105,11 @@ class Template:
         }
 
     @property
-    def template_id(self):
+    def template_id(self) -> str:
         """``template_id`` identifies the configuration."""
         return identity(self.snapshot())
 
-    def freeze(self):
+    def freeze(self) -> Self:
         """``freeze()`` locks the configuration."""
         self.resolve()
         for key in (
@@ -117,7 +123,7 @@ class Template:
         self._frozen = True
         return self
 
-    def refined(self, change):
+    def refined(self, change: Mapping[str, Mapping[str, Any]]) -> Template:
         """``refined(change)`` creates a frozen refined template, with each refinement applied
         independently to the original."""
         data = self.snapshot()
@@ -128,7 +134,7 @@ class Template:
         data["refinements"] = []
         return Template(**data).freeze()
 
-    def instantiate(self, asset, parameter_values, experiment):
+    def instantiate(self, asset: Asset, parameter_values: Mapping[str, float], experiment: Experiment) -> Environment:
         """``instantiate(asset, parameter_values, experiment)`` constructs one environment."""
         if not self._frozen:
             raise RuntimeError("freeze Template before executing")
@@ -140,7 +146,9 @@ class Template:
         complete = {**dict(self.fixed_parameters), **parameter_values}
         return asset.create_environment(self, complete, settings)
 
-    def instantiate_batch(self, asset, parameter_values, experiment):
+    def instantiate_batch(
+        self, asset: Asset, parameter_values: Iterable[Mapping[str, float]], experiment: Experiment
+    ) -> BatchEnvironment:
         """Create one BatchEnvironment for several candidates, with the checks of instantiate.
 
         ``instantiate_batch(...)`` constructs a batch. ``Rollout`` normally calls these methods.

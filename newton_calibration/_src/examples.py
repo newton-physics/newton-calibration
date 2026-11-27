@@ -3,10 +3,16 @@
 
 """Two synthetic physics cases assembled from the same public Tuning objects."""
 
+from __future__ import annotations
+
 import math
+import os
 import time
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 import numpy as np
+from numpy.typing import ArrayLike
 
 from .. import (
     CMAES,
@@ -22,6 +28,7 @@ from .. import (
     Parameters,
     Play,
     Rollout,
+    SimulationError,
     Template,
     Trace,
     Tuning,
@@ -29,7 +36,7 @@ from .. import (
 )
 
 
-def _trace(times, values):
+def _trace(times: np.ndarray, values: ArrayLike) -> Trace:
     values = np.asarray(values, dtype=np.float64).reshape(-1, 1)
     positions = np.zeros((len(times), 1, 3), dtype=np.float64)
     positions[:, 0, 0] = values[:, 0]
@@ -37,11 +44,11 @@ def _trace(times, values):
 
 
 class OscillatorEnvironment(Environment):
-    def __init__(self, parameters, dt, settings):
+    def __init__(self, parameters: Mapping[str, float], dt: float, settings: Mapping[str, Any]) -> None:
         self.applied_parameters = dict(parameters)
         self.dt, self.settings = dt, dict(settings)
 
-    def run(self, times, *, seed, deadline):
+    def run(self, times: np.ndarray, *, seed: int, deadline: float | None) -> Trace:
         p, s = self.applied_parameters, self.settings
         k, c, mass = p["stiffness"], p["damping"], p["mass"]
         force = s["force"]
@@ -55,7 +62,7 @@ class OscillatorEnvironment(Environment):
                     raise TimeoutError("oscillator deadline")
                 h = min(self.dt, target - current)
 
-                def acceleration(position, speed):
+                def acceleration(position: float, speed: float) -> float:
                     return (force - k * position - c * speed) / mass
 
                 a1 = acceleration(x, velocity)
@@ -76,7 +83,9 @@ class OscillatorAsset(Asset):
     # Keep existing asset exports loadable after implementation moves.
     __module__ = "newton_calibration.examples"
 
-    def create_environment(self, template, parameter_values, experiment_settings):
+    def create_environment(
+        self, template: Template, parameter_values: Mapping[str, float], experiment_settings: Mapping[str, Any]
+    ) -> OscillatorEnvironment:
         if template.numeric_settings["integrator"] != "rk4":
             raise ValueError("OscillatorAsset supports the declared RK4 integrator")
         return OscillatorEnvironment(parameter_values, template.numeric_settings["dt"], experiment_settings)
@@ -85,11 +94,11 @@ class OscillatorAsset(Asset):
 class OscillatorBatchEnvironment(BatchEnvironment):
     """All members integrated together as arrays; the same RK4 steps as OscillatorEnvironment."""
 
-    def __init__(self, parameters, dt, settings):
+    def __init__(self, parameters: Sequence[Mapping[str, float]], dt: float, settings: Mapping[str, Any]) -> None:
         self.applied_parameters = [dict(p) for p in parameters]
         self.dt, self.settings = dt, dict(settings)
 
-    def run(self, times, *, seed, deadline):
+    def run(self, times: np.ndarray, *, seed: int, deadline: float | None) -> list[Trace | SimulationError]:
         s = self.settings
         k = np.array([p["stiffness"] for p in self.applied_parameters], dtype=np.float64)
         c = np.array([p["damping"] for p in self.applied_parameters], dtype=np.float64)
@@ -108,7 +117,7 @@ class OscillatorBatchEnvironment(BatchEnvironment):
                     raise TimeoutError("oscillator deadline")
                 h = min(self.dt, target - current)
 
-                def acceleration(position, speed):
+                def acceleration(position: np.ndarray, speed: np.ndarray) -> np.ndarray:
                     return (force - k * position - c * speed) / mass
 
                 a1 = acceleration(x, velocity)
@@ -131,13 +140,18 @@ class BatchedOscillatorAsset(OscillatorAsset):
 
     __module__ = "newton_calibration.examples"
 
-    def create_batch_environment(self, template, parameter_values, experiment_settings):
+    def create_batch_environment(
+        self,
+        template: Template,
+        parameter_values: Sequence[Mapping[str, float]],
+        experiment_settings: Mapping[str, Any],
+    ) -> OscillatorBatchEnvironment:
         if template.numeric_settings["integrator"] != "rk4":
             raise ValueError("OscillatorAsset supports the declared RK4 integrator")
         return OscillatorBatchEnvironment(parameter_values, template.numeric_settings["dt"], experiment_settings)
 
 
-def oscillator_reference(times, parameters, settings):
+def oscillator_reference(times: np.ndarray, parameters: Mapping[str, float], settings: Mapping[str, Any]) -> np.ndarray:
     k, c, mass = parameters["stiffness"], parameters["damping"], parameters["mass"]
     equilibrium = settings["force"] / k
     if settings["mode"] == "static":
@@ -151,11 +165,11 @@ def oscillator_reference(times, parameters, settings):
 
 
 class SlidingEnvironment(Environment):
-    def __init__(self, parameters, dt, settings):
+    def __init__(self, parameters: Mapping[str, float], dt: float, settings: Mapping[str, Any]) -> None:
         self.applied_parameters = dict(parameters)
         self.dt, self.settings = dt, dict(settings)
 
-    def run(self, times, *, seed, deadline):
+    def run(self, times: np.ndarray, *, seed: int, deadline: float | None) -> Trace:
         deceleration = self.applied_parameters["friction"] * self.applied_parameters["gravity"]
         speed = self.settings["initial_speed"]
         x, current = 0.0, 0.0
@@ -177,13 +191,23 @@ class SlidingAsset(Asset):
     # Keep existing asset exports loadable after implementation moves.
     __module__ = "newton_calibration.examples"
 
-    def create_environment(self, template, parameter_values, experiment_settings):
+    def create_environment(
+        self, template: Template, parameter_values: Mapping[str, float], experiment_settings: Mapping[str, Any]
+    ) -> SlidingEnvironment:
         if template.numeric_settings["integrator"] != "event_trapezoid":
             raise ValueError("SlidingAsset requires event_trapezoid")
         return SlidingEnvironment(parameter_values, template.numeric_settings["dt"], experiment_settings)
 
 
-def make_tuning(case, workspace="workspace", *, optimizer=None, capacity=4, batched=False, worlds=None):
+def make_tuning(
+    case: str,
+    workspace: str | os.PathLike[str] = "workspace",
+    *,
+    optimizer: str | None = None,
+    capacity: int = 4,
+    batched: bool = False,
+    worlds: int | None = None,
+) -> Tuning:
     if case == "oscillator":
         parameters = Parameters(
             [

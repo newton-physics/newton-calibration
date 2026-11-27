@@ -3,11 +3,16 @@
 
 """Vectorized array scoring with fixed masks and complete episode identities."""
 
+from __future__ import annotations
+
 import math
+from collections.abc import Sequence
+from typing import Any
 
 import numpy as np
 
-from .data import identity
+from .data import Episode, identity
+from .evidence import Experiment
 
 
 class Evaluator:
@@ -23,7 +28,7 @@ class Evaluator:
     the affected members together.
     """
 
-    def __init__(self, *, loss="squared_error", max_normalized_error=None):
+    def __init__(self, *, loss: str = "squared_error", max_normalized_error: float | None = None) -> None:
         """Initialize the evaluator.
 
         Args:
@@ -47,7 +52,7 @@ class Evaluator:
         self.max_normalized_error = max_normalized_error
 
     @property
-    def metric_spec(self):
+    def metric_spec(self) -> dict[str, Any]:
         """``metric_spec`` records the scoring protocol."""
         return {
             "loss": self.loss,
@@ -56,11 +61,13 @@ class Evaluator:
         }
 
     @property
-    def evaluation_id(self):
+    def evaluation_id(self) -> str:
         """``evaluation_id`` identifies the scoring protocol in ``metric_spec``."""
         return identity(self.metric_spec)
 
-    def score_batch(self, episodes, trial_ids, experiments):
+    def score_batch(
+        self, episodes: Sequence[Episode], trial_ids: Sequence[str], experiments: Sequence[Experiment]
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """For batch size ``B``, constraint count ``K``, and concatenated feature count ``F``,
         ``score_batch()`` returns five arrays in this order.
 

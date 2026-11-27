@@ -89,10 +89,10 @@ class Episode:
     error: str | None = None
     """Error description, default ``None``."""
     applied_parameters: dict[str, float] = field(default_factory=dict)
-    """Full readback mapping, default empty dictionary."""
+    """Full parameter readback, default empty."""
 
     @property
-    def key(self):
+    def key(self) -> tuple[str, str, int]:
         return self.trial_id, self.experiment_id, self.repeat
 
 
@@ -120,12 +120,12 @@ class BatchResult:
     purpose: str
 
     @property
-    def feasible(self):
+    def feasible(self) -> np.ndarray:
         """``feasible`` combines validity and constraints."""
         return self.valid_mask & (self.constraints <= 0).all(axis=1)
 
     @property
-    def feedback(self):
+    def feedback(self) -> np.ndarray:
         """``feedback`` maps feasible candidates below 1, constraint violations to ``[1,2)``,
         and invalid candidates to 3. Built-in CMA-ES updates from ``feedback``, while run
         records retain the raw objective."""
@@ -158,22 +158,22 @@ class RunState:
     run_id: str = ""
     phase: str = "created"
     identity: dict[str, str] = field(default_factory=dict)
-    template_snapshot: dict = field(default_factory=dict)
-    budget_usage: dict = field(default_factory=dict)
-    batch_history: list[dict] = field(default_factory=list)
-    best_candidate: dict | None = None
-    analysis_reports: dict = field(default_factory=dict)
-    optimizer_snapshot: dict = field(default_factory=dict)
-    decision_history: list[dict] = field(default_factory=list)
-    validation_report: dict | None = None
-    artifact_refs: dict = field(default_factory=dict)
+    template_snapshot: dict[str, Any] = field(default_factory=dict)
+    budget_usage: dict[str, dict[str, int]] = field(default_factory=dict)
+    batch_history: list[dict[str, Any]] = field(default_factory=list)
+    best_candidate: dict[str, Any] | None = None
+    analysis_reports: dict[str, Any] = field(default_factory=dict)
+    optimizer_snapshot: dict[str, Any] = field(default_factory=dict)
+    decision_history: list[dict[str, Any]] = field(default_factory=list)
+    validation_report: dict[str, Any] | None = None
+    artifact_refs: dict[str, str] = field(default_factory=dict)
     errors: list[str] = field(default_factory=list)
     fatal_error: str | None = None
     cancelled: bool = False
     termination_reason: str | None = None
     elapsed_s: float = 0.0
 
-    def view(self):
+    def view(self) -> Mapping[str, Any]:
         """``state.view()`` supplies a read-only decision snapshot."""
         return immutable(plain(self))
 

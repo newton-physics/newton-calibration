@@ -3,6 +3,8 @@
 
 """Convert an exported task_tuning asset to the newton_calibration file format."""
 
+from __future__ import annotations
+
 import argparse
 import json
 from pathlib import Path
@@ -37,7 +39,7 @@ def migrate_asset(source: Path, destination: Path) -> None:
             raise
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", type=Path, help="existing legacy asset JSON")
     parser.add_argument("destination", type=Path, help="new output file")

@@ -3,8 +3,12 @@
 
 """Prepared observations; acquisition groups enforce independent holdout data."""
 
+from __future__ import annotations
+
 import math
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
@@ -41,7 +45,7 @@ class Experiment:
     repeats: int = 1
     """Simulation repeats against the same reference, executed with experiment ``seed + repeat``."""
 
-    def normalized(self):
+    def normalized(self) -> Experiment:
         reference = np.array(self.reference, dtype=np.float64)
         if reference.ndim != 2 or not reference.size:
             raise ValueError("reference must be a nonempty [time, channel] array")
@@ -73,21 +77,27 @@ class Experiment:
 class Evidence:
     """``Evidence`` groups experiments into training and validation data and records their sources."""
 
-    def __init__(self, train_data, validation_data=(), *, sources=None):
+    def __init__(
+        self,
+        train_data: Iterable[Experiment],
+        validation_data: Iterable[Experiment] = (),
+        *,
+        sources: Mapping[str, Any] | None = None,
+    ) -> None:
         """Initialize the evidence.
 
         Args:
-            train_data: Experiment sequence. At least one experiment for analysis and search.
+            train_data: At least one experiment for analysis and search.
             validation_data: Held-out experiments for individual evaluation after freezing
                 the candidate. Defaults to ``()``.
-            sources: Provenance dictionary for data versions, processing protocols, and
+            sources: Provenance for data versions, processing protocols, and
                 measurement sources, included in the fingerprint. Defaults to ``None``.
         """
         self.train_data = tuple(train_data)
         self.validation_data = tuple(validation_data)
         self.sources = dict(sources or {})
 
-    def prepare(self):
+    def prepare(self) -> None:
         """``Evidence.prepare()`` normalizes inputs, checks shapes, finiteness, IDs, and groups,
         then creates ``evidence_id``.
 
@@ -106,5 +116,5 @@ class Evidence:
             raise ValueError("acquisition group leakage between train and validation")
         self.evidence_id = self.fingerprint()
 
-    def fingerprint(self):
+    def fingerprint(self) -> str:
         return identity({"train": self.train_data, "validation": self.validation_data, "sources": self.sources})

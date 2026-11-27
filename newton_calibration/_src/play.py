@@ -3,11 +3,19 @@
 
 """Read-only GL comparison and portable USDA point animation."""
 
+from __future__ import annotations
+
 import json
+import os
+from collections.abc import Iterable, Mapping, Sequence
 from itertools import pairwise
 from pathlib import Path
+from typing import Any
 
 import numpy as np
+
+from .data import Episode
+from .evidence import Experiment
 
 
 class Play:
@@ -15,7 +23,14 @@ class Play:
     trajectories by ``(experiment_id, repeat)``. The default comparison contains
     ``baseline`` and ``calibrated`` tracks and an acceptance flag."""
 
-    def compare(self, baseline, calibrated, references=None, *, accepted=False):
+    def compare(
+        self,
+        baseline: Iterable[Episode],
+        calibrated: Iterable[Episode],
+        references: Sequence[Experiment] | None = None,
+        *,
+        accepted: bool = False,
+    ) -> dict[str, Any]:
         """Accept two episode sequences and return ``accepted`` and ``tracks``. Matched traces
         require positions on both sides and exactly equal time axes.
 
@@ -54,7 +69,7 @@ class Play:
                 )
         return {"accepted": accepted, "tracks": tracks}
 
-    def export_usd(self, comparison, output_path):
+    def export_usd(self, comparison: Mapping[str, Any], output_path: str | os.PathLike[str]) -> Path:
         """Write USDA point animation and return its path, with second-based time codes,
         meters, and Z-up."""
         tracks = comparison["tracks"]
@@ -104,7 +119,14 @@ class Play:
         path.write_text("\n".join(lines) + "\n", encoding="utf-8")
         return path
 
-    def show_gl(self, comparison, *, max_frames=None, screenshot=None, headless=False):
+    def show_gl(
+        self,
+        comparison: Mapping[str, Any],
+        *,
+        max_frames: int | None = None,
+        screenshot: str | os.PathLike[str] | None = None,
+        headless: bool = False,
+    ) -> None:
         """Project xyz onto xy. Rendering never advances the simulation.
 
         Use Pyglet from the ``gl`` extra to project xyz onto xy, optionally limit frames and
@@ -130,7 +152,7 @@ class Play:
         elapsed = 0.0
 
         @window.event
-        def on_draw():
+        def on_draw() -> None:
             window.clear()
             batch = pyglet.graphics.Batch()
             objects = []
@@ -173,7 +195,7 @@ class Play:
             )
             batch.draw()
 
-        def update(dt):
+        def update(dt: float) -> None:
             nonlocal frame, elapsed
             frame += 1
             elapsed = (elapsed + dt) % duration if duration > 0 else 0.0

@@ -6,21 +6,35 @@
 from __future__ import annotations
 
 import importlib.metadata
+import os
 import platform
 import shutil
 import time
+from collections.abc import Mapping, Sequence
 from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 from uuid import uuid4
 
 import numpy as np
+from numpy.typing import ArrayLike
 
-from .data import BatchResult, RunState, TrialBatch, TuningResult, identity, plain, write_json
+from .asset import Asset
+from .data import BatchResult, Episode, RunState, TrialBatch, TuningResult, identity, plain, write_json
+from .decision import Decision
+from .evaluator import Evaluator
+from .evidence import Evidence, Experiment
+from .optimizer import Optimizer
+from .parameters import Parameters
+from .play import Play
+from .rollout import Rollout
+from .template import Template
+from .validator import Validator
 
 
 class WorkStopped(Exception):
-    def __init__(self, reason):
+    def __init__(self, reason: str) -> None:
         super().__init__(reason)
         self.reason = reason
 
@@ -33,22 +47,22 @@ class Tuning:
     def __init__(
         self,
         *,
-        evidence,
-        asset,
-        evaluator,
-        parameters,
-        rollout,
-        optimizer,
-        decision,
-        validator,
-        template,
-        play,
-        workspace="workspace",
-        analysis_step=0.03,
-        rank_tolerance=1e-3,
-        allow_rank_reduction=False,
-        orthogonalize=True,
-    ):
+        evidence: Evidence,
+        asset: Asset,
+        evaluator: Evaluator,
+        parameters: Parameters,
+        rollout: Rollout,
+        optimizer: Optimizer,
+        decision: Decision,
+        validator: Validator,
+        template: Template,
+        play: Play,
+        workspace: str | os.PathLike[str] = "workspace",
+        analysis_step: float = 0.03,
+        rank_tolerance: float = 1e-3,
+        allow_rank_reduction: bool = False,
+        orthogonalize: bool = True,
+    ) -> None:
         """Initialize the run.
 
         Args:
@@ -82,19 +96,26 @@ class Tuning:
         self.orthogonalize = orthogonalize
         self.state = RunState()
         self._started = False
-        self._clock = None
+        self._clock: float | None = None
         self._counter = 0
-        self._baseline = None
-        self._best = None
-        self.comparison = None
-        self._parameter_lock = None
-        self._replayed_episodes = []
+        self._baseline: BatchResult | None = None
+        self._best: tuple[BatchResult, int] | None = None
+        self.comparison: dict[str, Any] | None = None
+        self._parameter_lock: str | None = None
+        self._replayed_episodes: list[Episode] = []
 
-    def _save(self):
+    def _save(self) -> None:
         self.state.elapsed_s = time.monotonic() - self._clock
         write_json(self.run_directory / "run_state.json", self.state)
 
-    def _authorize(self, purpose, count, experiments, *, minimum_batch=None):
+    def _authorize(
+        self,
+        purpose: str,
+        count: int,
+        experiments: Sequence[Experiment | None],
+        *,
+        minimum_batch: int | None = None,
+    ) -> int:
         self.state.elapsed_s = time.monotonic() - self._clock
         self.state.phase = purpose
         request = {
@@ -119,7 +140,7 @@ class Tuning:
             raise ValueError("Decision returned an invalid work authorization")
         return action.batch_size
 
-    def _check_locked(self):
+    def _check_locked(self) -> None:
         if self.template.template_id != self.state.identity["template"]:
             raise RuntimeError("template changed during run")
         if self.evidence.fingerprint() != self.state.identity["evidence"]:
@@ -131,11 +152,27 @@ class Tuning:
         if self._parameter_lock and self.parameters.parameter_space_id != self._parameter_lock:
             raise RuntimeError("parameter space changed during run")
 
-    def evaluate_batch(self, trials, experiments, purpose, *, asset=None, template=None):
+    def evaluate_batch(
+        self,
+        trials: TrialBatch,
+        experiments: Sequence[Experiment],
+        purpose: str,
+        *,
+        asset: Asset | None = None,
+        template: Template | None = None,
+    ) -> BatchResult:
         self._authorize(purpose, len(trials.trial_ids), experiments)
         return self._execute(trials, experiments, purpose, asset=asset, template=template)
 
-    def _execute(self, trials, experiments, purpose, *, asset=None, template=None):
+    def _execute(
+        self,
+        trials: TrialBatch,
+        experiments: Sequence[Experiment],
+        purpose: str,
+        *,
+        asset: Asset | None = None,
+        template: Template | None = None,
+    ) -> BatchResult:
         self._check_locked()
         asset, template = asset or self.asset, template or self.template
         if (
@@ -213,11 +250,11 @@ class Tuning:
             raise RuntimeError("; ".join(infrastructure))
         return result
 
-    def _physical_trials(self, values, prefix):
+    def _physical_trials(self, values: ArrayLike, prefix: str) -> TrialBatch:
         rows = np.atleast_2d(np.asarray(values, dtype=np.float64))
         return TrialBatch(tuple(f"{prefix}-{i}" for i in range(len(rows))), self.parameters.encode(rows))
 
-    def prepare(self):
+    def prepare(self) -> None:
         if self._started:
             raise RuntimeError("each Tuning object runs once; construct another for a new run")
         self.workspace.mkdir(parents=True, exist_ok=True)
@@ -349,7 +386,7 @@ class Tuning:
             raise ValueError(f"{self.template.qualification_mode} difference exceeds tolerance")
         self._save()
 
-    def sensitivity(self):
+    def sensitivity(self) -> dict[str, Any]:
         self._check_locked()
         p = len(self.parameters.names)
         anchors = [
@@ -390,7 +427,7 @@ class Tuning:
         self._save()
         return report
 
-    def identifiability(self, sensitivity_report):
+    def identifiability(self, sensitivity_report: Mapping[str, Any]) -> dict[str, Any]:
         j = sensitivity_report["jacobian"]
         _, singular_values, vh = np.linalg.svd(j, full_matrices=False)
         threshold = max(float(singular_values[0]) * self.rank_tolerance, 1e-10)
@@ -431,7 +468,7 @@ class Tuning:
         self._save()
         return report
 
-    def _failure(self, error):
+    def _failure(self, error: BaseException) -> str:
         self.state.fatal_error = f"{type(error).__name__}: {error}"
         self.state.errors.append(self.state.fatal_error)
         if self._clock is None:
@@ -442,7 +479,7 @@ class Tuning:
             return stop.reason
         raise RuntimeError("Decision must stop when fatal_error is set")
 
-    def _finish(self):
+    def _finish(self) -> tuple[str, Path | None]:
         candidate = self.state.best_candidate
         if self.state.analysis_reports.get("numerical", {}).get("passed") is False:
             return "rejected_numerics", None
@@ -465,12 +502,12 @@ class Tuning:
             "validation",
         )
 
-        def evaluate(reloaded, experiments):
+        def evaluate(reloaded: Asset, experiments: Sequence[Experiment]) -> BatchResult:
             if reloaded is not loaded:
                 raise ValueError("validator cannot substitute an unfrozen candidate")
             return self.evaluate_batch(trials, experiments, "validation", asset=loaded)
 
-        def evaluate_training(reloaded, experiments):
+        def evaluate_training(reloaded: Asset, experiments: Sequence[Experiment]) -> BatchResult:
             if reloaded is not loaded:
                 raise ValueError("training retest must use the reloaded candidate")
             replay = self.evaluate_batch(trials, experiments, "training_retest", asset=loaded)
@@ -542,7 +579,7 @@ class Tuning:
             self.state.artifact_refs["released_asset"] = str(published)
         return acceptance, published
 
-    def run(self):
+    def run(self) -> TuningResult:
         """Start with ``result = tuning.run()``. Calling ``prepare()``, ``sensitivity()``,
         ``identifiability(report)``, and ``evaluate_batch(...)`` manually requires following
         the lifecycle, freezing, and budget protocols. Let ``run()`` manage those steps, using

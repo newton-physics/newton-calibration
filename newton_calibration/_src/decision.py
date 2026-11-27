@@ -3,8 +3,12 @@
 
 """The sole authority for stopping or authorizing work."""
 
+from __future__ import annotations
+
 import math
+from collections.abc import Mapping
 from dataclasses import dataclass
+from typing import Any
 
 from .data import DecisionResult
 
@@ -35,7 +39,7 @@ class Decision:
     improvement_tolerance: float = 1e-10
     """Threshold for old best objective minus new best objective when patience is enabled."""
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if (
             min(self.max_trials, self.max_rollouts, self.max_generations) < 1
             or not math.isfinite(self.max_seconds)
@@ -46,7 +50,7 @@ class Decision:
         ):
             raise ValueError("invalid decision policy")
 
-    def next_action(self, state, request):
+    def next_action(self, state: Mapping[str, Any], request: Mapping[str, Any]) -> DecisionResult:
         """``next_action(state, request)`` receives a read-only state snapshot and work
         request, then returns ``action="continue"`` or ``"stop"``. Its ``reason`` enters
         decision history."""

@@ -39,6 +39,17 @@ Issues = "https://github.com/newton-physics/newton-calibration/issues"
 [project.scripts]
 newton-calibration = "newton_calibration.__main__:main"
 
+[tool.basedpyright]
+reportUnknownVariableType = false
+reportUnknownArgumentType = false
+reportAny = false
+reportExplicitAny = false
+reportUnannotatedClassAttribute = false
+reportUnknownMemberType = false
+reportUnknownParameterType = false
+reportOptionalOperand = false
+reportUnusedCallResult = false
+
 [tool.setuptools.packages.find]
 include = ["newton_calibration*"]
 exclude = ["newton_calibration.tests*"]

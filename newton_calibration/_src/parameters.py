@@ -3,10 +3,15 @@
 
 """Parameter encoding and feasible combinations; analysis belongs to Tuning."""
 
+from __future__ import annotations
+
 import math
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
+from numpy.typing import ArrayLike
 
 from .data import identity
 
@@ -26,7 +31,7 @@ class Parameter:
     transform: str = "linear"
     """``"linear"`` or ``"log"``. Logarithmic normalization requires a positive lower bound."""
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         lo, hi = self.bounds
         if (
             not self.name
@@ -51,11 +56,11 @@ class Parameters:
     for another run.
     """
 
-    def __init__(self, definitions):
+    def __init__(self, definitions: Sequence[Parameter]) -> None:
         """Initialize the parameters.
 
         Args:
-            definitions: Nonempty ``Parameter`` sequence whose order defines physical-vector columns.
+            definitions: Nonempty. Their order defines the physical-vector columns.
         """
         self.definitions = tuple(definitions)
         self.names = tuple(x.name for x in self.definitions)
@@ -70,22 +75,22 @@ class Parameters:
         self._frozen = False
         self.set_mapping(np.zeros(len(self.names)), np.eye(len(self.names)))
 
-    def __setattr__(self, name, value):
+    def __setattr__(self, name: str, value: Any) -> None:
         if getattr(self, "_frozen", False):
             raise AttributeError("Parameters is frozen; create a new parameter space")
         object.__setattr__(self, name, value)
 
     @property
-    def bounds(self):
+    def bounds(self) -> np.ndarray:
         """``[P,2]`` bounds."""
         return self._bounds.copy()
 
     @property
-    def baseline(self):
+    def baseline(self) -> np.ndarray:
         """``[P]`` baseline."""
         return self._baseline.copy()
 
-    def to_normalized(self, values):
+    def to_normalized(self, values: ArrayLike) -> np.ndarray:
         """Convert physical values to per-parameter ``[0,1]`` coordinates."""
         values = np.array(values, dtype=np.float64)
         if values.shape[-1] != len(self.names):
@@ -93,14 +98,14 @@ class Parameters:
         values[..., self._log] = np.log(values[..., self._log])
         return (values - self._limits[:, 0]) / (self._limits[:, 1] - self._limits[:, 0])
 
-    def from_normalized(self, values):
+    def from_normalized(self, values: ArrayLike) -> np.ndarray:
         """Convert per-parameter ``[0,1]`` coordinates to physical values."""
         values = np.asarray(values, dtype=np.float64)
         physical = values * (self._limits[:, 1] - self._limits[:, 0]) + self._limits[:, 0]
         physical[..., self._log] = np.exp(physical[..., self._log])
         return physical
 
-    def set_mapping(self, origin, basis):
+    def set_mapping(self, origin: ArrayLike, basis: ArrayLike) -> None:
         if self._frozen:
             raise RuntimeError("parameter mapping is frozen")
         p = len(self.names)
@@ -122,10 +127,10 @@ class Parameters:
         self._high = np.maximum(-origin[:, None] * basis, (1 - origin[:, None]) * basis).sum(axis=0)
 
     @property
-    def dimension(self):
+    def dimension(self) -> int:
         return self._basis.shape[1]
 
-    def snapshot(self):
+    def snapshot(self) -> dict[str, Any]:
         """Record definitions and combination mapping."""
         return {
             "definitions": self.definitions,
@@ -136,14 +141,14 @@ class Parameters:
         }
 
     @property
-    def parameter_space_id(self):
+    def parameter_space_id(self) -> str:
         """Identity of the definitions and combination mapping."""
         return identity(self.snapshot())
 
-    def freeze(self):
+    def freeze(self) -> None:
         self._frozen = True
 
-    def encode(self, values):
+    def encode(self, values: ArrayLike) -> np.ndarray:
         """Convert physical values to the current combination search space, whose size is
         ``dimension``."""
         x = self.to_normalized(values) - self._origin
@@ -152,7 +157,7 @@ class Parameters:
             raise ValueError("physical parameters are outside the selected subspace")
         return (z - self._low) / (self._high - self._low)
 
-    def decode(self, values):
+    def decode(self, values: ArrayLike) -> np.ndarray:
         """Convert values in the current combination search space, whose size is
         ``dimension``, to physical values."""
         values = np.asarray(values, dtype=np.float64)
@@ -161,8 +166,9 @@ class Parameters:
         z = self._low + values * (self._high - self._low)
         return self.from_normalized(self._origin + z @ self._basis.T)
 
-    def check_bounds(self, values):
-        """Boolean validity of each physical row against finiteness and bounds."""
+    def check_bounds(self, values: ArrayLike) -> np.ndarray:
+        """Boolean validity of each physical row against finiteness and bounds.
+        A single 1-D row gives a NumPy boolean scalar."""
         values = np.asarray(values, dtype=np.float64)
         return (
             np.isfinite(values).all(axis=-1)
@@ -170,6 +176,6 @@ class Parameters:
             & (values <= self.bounds[:, 1] + 1e-12).all(axis=-1)
         )
 
-    def as_dict(self, row):
+    def as_dict(self, row: Iterable[float]) -> dict[str, float]:
         """Map one physical row to names, commonly for constructing the asset baseline."""
         return dict(zip(self.names, map(float, row), strict=True))

@@ -3,12 +3,17 @@
 
 """Environment batches: one BatchEnvironment per experiment, or threaded per-episode instances."""
 
+from __future__ import annotations
+
 import math
 import time
+from collections.abc import Iterable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 
-from .asset import SimulationError
+from .asset import Asset, BatchEnvironment, Environment, SimulationError
 from .data import Episode, Trace
+from .evidence import Experiment
+from .template import Template
 
 
 class Rollout:
@@ -30,13 +35,20 @@ class Rollout:
     together.
     """
 
-    def __init__(self, capacity=1, *, worlds=None, parameter_rtol=1e-10, parameter_atol=1e-12):
+    def __init__(
+        self,
+        capacity: int = 1,
+        *,
+        worlds: int | None = None,
+        parameter_rtol: float = 1e-10,
+        parameter_atol: float = 1e-12,
+    ) -> None:
         """Initialize the rollout.
 
         Args:
             capacity: Positive capacity, limiting worker threads for ordinary independent
                 environments. Defaults to ``1``.
-            worlds: ``None`` or a positive integer limiting candidates per batch environment.
+            worlds: Positive limit on candidates per batch environment.
                 ``None`` puts the current batch's valid candidates in one environment.
                 Defaults to ``None``.
             parameter_rtol: Readback relative tolerance, default ``1e-10``.
@@ -51,9 +63,17 @@ class Rollout:
         self.parameter_rtol, self.parameter_atol = parameter_rtol, parameter_atol
         self.capacity = capacity
         self.worlds = worlds
-        self._pool = None
+        self._pool: ThreadPoolExecutor | None = None
 
-    def execute_batch(self, template, asset, trials, experiments, *, deadline=None):
+    def execute_batch(
+        self,
+        template: Template,
+        asset: Asset,
+        trials: Iterable[tuple[str, Mapping[str, float] | None]],
+        experiments: Iterable[Experiment],
+        *,
+        deadline: float | None = None,
+    ) -> tuple[Episode, ...]:
         """For direct ``execute_batch()`` calls, supply ``trials`` as
         ``(trial_id, physical_parameter_dict)`` pairs, prepared ``experiments``, and a frozen
         ``template``. In a complete run, ``Tuning`` decodes candidates and calls the method.
@@ -63,7 +83,7 @@ class Rollout:
             return self._execute_batched(template, asset, tuple(trials), experiments, deadline)
         return self._execute_threaded(template, asset, trials, experiments, deadline)
 
-    def _check_readback(self, template, values, applied):
+    def _check_readback(self, template: Template, values: Mapping[str, float], applied: Mapping[str, float]) -> None:
         expected = {**dict(template.fixed_parameters), **values}
         if expected.keys() != applied.keys() or any(
             not math.isclose(
@@ -76,11 +96,18 @@ class Rollout:
         ):
             raise RuntimeError("parameter readback does not match requested values")
 
-    def _execute_batched(self, template, asset, trials, experiments, deadline):
-        by_key = {}
+    def _execute_batched(
+        self,
+        template: Template,
+        asset: Asset,
+        trials: Sequence[tuple[str, Mapping[str, float] | None]],
+        experiments: Sequence[Experiment],
+        deadline: float | None,
+    ) -> tuple[Episode, ...]:
+        by_key: dict[tuple[str, str, int], Episode] = {}
         for exp in experiments:
             for repeat in range(exp.repeats):
-                live = []
+                live: list[tuple[Episode, Mapping[str, float]]] = []
                 for trial_id, values in trials:
                     episode = Episode(trial_id, exp.id, repeat, "completed")
                     by_key[episode.key] = episode
@@ -98,8 +125,16 @@ class Rollout:
             for repeat in range(exp.repeats)
         )
 
-    def _run_chunk(self, template, asset, exp, repeat, chunk, deadline):
-        environment = None
+    def _run_chunk(
+        self,
+        template: Template,
+        asset: Asset,
+        exp: Experiment,
+        repeat: int,
+        chunk: Sequence[tuple[Episode, Mapping[str, float]]],
+        deadline: float | None,
+    ) -> None:
+        environment: BatchEnvironment | None = None
         try:
             if deadline is not None and time.monotonic() >= deadline:
                 raise TimeoutError("rollout deadline reached")
@@ -142,7 +177,14 @@ class Rollout:
                     for episode, _ in chunk:
                         episode.status, episode.error = "execution_error", f"close: {error}"
 
-    def _execute_threaded(self, template, asset, trials, experiments, deadline):
+    def _execute_threaded(
+        self,
+        template: Template,
+        asset: Asset,
+        trials: Iterable[tuple[str, Mapping[str, float] | None]],
+        experiments: Sequence[Experiment],
+        deadline: float | None,
+    ) -> tuple[Episode, ...]:
         if self._pool is None:
             self._pool = ThreadPoolExecutor(max_workers=self.capacity)
         requests = [
@@ -152,13 +194,13 @@ class Rollout:
             for repeat in range(exp.repeats)
         ]
 
-        def execute(request):
+        def execute(request: tuple[str, Mapping[str, float] | None, Experiment, int]) -> Episode:
             trial_id, values, exp, repeat = request
             episode = Episode(trial_id, exp.id, repeat, "completed")
             if values is None:
                 episode.status = "invalid_parameters"
                 return episode
-            environment = None
+            environment: Environment | None = None
             try:
                 if deadline is not None and time.monotonic() >= deadline:
                     raise TimeoutError("rollout deadline reached")
@@ -187,7 +229,7 @@ class Rollout:
 
         return tuple(self._pool.map(execute, requests))
 
-    def close(self):
+    def close(self) -> None:
         if self._pool is not None:
             self._pool.shutdown(wait=True, cancel_futures=True)
             self._pool = None

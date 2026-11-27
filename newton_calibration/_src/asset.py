@@ -3,13 +3,22 @@
 
 """Assets own physical bindings; a reloaded candidate constructs fresh environments."""
 
+from __future__ import annotations
+
 import copy
 import json
+import os
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
+from typing import TYPE_CHECKING, Any, Self
 
-from .data import identity, immutable, plain, write_json
+import numpy as np
+
+from .data import Trace, identity, immutable, plain, write_json
+
+if TYPE_CHECKING:
+    from .template import Template
 
 
 class SimulationError(RuntimeError):
@@ -26,7 +35,7 @@ class Environment(ABC):
     parameter keys."""
 
     @abstractmethod
-    def run(self, times, *, seed, deadline):
+    def run(self, times: np.ndarray, *, seed: int, deadline: float | None) -> Trace:
         """Return a Trace at requested observation times; obey the monotonic deadline.
 
         ``run()`` samples at the requested ``times``. ``seed`` applies to the current repeat.
@@ -39,7 +48,7 @@ class Environment(ABC):
         or numerical issue.
         """
 
-    def close(self):  # noqa: B027
+    def close(self) -> None:  # noqa: B027
         """``close()`` releases environment resources. ``Rollout`` calls it after execution."""
 
 
@@ -55,7 +64,7 @@ class BatchEnvironment(ABC):
     applied_parameters: Sequence[dict[str, float]]
 
     @abstractmethod
-    def run(self, times, *, seed, deadline):
+    def run(self, times: np.ndarray, *, seed: int, deadline: float | None) -> Sequence[Trace | SimulationError]:
         """Return one Trace per member at the requested times, in member order.
 
         A member that fails physically returns a SimulationError in its slot; the
@@ -66,7 +75,7 @@ class BatchEnvironment(ABC):
         batch call affects the entire current chunk.
         """
 
-    def close(self):
+    def close(self) -> None:
         return None
 
 
@@ -79,7 +88,7 @@ class Asset(ABC):
     implement their abstract methods.
     """
 
-    def __init__(self, baseline_parameters, *, config=None):
+    def __init__(self, baseline_parameters: Mapping[str, float], *, config: Mapping[str, Any] | None = None) -> None:
         """Initialize the asset.
 
         Args:
@@ -92,12 +101,12 @@ class Asset(ABC):
         self.baseline_parameters = immutable(dict(baseline_parameters))
         self.config = immutable(dict(config or {}))
 
-    def load_or_create(self):
+    def load_or_create(self) -> Asset:
         """Return the asset to calibrate. ``Tuning`` calls it at the start of a run. The
         default returns this asset."""
         return self
 
-    def snapshot(self):
+    def snapshot(self) -> dict[str, Any]:
         """Return the asset type, baseline parameters, and ``config`` as a record."""
         return {
             "type": f"{type(self).__module__}.{type(self).__qualname__}",
@@ -106,12 +115,14 @@ class Asset(ABC):
         }
 
     @property
-    def asset_id(self):
+    def asset_id(self) -> str:
         """Identity of ``snapshot()``."""
         return identity(self.snapshot())
 
     @abstractmethod
-    def create_environment(self, template, parameter_values, experiment_settings):
+    def create_environment(
+        self, template: Template, parameter_values: Mapping[str, float], experiment_settings: Mapping[str, Any]
+    ) -> Environment:
         """One fresh environment, with the applied parameter values available for readback.
 
         ``create_environment()`` receives merged fixed and candidate parameters, constructs
@@ -119,7 +130,12 @@ class Asset(ABC):
         initial conditions.
         """
 
-    def create_batch_environment(self, template, parameter_values, experiment_settings):
+    def create_batch_environment(
+        self,
+        template: Template,
+        parameter_values: Sequence[Mapping[str, float]],
+        experiment_settings: Mapping[str, Any],
+    ) -> BatchEnvironment:
         """One fresh BatchEnvironment for a sequence of parameter mappings.
 
         Rollout uses this when the asset overrides it; otherwise it creates one
@@ -132,10 +148,10 @@ class Asset(ABC):
         raise NotImplementedError
 
     @property
-    def supports_batch(self):
+    def supports_batch(self) -> bool:
         return type(self).create_batch_environment is not Asset.create_batch_environment
 
-    def export(self, parameter_values, path):
+    def export(self, parameter_values: Mapping[str, float], path: str | os.PathLike[str]) -> Path:
         """Default export writes ``newton-calibration-asset/1`` JSON with the asset type,
         candidate parameters, and construction configuration."""
         path = Path(path)
@@ -150,7 +166,7 @@ class Asset(ABC):
         )
         return path
 
-    def reload(self, path):
+    def reload(self, path: str | os.PathLike[str]) -> Self:
         """Calling ``reload(path)`` on the original asset returns an instance of the same type
         with the candidate baseline. Its ``create_environment()`` must still construct fresh
         mutable state. Subclasses that cache mutable models must handle rebuilding and
