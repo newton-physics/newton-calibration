@@ -125,5 +125,42 @@ take about 2 GB per batch.
 - Only scalar (one-coordinate, one-DOF) joints and position-target PD drives are supported.
 - Replay starts from the measured joint positions with zero velocity.
 - Held-out recordings come from the same dataset revision and robot; their acquisition
+### Several parameter sets can fit equally well
+
+Expect the fit to be non-unique. Several combinations of gains, friction and armature can
+reproduce a joint's recorded motion with almost the same loss. For example, PD stiffness
+and damping trade off against viscous friction, and so do dry friction and a stiffer drive.
+On this example, changing only the search seed, the starting point or the bounds can yield a
+solution with a similar loss whose parameter values are completely different. Widening a
+bound that a parameter had reached does not necessarily move that parameter further: the
+search can settle elsewhere with no parameter near its limits. The identifiability check
+does not detect this. It analyzes the response around three anchors and cannot see
+separate minima elsewhere in the bounds.
+
+Before using the parameters, check whether the result is unique:
+
+1. Repeat the run with a different `search.seed` in a fresh workspace, and once with
+   different baselines or a larger `search.sigma`.
+2. Compare the calibrated values in each run's `candidate_asset.usda` with the
+   training and held-out scores. If the scores agree but the parameters do not, the
+   recordings do not determine those parameters. They determine only the joint
+   behavior that every solution reproduces.
+3. Do not report a parameter as a physical motor constant unless it agrees across runs.
+
+If the parameters disagree, use one of the following:
+
+- Add recordings that separate the effects. For example, slow constant-velocity
+  segments isolate friction, holds under load isolate stiffness, and fast reversals or
+  chirps isolate armature and damping. Each recording should be its own acquisition
+  group.
+- Fix quantities that are known independently, such as datasheet armature or a
+  measured friction, with equal bounds. Narrow the other bounds only with a physical
+  justification.
+- When the simulation only needs to reproduce joint behavior, accept any validated
+  solution. In that case, treat the individual values as an equivalent model rather than
+  measured properties.
+
   sessions are not documented beyond the file names, so each file is treated as its own
   acquisition group.
+- A single run returns one of possibly several equally good parameter sets; see
+  [Several parameter sets can fit equally well](#several-parameter-sets-can-fit-equally-well).
