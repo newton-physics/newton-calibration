@@ -46,6 +46,19 @@ Numerical qualification uses a pointwise tolerance in radians,
 `pointwise_precision_tolerance_rad`, converted to Evaluator feature units as
 `tolerance / sqrt(N · J)` for N scored training samples and J joints.
 
+### Configuration file
+
+A configuration is a JSON file in the `actuator-calibration/1` format, defined by the
+pydantic models in [schema.py](schema.py). Loading rejects unknown keys, missing
+quantities, out-of-range values and inconsistent rates, and each error names the path of
+the offending field, for example `joint_groups.0.parameters.armature.bounds`.
+[actuator-calibration.schema.json](actuator-calibration.schema.json) is generated from the
+models. Point a configuration's `$schema` key at it, as
+[configs/so101.json](configs/so101.json) does, so that editors can validate and complete the
+file. After changing a model, regenerate the schema file with
+`python -m examples.actuator_calibration.schema`. A test fails when the committed file is
+out of date.
+
 ## 3. Data and asset
 
 [configs/so101.json](configs/so101.json) uses the `nvidia/Anchor-Lab` Hugging Face dataset
@@ -81,7 +94,8 @@ with the asset.
 
 ## 4. Install
 
-The CPU tests for configuration and data handling need the `actuator` extra:
+The CPU tests for configuration and data handling need the `actuator` extra. It includes
+pydantic for configuration validation:
 
 ```bash
 python -m pip install -e ".[cma,actuator,dev]"
@@ -111,20 +125,6 @@ With 30 free parameters the identifiability check can find a rank-deficient loca
 response and stop the run as `inconclusive`. Reduce or fix parameters, or set
 `analysis.allow_rank_reduction`, as an explicit configuration decision.
 
-Batch files keep candidate values, scores and statuses but not trajectories
-(`record_traces` is false in the configuration), and the sensitivity Jacobians are
-stored in `analysis/sensitivity.npz`. Full trajectory records for these recordings
-take about 2 GB per batch.
-
-## 6. Limitations
-
-- No calibration result is archived for this example, and the acceptance thresholds in
-  the configuration are declared before any run, not derived from one.
-- The Newton population and the USD export/reload round trip are not exercised by
-  CPU CI; they require Newton and a simulation device.
-- Only scalar (one-coordinate, one-DOF) joints and position-target PD drives are supported.
-- Replay starts from the measured joint positions with zero velocity.
-- Held-out recordings come from the same dataset revision and robot; their acquisition
 ### Several parameter sets can fit equally well
 
 Expect the fit to be non-unique. Several combinations of gains, friction and armature can
@@ -160,7 +160,21 @@ If the parameters disagree, use one of the following:
   solution. In that case, treat the individual values as an equivalent model rather than
   measured properties.
 
-  sessions are not documented beyond the file names, so each file is treated as its own
-  acquisition group.
+Batch files keep candidate values, scores and statuses but not trajectories
+(`record_traces` is false in the configuration), and the sensitivity Jacobians are
+stored in `analysis/sensitivity.npz`. Full trajectory records for these recordings
+take about 2 GB per batch.
+
+## 6. Limitations
+
+- No calibration result is archived for this example, and the acceptance thresholds in
+  the configuration are declared before any run, not derived from one.
+- The Newton population and the USD export/reload round trip are not exercised by
+  CPU CI; they require Newton and a simulation device.
+- Only scalar (one-coordinate, one-DOF) joints and position-target PD drives are supported.
+- Replay starts from the measured joint positions with zero velocity.
 - A single run returns one of possibly several equally good parameter sets; see
   [Several parameter sets can fit equally well](#several-parameter-sets-can-fit-equally-well).
+- Held-out recordings come from the same dataset revision and robot; their acquisition
+  sessions are not documented beyond the file names, so each file is treated as its own
+  acquisition group.

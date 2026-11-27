@@ -1,0 +1,683 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "AcceptanceConfig": {
+      "additionalProperties": false,
+      "description": "Per-recording thresholds for the training retest and held-out recordings.",
+      "properties": {
+        "max_objective_rad2": {
+          "description": "Maximum position MSE [rad²].",
+          "exclusiveMinimum": 0,
+          "title": "Max Objective Rad2",
+          "type": "number"
+        },
+        "max_error_rad": {
+          "description": "Maximum absolute position error [rad].",
+          "exclusiveMinimum": 0,
+          "title": "Max Error Rad",
+          "type": "number"
+        }
+      },
+      "required": [
+        "max_objective_rad2",
+        "max_error_rad"
+      ],
+      "title": "AcceptanceConfig",
+      "type": "object"
+    },
+    "AnalysisConfig": {
+      "additionalProperties": false,
+      "description": "Identifiability decisions.",
+      "properties": {
+        "allow_rank_reduction": {
+          "description": "Search a reduced subspace instead of stopping as inconclusive on rank deficiency.",
+          "title": "Allow Rank Reduction",
+          "type": "boolean"
+        },
+        "orthogonalize": {
+          "default": true,
+          "description": "Search orthogonalized combinations instead of normalized parameters.",
+          "title": "Orthogonalize",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "allow_rank_reduction"
+      ],
+      "title": "AnalysisConfig",
+      "type": "object"
+    },
+    "AssetConfig": {
+      "additionalProperties": false,
+      "description": "The robot USD.",
+      "properties": {
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "USD path relative to the dataset root; omit when ``--usd`` always supplies the file.",
+          "title": "Path"
+        },
+        "usd_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Required sha256 of the USD; omit to record the hash of whichever file is used.",
+          "title": "Usd Sha256"
+        },
+        "provenance": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Where the asset comes from.",
+          "title": "Provenance"
+        },
+        "fixed_base": {
+          "default": true,
+          "description": "Attach the articulation root to the world.",
+          "title": "Fixed Base",
+          "type": "boolean"
+        }
+      },
+      "title": "AssetConfig",
+      "type": "object"
+    },
+    "DatasetConfig": {
+      "additionalProperties": false,
+      "description": "Recordings and how they are resampled.",
+      "properties": {
+        "provider": {
+          "anyOf": [
+            {
+              "const": "huggingface",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Remote dataset provider; without one, pass ``--data-root``.",
+          "title": "Provider"
+        },
+        "repo_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Hugging Face dataset repository.",
+          "title": "Repo Id"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Pinned dataset revision.",
+          "title": "Revision"
+        },
+        "dt": {
+          "description": "Resampling interval [s].",
+          "exclusiveMinimum": 0,
+          "title": "Dt",
+          "type": "number"
+        },
+        "buffer_time": {
+          "default": 0.0,
+          "description": "Unscored settling time at the start of each recording [s].",
+          "minimum": 0,
+          "title": "Buffer Time",
+          "type": "number"
+        },
+        "joint_name_mapping": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Recording joint name to USD joint name.",
+          "title": "Joint Name Mapping"
+        },
+        "train": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "pattern": "^[0-9a-f]{64}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": "object"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "Search recordings: ``{path: sha256 or null}`` or a list of paths, relative to the dataset root.",
+          "title": "Train"
+        },
+        "validation": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "pattern": "^[0-9a-f]{64}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": "object"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "Held-out recordings, in the same form as ``train``.",
+          "title": "Validation"
+        }
+      },
+      "required": [
+        "dt",
+        "train",
+        "validation"
+      ],
+      "title": "DatasetConfig",
+      "type": "object"
+    },
+    "JointGroup": {
+      "additionalProperties": false,
+      "description": "Joints that share bounds, baselines and fixed controller settings.\n\nEvery joint still receives its own parameters.",
+      "properties": {
+        "names": {
+          "description": "USD joint names.",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Names",
+          "type": "array"
+        },
+        "delay_ms": {
+          "default": 0.0,
+          "description": "Command delay [ms], rounded to whole control steps.",
+          "minimum": 0,
+          "title": "Delay Ms",
+          "type": "number"
+        },
+        "effort_limit": {
+          "description": "Fixed drive effort clamp [N m or N].",
+          "exclusiveMinimum": 0,
+          "title": "Effort Limit",
+          "type": "number"
+        },
+        "velocity_limit": {
+          "description": "Fixed joint velocity clamp [rad/s or m/s].",
+          "exclusiveMinimum": 0,
+          "title": "Velocity Limit",
+          "type": "number"
+        },
+        "parameters": {
+          "$ref": "#/$defs/JointParameters"
+        }
+      },
+      "required": [
+        "names",
+        "effort_limit",
+        "velocity_limit",
+        "parameters"
+      ],
+      "title": "JointGroup",
+      "type": "object"
+    },
+    "JointParameters": {
+      "additionalProperties": false,
+      "description": "The five quantities fitted for every joint of a group.",
+      "properties": {
+        "stiffness": {
+          "$ref": "#/$defs/ParameterSpec",
+          "description": "PD drive stiffness ``joint_target_ke`` [N m/rad or N/m]."
+        },
+        "damping": {
+          "$ref": "#/$defs/ParameterSpec",
+          "description": "PD drive damping ``joint_target_kd`` [N m s/rad or N s/m]."
+        },
+        "dry_friction": {
+          "$ref": "#/$defs/ParameterSpec",
+          "description": "Joint dry friction ``joint_friction`` [N m or N]."
+        },
+        "viscous_friction": {
+          "$ref": "#/$defs/ParameterSpec",
+          "description": "Joint viscous damping ``joint_damping`` [N m s/rad or N s/m]."
+        },
+        "armature": {
+          "$ref": "#/$defs/ParameterSpec",
+          "description": "Joint armature ``joint_armature`` [kg m² or kg]."
+        }
+      },
+      "required": [
+        "stiffness",
+        "damping",
+        "dry_friction",
+        "viscous_friction",
+        "armature"
+      ],
+      "title": "JointParameters",
+      "type": "object"
+    },
+    "NumericSettings": {
+      "additionalProperties": false,
+      "description": "Overrides of the MuJoCo solver settings for one numerical refinement.",
+      "properties": {
+        "physics_freq": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Physics frequency [Hz].",
+          "title": "Physics Freq"
+        },
+        "solver": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "``SolverMuJoCo`` constraint solver.",
+          "title": "Solver"
+        },
+        "integrator": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "``SolverMuJoCo`` integrator.",
+          "title": "Integrator"
+        },
+        "iterations": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Solver iterations.",
+          "title": "Iterations"
+        },
+        "ls_iterations": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Line-search iterations.",
+          "title": "Ls Iterations"
+        }
+      },
+      "title": "NumericSettings",
+      "type": "object"
+    },
+    "ParameterSpec": {
+      "additionalProperties": false,
+      "description": "Search range of one actuator quantity, applied to every joint of its group.",
+      "properties": {
+        "bounds": {
+          "description": "Lower and upper physical bound; equal bounds fix the quantity at that value.",
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "minimum": 0,
+              "type": "number"
+            }
+          ],
+          "title": "Bounds",
+          "type": "array"
+        },
+        "baseline": {
+          "description": "Starting value inside the bounds.",
+          "minimum": 0,
+          "title": "Baseline",
+          "type": "number"
+        },
+        "unit": {
+          "default": "1",
+          "description": "Physical unit, recorded with the parameter.",
+          "title": "Unit",
+          "type": "string"
+        },
+        "transform": {
+          "default": "linear",
+          "description": "Search coordinate; ``log`` requires a positive lower bound.",
+          "enum": [
+            "linear",
+            "log"
+          ],
+          "title": "Transform",
+          "type": "string"
+        }
+      },
+      "required": [
+        "bounds",
+        "baseline"
+      ],
+      "title": "ParameterSpec",
+      "type": "object"
+    },
+    "Refinement": {
+      "additionalProperties": false,
+      "description": "One numerical refinement used for qualification; physical parameters stay fixed.",
+      "properties": {
+        "numeric_settings": {
+          "$ref": "#/$defs/NumericSettings"
+        }
+      },
+      "required": [
+        "numeric_settings"
+      ],
+      "title": "Refinement",
+      "type": "object"
+    },
+    "SearchConfig": {
+      "additionalProperties": false,
+      "description": "CMA-ES search and its budgets.",
+      "properties": {
+        "world_count": {
+          "description": "Candidates per generation, each simulated in its own world.",
+          "exclusiveMinimum": 0,
+          "title": "World Count",
+          "type": "integer"
+        },
+        "sigma": {
+          "description": "Initial CMA-ES step size in normalized coordinates.",
+          "exclusiveMinimum": 0,
+          "title": "Sigma",
+          "type": "number"
+        },
+        "seed": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "CMA-ES random seed.",
+          "title": "Seed"
+        },
+        "max_generations": {
+          "description": "Generation budget.",
+          "exclusiveMinimum": 0,
+          "title": "Max Generations",
+          "type": "integer"
+        },
+        "patience": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Generations without relative improvement before stopping.",
+          "title": "Patience"
+        },
+        "relative_improvement_tolerance": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Relative loss improvement that resets ``patience``.",
+          "title": "Relative Improvement Tolerance"
+        },
+        "max_seconds": {
+          "description": "Wall-clock budget [s].",
+          "exclusiveMinimum": 0,
+          "title": "Max Seconds",
+          "type": "number"
+        }
+      },
+      "required": [
+        "world_count",
+        "sigma",
+        "max_generations",
+        "max_seconds"
+      ],
+      "title": "SearchConfig",
+      "type": "object"
+    },
+    "SimulationConfig": {
+      "additionalProperties": false,
+      "description": "Newton ``SolverMuJoCo`` settings for the replay.",
+      "properties": {
+        "physics_freq": {
+          "description": "Physics frequency [Hz]; an integer multiple of ``control_freq``.",
+          "exclusiveMinimum": 0,
+          "title": "Physics Freq",
+          "type": "integer"
+        },
+        "control_freq": {
+          "description": "Command rate [Hz]; equals the resampled data rate ``1 / dataset.dt``.",
+          "exclusiveMinimum": 0,
+          "title": "Control Freq",
+          "type": "integer"
+        },
+        "solver": {
+          "description": "``SolverMuJoCo`` constraint solver, for example ``newton``.",
+          "title": "Solver",
+          "type": "string"
+        },
+        "integrator": {
+          "description": "``SolverMuJoCo`` integrator, for example ``implicitfast``.",
+          "title": "Integrator",
+          "type": "string"
+        },
+        "iterations": {
+          "description": "Solver iterations.",
+          "exclusiveMinimum": 0,
+          "title": "Iterations",
+          "type": "integer"
+        },
+        "ls_iterations": {
+          "description": "Line-search iterations.",
+          "exclusiveMinimum": 0,
+          "title": "Ls Iterations",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "physics_freq",
+        "control_freq",
+        "solver",
+        "integrator",
+        "iterations",
+        "ls_iterations"
+      ],
+      "title": "SimulationConfig",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Actuator calibration configuration.",
+  "properties": {
+    "$schema": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Optional JSON Schema reference for editors; ignored by the loader.",
+      "title": "$Schema"
+    },
+    "schema": {
+      "const": "actuator-calibration/1",
+      "description": "Configuration format version.",
+      "title": "Schema",
+      "type": "string"
+    },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Description"
+    },
+    "asset": {
+      "$ref": "#/$defs/AssetConfig"
+    },
+    "joint_groups": {
+      "items": {
+        "$ref": "#/$defs/JointGroup"
+      },
+      "minItems": 1,
+      "title": "Joint Groups",
+      "type": "array"
+    },
+    "simulation": {
+      "$ref": "#/$defs/SimulationConfig"
+    },
+    "refinements": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Refinement"
+      },
+      "title": "Refinements",
+      "type": "array"
+    },
+    "pointwise_precision_tolerance_rad": {
+      "description": "Pointwise numerical qualification tolerance [rad].",
+      "exclusiveMinimum": 0,
+      "title": "Pointwise Precision Tolerance Rad",
+      "type": "number"
+    },
+    "dataset": {
+      "$ref": "#/$defs/DatasetConfig"
+    },
+    "search": {
+      "$ref": "#/$defs/SearchConfig"
+    },
+    "analysis": {
+      "$ref": "#/$defs/AnalysisConfig"
+    },
+    "acceptance": {
+      "$ref": "#/$defs/AcceptanceConfig"
+    },
+    "record_traces": {
+      "default": false,
+      "description": "Store per-candidate trajectories in batch files (large for long recordings).",
+      "title": "Record Traces",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "schema",
+    "asset",
+    "joint_groups",
+    "simulation",
+    "pointwise_precision_tolerance_rad",
+    "dataset",
+    "search",
+    "analysis",
+    "acceptance"
+  ],
+  "title": "ActuatorConfig",
+  "type": "object"
+}

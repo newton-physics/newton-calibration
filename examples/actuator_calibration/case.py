@@ -30,20 +30,20 @@ def make_tuning(
     Without ``usd_path`` the robot USD is the configured dataset file at the pinned revision.
     """
     case = build_case(load_config(config_path))
-    usd_path = resolve_asset(case.config, usd_path, data_root)
+    usd_path = resolve_asset(case.config.asset, case.config.dataset, usd_path, data_root)
     evidence = load_evidence(case, data_root)
     train, validation = evidence.train_data, evidence.validation_data
     scored = sum(int(e.weight) for e in train)
     template = make_template(case, [e.id for e in train + validation], scored)
     optimizer, decision = make_search(case, len(train), len(validation))
-    world_count = int(case.config["search"]["world_count"])
+    world_count = case.config.search.world_count
     rollout = Rollout(worlds=world_count, **READBACK)
     asset = ArticulationAsset(
         case.parameters.as_dict(case.parameters.baseline),
         usd_path=usd_path,
         joints=case.joints,
         fixed_parameters=case.fixed_parameters,
-        fixed_base=case.config["asset"].get("fixed_base", True),
+        fixed_base=case.config.asset.fixed_base,
         world_count=world_count,
         # Every chunk replays all training recordings in one pass, one world per candidate and recording.
         recordings=[e.inputs for e in train],
@@ -61,8 +61,8 @@ def make_tuning(
         template=template,
         play=Play(),
         workspace=Path(workspace),
-        allow_rank_reduction=bool(case.config["analysis"]["allow_rank_reduction"]),
-        orthogonalize=bool(case.config["analysis"].get("orthogonalize", True)),
+        allow_rank_reduction=case.config.analysis.allow_rank_reduction,
+        orthogonalize=case.config.analysis.orthogonalize,
         # Long recordings: per-candidate traces would dominate run time and disk use.
-        record_traces=bool(case.config.get("record_traces", False)),
+        record_traces=case.config.record_traces,
     )

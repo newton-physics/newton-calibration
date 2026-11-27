@@ -8,6 +8,7 @@ These tests do not import Newton or Warp and do not simulate.
 
 import copy
 import importlib.util
+import json
 import math
 import types
 import unittest
@@ -23,6 +24,7 @@ from examples.actuator_calibration.config import (
     load_config,
     make_search,
     make_template,
+    parse_config,
     precision_tolerance,
 )
 from examples.actuator_calibration.data import experiment
@@ -34,6 +36,15 @@ from newton_calibration.tests.unittest_utils import TempPathTestCase
 HAS_PANDAS = importlib.util.find_spec("pandas") is not None
 HAS_PYARROW = importlib.util.find_spec("pyarrow") is not None
 HAS_PXR = importlib.util.find_spec("pxr") is not None
+HAS_PYDANTIC = importlib.util.find_spec("pydantic") is not None
+
+
+def _dataset(**fields):
+    """A valid DatasetConfig with ``fields`` replaced."""
+    from examples.actuator_calibration.schema import DatasetConfig  # noqa: PLC0415 (optional actuator extra)
+
+    defaults = {"provider": "huggingface", "repo_id": "org/data", "revision": "0" * 40, "dt": 0.02}
+    return DatasetConfig(**{**defaults, "train": [], "validation": [], **fields})
 
 
 class _EchoPopulation:
@@ -71,8 +82,10 @@ class _RecordingPopulation(_EchoPopulation):
         return traces
 
 
+@unittest.skipUnless(HAS_PYDANTIC, "pydantic is not installed")
 class TestActuatorConfiguration(unittest.TestCase):
     def setUp(self):
+        self.raw = json.loads(DEFAULT_CONFIG.read_text(encoding="utf-8"))
         self.so101 = load_config(DEFAULT_CONFIG)
 
     def test_so101_case_has_independent_parameters_per_joint(self):
@@ -96,29 +109,57 @@ class TestActuatorConfiguration(unittest.TestCase):
 
     def test_equal_bounds_become_fixed_and_delay_is_in_control_steps(self):
         """Fix parameters with equal bounds and convert delays to control steps."""
-        config = copy.deepcopy(self.so101)
+        config = copy.deepcopy(self.raw)
         group = config["joint_groups"][0]
         group["parameters"]["armature"] = {"bounds": [0.02, 0.02], "baseline": 0.02}
         group["delay_ms"] = 40
-        case = build_case(config)
+        case = build_case(parse_config(config))
         self.assertEqual(len(case.parameters.names), 24)
         self.assertEqual(case.fixed_parameters["Elbow.armature"], 0.02)
         self.assertEqual(case.fixed_parameters["Elbow.delay_steps"], 2.0)
 
     def test_invalid_configurations_are_rejected(self):
-        """Reject inconsistent schemas, rates, joints and bounds."""
+        """Reject inconsistent schemas, rates, joints, bounds and unknown keys."""
+        armature = ("joint_groups", 0, "parameters", "armature")
+
+        def at(config, path):
+            for key in path:
+                config = config[key]
+            return config
+
         cases = [
+            (lambda c: c.update(schema="actuator-calibration/2"), "actuator-calibration/1"),
             (lambda c: c["simulation"].update(physics_freq=275), "integer multiple"),
+            (lambda c: c["refinements"][0]["numeric_settings"].update(physics_freq=275), "integer multiple"),
             (lambda c: c["dataset"].update(dt=0.01), "control timestep"),
-            (lambda c: c["joint_groups"].append(copy.deepcopy(c["joint_groups"][0])), "more than"),
-            (lambda c: c["joint_groups"][0]["parameters"]["armature"].update(bounds=[-1, 1]), "nonnegative"),
+            (lambda c: c["joint_groups"].append(copy.deepcopy(c["joint_groups"][0])), "more than once"),
+            (lambda c: at(c, armature).update(bounds=[-1, 1]), r"joint_groups\.0\.parameters\.armature\.bounds\.0"),
+            (lambda c: at(c, armature).update(bounds=[0.1, 0.0]), "lower <= upper"),
+            (lambda c: at(c, armature).update(baseline=0.5), "within the bounds"),
+            (lambda c: at(c, armature).update(transform="log"), "positive lower bound"),
+            (lambda c: at(c, armature[:-1]).pop("armature"), r"parameters\.armature\s+Field required"),
+            (lambda c: at(c, armature[:-1]).update(backlash={}), "Extra inputs are not permitted"),
+            (lambda c: c["dataset"].update(train="data/train.parquet"), r"dataset\.train"),
+            (lambda c: c["asset"].update(usd_sha256="0"), r"asset\.usd_sha256"),
+            (lambda c: c["dataset"].pop("revision"), "repo_id and revision"),
         ]
         for change, message in cases:
             with self.subTest(message=message):
-                config = copy.deepcopy(self.so101)
+                config = copy.deepcopy(self.raw)
                 change(config)
                 with self.assertRaisesRegex(ValueError, message):
-                    build_case(config)
+                    parse_config(config)
+
+    def test_json_schema_file_matches_the_models(self):
+        """Keep the committed JSON Schema in sync with the configuration models."""
+        from examples.actuator_calibration.schema import SCHEMA_PATH, json_schema  # noqa: PLC0415
+
+        self.assertEqual(
+            SCHEMA_PATH.read_text(encoding="utf-8"),
+            json_schema(),
+            "regenerate with: python -m examples.actuator_calibration.schema",
+        )
+        self.assertEqual((DEFAULT_CONFIG.parent / self.raw["$schema"]).resolve(), SCHEMA_PATH.resolve())
 
     def test_template_declares_refinements_and_pointwise_tolerance(self):
         """Declare refinements and express the pointwise tolerance in feature units."""
@@ -234,33 +275,33 @@ class TestActuatorData(TempPathTestCase):
         with self.assertRaisesRegex(ValueError, "missing fields"):
             trajectories(path, ["b"], 1e-8)
 
+    @unittest.skipUnless(HAS_PYDANTIC, "pydantic is not installed")
     def test_robot_usd_comes_from_the_dataset_or_a_local_file_with_the_same_hash(self):
         """Fetch the robot USD from the dataset or a local file, checking a declared hash."""
 
         from examples.actuator_calibration.data import resolve_asset  # noqa: PLC0415
+        from examples.actuator_calibration.schema import AssetConfig  # noqa: PLC0415
         from newton_calibration.sources import file_sha256  # noqa: PLC0415
 
         source = self.tmp_path / "robot_assets" / "robot.usda"
         source.parent.mkdir()
         source.write_text("#usda 1.0\n")
-        config = {
-            "asset": {"path": "robot_assets/robot.usda", "usd_sha256": file_sha256(source)},
-            "dataset": {"provider": "huggingface"},
-        }
-        self.assertEqual(resolve_asset(config, data_root=self.tmp_path), source.absolute())
-        self.assertEqual(resolve_asset(config, source), source.absolute())
+        dataset = _dataset()
+        pinned = AssetConfig(path="robot_assets/robot.usda", usd_sha256=file_sha256(source))
+        self.assertEqual(resolve_asset(pinned, dataset, data_root=self.tmp_path), source.absolute())
+        self.assertEqual(resolve_asset(pinned, dataset, source), source.absolute())
         other = self.tmp_path / "other.usda"
         other.write_text("#usda 1.0\n# changed\n")
         with self.assertRaisesRegex(ValueError, "differs"):
-            resolve_asset(config, other)
+            resolve_asset(pinned, dataset, other)
         with self.assertRaisesRegex(ValueError, "names no dataset asset"):
-            resolve_asset({"asset": {"usd_sha256": "0"}, "dataset": {}})
+            resolve_asset(AssetConfig(usd_sha256=file_sha256(source)), dataset)
         # Without a declared hash, the configured or substituted file is used as is.
-        unpinned = {"asset": {"path": "robot_assets/robot.usda"}, "dataset": {"provider": "huggingface"}}
-        self.assertEqual(resolve_asset(unpinned, data_root=self.tmp_path), source.absolute())
-        self.assertEqual(resolve_asset(unpinned, other), other.absolute())
+        unpinned = AssetConfig(path="robot_assets/robot.usda")
+        self.assertEqual(resolve_asset(unpinned, dataset, data_root=self.tmp_path), source.absolute())
+        self.assertEqual(resolve_asset(unpinned, dataset, other), other.absolute())
 
-    @unittest.skipUnless(HAS_PANDAS and HAS_PYARROW, "pandas and pyarrow are not installed")
+    @unittest.skipUnless(HAS_PANDAS and HAS_PYARROW and HAS_PYDANTIC, "pandas, pyarrow and pydantic are not installed")
     def test_recordings_without_declared_hashes_record_the_hash_of_each_file_read(self):
         """Accept listed or unhashed recordings and record the sha256 of every file read."""
 
@@ -280,7 +321,6 @@ class TestActuatorData(TempPathTestCase):
             paths[name].parent.mkdir(exist_ok=True)
             frame.to_parquet(paths[name])
         digests = {f"data/{name}": file_sha256(path) for name, path in paths.items()}
-        dataset = {"provider": "huggingface", "dt": 1e-8}
         layouts = {
             "listed": {"train": ["data/train.parquet"], "validation": ["data/heldout.parquet"]},
             "unhashed": {"train": {"data/train.parquet": None}, "validation": {"data/heldout.parquet": None}},
@@ -291,14 +331,12 @@ class TestActuatorData(TempPathTestCase):
         }
         for layout, files in layouts.items():
             with self.subTest(layout=layout):
-                case = types.SimpleNamespace(config={"dataset": {**dataset, **files}}, joints=("a",), buffer_steps=0)
+                config = types.SimpleNamespace(dataset=_dataset(dt=1e-8, **files))
+                case = types.SimpleNamespace(config=config, joints=("a",), buffer_steps=0)
                 evidence = load_evidence(case, data_root=self.tmp_path)
                 self.assertEqual([e.id for e in evidence.train_data], ["train.parquet"])
                 self.assertEqual([e.id for e in evidence.validation_data], ["heldout.parquet"])
                 self.assertEqual(evidence.sources["files"], digests)
-        case = types.SimpleNamespace(config={"dataset": {**dataset, "train": "data/train.parquet"}}, joints=("a",))
-        with self.assertRaisesRegex(ValueError, "mapping or a list"):
-            load_evidence(case, data_root=self.tmp_path)
 
 
 class TestActuatorBatching(unittest.TestCase):

@@ -1,4 +1,5 @@
 {
+  "$schema": "../actuator-calibration.schema.json",
   "schema": "actuator-calibration/1",
   "description": "SO-101 arm: PD gains, armature and joint friction from replayed position commands",
   "asset": {

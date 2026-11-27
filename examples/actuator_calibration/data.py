@@ -126,50 +126,39 @@ def experiment(experiment_id, command, measured, *, dt, buffer_steps, group=None
 
 
 def file_source(dataset, data_root=None):
-    """The dataset's files: from ``data_root`` if given, else the pinned Hugging Face revision."""
     if data_root is not None:
         return FileSourceLocal(data_root)
-    if dataset.get("provider") == "huggingface":
-        return FileSourceHuggingFace(dataset["repo_id"], dataset["revision"])
+    if dataset.provider == "huggingface":
+        return FileSourceHuggingFace(dataset.repo_id, dataset.revision)
     raise ValueError("pass data_root for a dataset without a supported provider")
 
 
-def resolve_asset(config, usd_path=None, data_root=None):
+def resolve_asset(asset, dataset, usd_path=None, data_root=None):
     """The robot USD: ``usd_path`` if given, else the configured dataset file.
 
     The file is checked against ``asset.usd_sha256`` when the configuration declares one.
     """
-    asset = config["asset"]
     if usd_path is None:
-        if "path" not in asset:
+        if asset.path is None:
             raise ValueError("pass a USD path; the configuration names no dataset asset")
-        return file_source(config["dataset"], data_root).fetch(asset["path"], asset.get("usd_sha256"))
+        return file_source(dataset, data_root).fetch(asset.path, asset.usd_sha256)
     path = Path(os.path.abspath(Path(usd_path).expanduser()))
-    return FileSourceLocal(path.parent).fetch(path.name, asset.get("usd_sha256"))
-
-
-def declared_files(files):
-    """``{relative path: sha256 or None}`` from a mapping or a list of paths."""
-    if isinstance(files, dict):
-        return dict(files)
-    if isinstance(files, list) and all(isinstance(f, str) for f in files):
-        return dict.fromkeys(files)
-    raise ValueError("dataset files must be a {path: sha256} mapping or a list of paths")
+    return FileSourceLocal(path.parent).fetch(path.name, asset.usd_sha256)
 
 
 def load_evidence(case, data_root=None):
     """Read the training and validation recordings; sources record the sha256 of every file read."""
-    dataset = case.config["dataset"]
+    dataset = case.config.dataset
     source = file_source(dataset, data_root)
     splits, digests = {}, {}
     for split in ("train", "validation"):
         experiments = []
-        files = declared_files(dataset[split])
+        files = dataset.files(split)
         for relative, path in source.fetch_all(files).items():
             # A declared digest was checked by the fetch; hash the others once here.
             digests[relative] = files[relative] or file_sha256(path)
             for experiment_id, command, measured in trajectories(
-                path, case.joints, dataset["dt"], dataset.get("joint_name_mapping")
+                path, case.joints, dataset.dt, dataset.joint_name_mapping
             ):
                 # One acquisition group per recording file.
                 experiments.append(
@@ -177,17 +166,15 @@ def load_evidence(case, data_root=None):
                         experiment_id,
                         command,
                         measured,
-                        dt=dataset["dt"],
+                        dt=dataset.dt,
                         buffer_steps=case.buffer_steps,
                         group=relative,
                     )
                 )
         splits[split] = experiments
-    sources = {
-        key: dataset[key]
-        for key in ("provider", "repo_id", "revision", "dt", "buffer_time", "joint_name_mapping")
-        if key in dataset
-    }
+    sources = dataset.model_dump(
+        include={"provider", "repo_id", "revision", "dt", "buffer_time", "joint_name_mapping"}, exclude_none=True
+    )
     sources["files"] = digests
     sources["resampling"] = "linear interpolation over the overlap of all recorded fields"
     return Evidence(splits["train"], splits["validation"], sources=sources)
